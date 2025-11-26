@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
 import { streamEngine } from './core/StreamEngine';
 import { useMarketStore } from './store/useMarketStore';
+import { Watchlist } from './components/Watchlist';
+import { MainChart } from './components/MainChart';
 
 function App() {
-  const { tickerConnected, klineConnected, tickers, activeCandle } = useMarketStore();
+  const { tickerConnected, klineConnected, tickers } = useMarketStore();
 
   useEffect(() => {
     // Start the stream engine
     streamEngine.start();
-
-    // Set a default symbol for kline streaming
-    streamEngine.setActiveSymbol('btcusdt');
 
     // Cleanup on unmount
     return () => {
@@ -19,43 +18,38 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-orion-bg p-8 text-white">
-      <h1 className="mb-4 text-2xl font-bold text-orion-neon-cyan">
-        Project ORION - Core Engine
-      </h1>
-
-      <div className="mb-4 space-y-2">
-        <p>
-          Ticker Stream:{' '}
-          <span className={tickerConnected ? 'text-orion-neon-green' : 'text-orion-neon-red'}>
-            {tickerConnected ? 'Connected' : 'Disconnected'}
+    <div className="grid h-screen grid-cols-[280px_1fr] grid-rows-[56px_1fr] bg-orion-bg">
+      {/* Header */}
+      <header className="col-span-2 flex items-center justify-between border-b border-gray-800 bg-[#0B0E11] px-6">
+        <h1 className="text-xl font-bold text-orion-neon-cyan">Project ORION</h1>
+        <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${tickerConnected ? 'bg-orion-neon-green' : 'bg-orion-neon-red'}`}
+            />
+            <span className="text-gray-400">Ticker</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${klineConnected ? 'bg-orion-neon-green' : 'bg-orion-neon-red'}`}
+            />
+            <span className="text-gray-400">Kline</span>
+          </div>
+          <span className="text-gray-500">
+            {tickers.size > 0 ? `${tickers.size} pairs` : 'Loading...'}
           </span>
-        </p>
-        <p>
-          Kline Stream:{' '}
-          <span className={klineConnected ? 'text-orion-neon-green' : 'text-orion-neon-red'}>
-            {klineConnected ? 'Connected' : 'Disconnected'}
-          </span>
-        </p>
-        <p>Total Tickers: {tickers.size}</p>
-      </div>
-
-      {activeCandle && (
-        <div className="rounded border border-orion-neon-cyan p-4">
-          <h2 className="mb-2 text-lg font-semibold text-orion-neon-cyan">
-            Active Candle: {activeCandle.symbol.toUpperCase()}
-          </h2>
-          <p>Open: ${activeCandle.open.toFixed(2)}</p>
-          <p>High: ${activeCandle.high.toFixed(2)}</p>
-          <p>Low: ${activeCandle.low.toFixed(2)}</p>
-          <p>Close: ${activeCandle.close.toFixed(2)}</p>
-          <p>Volume: {activeCandle.volume.toFixed(4)}</p>
         </div>
-      )}
+      </header>
 
-      <p className="mt-8 text-sm text-gray-500">
-        Open the browser console to see real-time Binance data logs.
-      </p>
+      {/* Left Sidebar - Watchlist */}
+      <aside className="overflow-hidden border-r border-gray-800 p-2">
+        <Watchlist />
+      </aside>
+
+      {/* Center - Main Chart */}
+      <main className="overflow-hidden p-2">
+        <MainChart />
+      </main>
     </div>
   );
 }

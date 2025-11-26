@@ -22,3 +22,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* Flash animations for watchlist price updates */
+.flash-green {
+  background-color: rgba(0, 192, 135, 0.3);
+}
+
+.flash-red {
+  background-color: rgba(246, 70, 93, 0.3);
+}

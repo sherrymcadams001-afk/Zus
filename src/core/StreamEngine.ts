@@ -212,6 +212,13 @@ class StreamEngine {
   }
 
   /**
+   * Subscribe to chart data for a symbol (alias for setActiveSymbol)
+   */
+  public subscribeToChart(symbol: string): void {
+    this.setActiveSymbol(symbol);
+  }
+
+  /**
    * Update configuration
    */
   public updateConfig(config: Partial<StreamEngineConfig>): void {
