@@ -63,8 +63,8 @@ function App() {
               <Zap className="h-5 w-5 text-orion-neon-cyan" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-sm font-bold tracking-widest text-white leading-none">ORION <span className="text-orion-neon-cyan">TERMINAL</span></h1>
-              <span className="text-[9px] uppercase tracking-widest text-slate-500 leading-none mt-1">Autonomous Trading System</span>
+              <h1 className="text-sm font-bold tracking-widest text-white leading-none">ORION <span className="text-orion-neon-cyan">AI</span></h1>
+              <span className="text-[9px] uppercase tracking-widest text-slate-500 leading-none mt-1">The consensus mechanism</span>
             </div>
           </div>
 

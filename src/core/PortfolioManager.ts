@@ -164,19 +164,20 @@ class PortfolioManager {
 
       // If we are BEHIND schedule, force a win
       if (currentReturn < targetReturnNow) {
-        pnl = Math.random() * 150 + 50; // Win $50 - $200
+        pnl = Math.random() * 40 + 10; // Win $10 - $50 (Scaled for $10k wallet)
       } 
       // If we are AHEAD of schedule (by a lot), force a small loss or break even
       // Use TARGET_DAILY_MAX to determine if we are running too hot
       else if (currentReturn > this.TARGET_DAILY_MAX * dayProgress * 1.2) {
-        pnl = (Math.random() * -100) - 20; // Loss $20 - $120
+        pnl = (Math.random() * -30) - 5; // Loss $5 - $35
       }
       // Otherwise, random outcome with slight positive bias
       else {
-        pnl = (Math.random() - 0.4) * 100; // Bias towards profit
+        // More volatility: -20 to +30 range
+        pnl = (Math.random() - 0.4) * 50; 
       }
 
-      const quantity = (Math.random() * 2000) / price;
+      const quantity = (Math.random() * 500) / price; // Smaller position size
 
       // Execute trade (Ledger update)
       usePortfolioStore.getState().addTrade({
@@ -194,6 +195,33 @@ class PortfolioManager {
 
     }, 5000 + Math.random() * 8000); // Trade every 5-13 seconds (Slower than logs)
   }
+
+  /**
+   * Exposes the current portfolio state as a JSON object
+   * Simulates an API endpoint response
+   */
+  public getPortfolioStateAPI() {
+    const state = usePortfolioStore.getState();
+    return {
+      status: 'success',
+      timestamp: Date.now(),
+      data: {
+        wallet_balance: state.walletBalance,
+        pool_balance: state.poolBalance,
+        total_equity: state.totalEquity,
+        session_pnl: state.sessionPnL,
+        daily_target_pct: {
+          min: this.TARGET_DAILY_MIN,
+          max: this.TARGET_DAILY_MAX
+        },
+        active_trades_count: state.trades.length,
+        system_status: 'OPERATIONAL'
+      }
+    };
+  }
 }
+
+// Expose API globally for "Open API" requirement
+(window as any).getOrionStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
 
 export const portfolioManager = PortfolioManager.getInstance();

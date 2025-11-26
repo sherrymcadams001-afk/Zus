@@ -37,11 +37,11 @@ interface PortfolioState {
 }
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
-  walletBalance: 12588.00,
+  walletBalance: 10000.00, // Simulated user funds
   poolBalance: 142500000.00, // Large liquidity pool
-  totalEquity: 142512588.00,
-  sessionPnL: 270.60,
-  startOfDayEquity: 142512588.00, // Baseline for daily target
+  totalEquity: 142510000.00,
+  sessionPnL: 0.00,
+  startOfDayEquity: 142510000.00, // Baseline for daily target
   trades: [],
   logs: [],
 
