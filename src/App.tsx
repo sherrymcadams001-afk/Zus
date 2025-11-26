@@ -16,7 +16,7 @@ type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER' | 'FUNDS';
 
 function App() {
   const { tickerConnected, tickers } = useMarketStore();
-  const { totalEquity, sessionPnL } = usePortfolioStore();
+  const { sessionPnL } = usePortfolioStore();
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
   const [mobileTab, setMobileTab] = useState<MobileTab>('LOGS');
 
@@ -72,9 +72,9 @@ function App() {
             {/* Scoreboard */}
             <div className="flex items-center gap-6 border-r border-white/10 pr-6">
               <div className="text-right">
-                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Total Equity</div>
+                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Wallet Balance</div>
                 <div className="text-lg font-bold tabular-nums text-white tracking-tight">
-                  ${totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${usePortfolioStore((state) => state.walletBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
               <div className="text-right">
@@ -155,9 +155,9 @@ function App() {
           </div>
           
           <div className="flex flex-col items-end">
-            <div className="text-[8px] uppercase text-slate-500 font-medium tracking-wider">Equity</div>
+            <div className="text-[8px] uppercase text-slate-500 font-medium tracking-wider">Balance</div>
             <div className="text-sm font-bold tabular-nums text-white tracking-tight leading-none">
-              ${totalEquity.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              ${usePortfolioStore((state) => state.walletBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </header>

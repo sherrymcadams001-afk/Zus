@@ -106,18 +106,22 @@ export function MainChart() {
 
     const handleResize = () => {
       if (containerRef.current) {
-        chart.applyOptions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+        const { clientWidth, clientHeight } = containerRef.current;
+        if (clientWidth > 0 && clientHeight > 0) {
+          chart.applyOptions({ width: clientWidth, height: clientHeight });
+        }
       }
     };
 
-    window.addEventListener('resize', handleResize);
+    // Use ResizeObserver for more robust resizing (especially on mobile/flex layouts)
+    const resizeObserver = new ResizeObserver(() => handleResize());
+    resizeObserver.observe(containerRef.current);
+
+    // Initial sizing
     handleResize();
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;

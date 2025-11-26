@@ -34,6 +34,7 @@ interface PortfolioState {
   addLog: (message: string, type: LogEntry['type']) => void;
   updateBalances: (walletDelta: number, poolDelta: number) => void;
   setEquity: (equity: number) => void;
+  setWalletBalance: (balance: number) => void;
 }
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
@@ -44,6 +45,8 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   startOfDayEquity: 142510000.00, // Baseline for daily target
   trades: [],
   logs: [],
+
+  setWalletBalance: (balance) => set({ walletBalance: balance }),
 
   addTrade: (tradeData) => {
     const state = get();

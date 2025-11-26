@@ -223,5 +223,12 @@ class PortfolioManager {
 
 // Expose API globally for "Open API" requirement
 (window as any).getOrionStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
+(window as any).setOrionBalance = (amount: number) => {
+  if (typeof amount === 'number' && !isNaN(amount)) {
+    usePortfolioStore.getState().setWalletBalance(amount);
+    return { status: 'success', new_balance: amount };
+  }
+  return { status: 'error', message: 'Invalid amount' };
+};
 
 export const portfolioManager = PortfolioManager.getInstance();
