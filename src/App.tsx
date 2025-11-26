@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Activity, Zap, Radio, TrendingUp, TrendingDown, Globe, Server, Shield } from 'lucide-react';
 import { streamEngine } from './core/StreamEngine';
+import { portfolioManager } from './core/PortfolioManager';
 import { useMarketStore } from './store/useMarketStore';
+import { usePortfolioStore } from './store/usePortfolioStore';
 import { MacroTicker } from './components/MacroTicker';
 import { Watchlist } from './components/Watchlist';
 import { MainChart } from './components/MainChart';
@@ -10,12 +12,9 @@ import { BotActivityLog } from './components/BotActivityLog';
 import { LiveTrades } from './components/LiveTrades';
 import { TreasuryReactor } from './components/TreasuryReactor';
 
-// Simulated portfolio data (in real app, this would come from store)
-const TOTAL_VALUE = 24580.45;
-const SESSION_PNL = 270.60;
-
 function App() {
   const { tickerConnected, klineConnected, tickers } = useMarketStore();
+  const { totalEquity, sessionPnL } = usePortfolioStore();
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
 
   useEffect(() => {
@@ -24,6 +23,9 @@ function App() {
       // Initialize chart after engine is ready (and region probed)
       streamEngine.subscribeToChart('BTCUSDT');
     });
+    
+    // Start Portfolio Manager (Global Data Script)
+    portfolioManager.start();
     
     // Check region periodically
     const checkRegion = () => {
@@ -37,6 +39,7 @@ function App() {
     // Cleanup on unmount
     return () => {
       streamEngine.stop();
+      portfolioManager.stop();
       clearInterval(interval);
     };
   }, []);
@@ -66,16 +69,16 @@ function App() {
             <div className="text-right">
               <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Total Equity</div>
               <div className="text-lg font-bold tabular-nums text-white tracking-tight">
-                ${TOTAL_VALUE.toLocaleString()}
+                ${totalEquity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="text-right">
               <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Session P&L</div>
               <div className={`flex items-center justify-end gap-1 text-lg font-bold tabular-nums tracking-tight ${
-                SESSION_PNL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
+                sessionPnL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
               }`}>
-                {SESSION_PNL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                {SESSION_PNL >= 0 ? '+' : ''}${SESSION_PNL.toFixed(2)}
+                {sessionPnL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                {sessionPnL >= 0 ? '+' : ''}${sessionPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>

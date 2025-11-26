@@ -1,45 +1,8 @@
-import { useEffect, useState } from 'react';
 import { Receipt } from 'lucide-react';
-
-interface Trade {
-  id: number;
-  symbol: string;
-  side: 'BUY' | 'SELL';
-  price: number;
-  quantity: number;
-  pnl: number;
-  timestamp: Date;
-}
-
-function generateTrade(id: number): Trade {
-  const symbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'];
-  const prices: Record<string, number> = { BTC: 97450, ETH: 3420, SOL: 185, BNB: 618, XRP: 2.52 };
-  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-  const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
-  const basePrice = prices[symbol];
-  const price = basePrice + basePrice * (Math.random() * 0.002 - 0.001);
-  const quantity = Math.random() * (symbol === 'BTC' ? 0.5 : symbol === 'ETH' ? 5 : 100);
-  const pnl = (Math.random() - 0.4) * 500;
-  return { id, symbol, side, price, quantity, pnl, timestamp: new Date() };
-}
+import { usePortfolioStore } from '../store/usePortfolioStore';
 
 export function LiveTrades() {
-  const [trades, setTrades] = useState<Trade[]>([]);
-
-  useEffect(() => {
-    const initialTrades = Array.from({ length: 6 }, (_, i) => ({
-      ...generateTrade(i),
-      timestamp: new Date(Date.now() - (6 - i) * 2000),
-    }));
-    setTrades(initialTrades);
-
-    let tradeId = 6;
-    const interval = setInterval(() => {
-      setTrades(prev => [generateTrade(tradeId++), ...prev].slice(0, 10));
-    }, 1000 + Math.random() * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const trades = usePortfolioStore((state) => state.trades);
 
   return (
     <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden">
