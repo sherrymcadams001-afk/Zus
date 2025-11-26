@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wallet, Database, ArrowRightLeft } from 'lucide-react';
+import { usePortfolioStore } from '../store/usePortfolioStore';
 
 interface Particle {
   id: number;
@@ -24,40 +25,40 @@ const PATHS_REVERSED = [
 
 export function TreasuryReactor() {
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [poolValue, setPoolValue] = useState(24580.45);
-  const [walletValue, setWalletValue] = useState(12340.80);
+  const { poolBalance, walletBalance } = usePortfolioStore();
+  const prevPoolBalance = useRef(poolBalance);
   const particleIdRef = useRef(0);
 
-  const triggerFlow = useCallback((type: 'PUT' | 'CALL') => {
-    const amount = Math.random() * 150 + 30;
+  const spawnParticle = useCallback((direction: 'PUT' | 'CALL', amount: number) => {
     const newParticle: Particle = {
       id: particleIdRef.current++,
-      direction: type,
+      direction,
       pathIndex: Math.floor(Math.random() * 3),
       amount,
     };
     
     setParticles(prev => [...prev, newParticle]);
     
-    if (type === 'PUT') {
-      setPoolValue(prev => prev - amount);
-      setWalletValue(prev => prev + amount);
-    } else {
-      setWalletValue(prev => prev - amount);
-      setPoolValue(prev => prev + amount);
-    }
-    
     setTimeout(() => {
       setParticles(prev => prev.filter(p => p.id !== newParticle.id));
     }, 1500);
   }, []);
 
+  // Watch for balance changes to trigger visual effects
   useEffect(() => {
-    const interval = setInterval(() => {
-      triggerFlow(Math.random() > 0.4 ? 'PUT' : 'CALL');
-    }, 2500 + Math.random() * 1500);
-    return () => clearInterval(interval);
-  }, [triggerFlow]);
+    const diff = poolBalance - prevPoolBalance.current;
+    // Only trigger for significant changes (ignore tiny floating point noise)
+    if (Math.abs(diff) > 0.01) {
+      if (diff < 0) {
+        // Pool decreased -> Payout -> PUT (Pool to Wallet)
+        spawnParticle('PUT', Math.abs(diff));
+      } else {
+        // Pool increased -> Injection -> CALL (Wallet to Pool)
+        spawnParticle('CALL', Math.abs(diff));
+      }
+    }
+    prevPoolBalance.current = poolBalance;
+  }, [poolBalance, spawnParticle]);
 
   return (
     <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden">
@@ -76,7 +77,7 @@ export function TreasuryReactor() {
             <span className="text-[8px] uppercase text-slate-500 font-bold mt-0.5">Pool</span>
           </div>
           <div className="text-xs font-bold tabular-nums text-white font-mono">
-            ${poolValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            ${poolBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         </div>
 
@@ -111,7 +112,7 @@ export function TreasuryReactor() {
             <span className="text-[8px] uppercase text-slate-500 font-bold mt-0.5">Wallet</span>
           </div>
           <div className="text-xs font-bold tabular-nums text-white font-mono">
-            ${walletValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            ${walletBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         </div>
       </div>

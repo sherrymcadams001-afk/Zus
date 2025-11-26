@@ -70,7 +70,10 @@ class PortfolioManager {
   private startTradeCycle() {
     this.tradeInterval = setInterval(() => {
       const tickers = useMarketStore.getState().tickers;
-      if (tickers.size === 0) return;
+      if (tickers.size === 0) {
+        // console.warn('PortfolioManager: Waiting for market data...');
+        return;
+      }
 
       // Pick a random symbol
       const symbols = Array.from(tickers.keys());
@@ -80,6 +83,10 @@ class PortfolioManager {
       if (!ticker) return;
 
       const price = parseFloat(ticker.closePrice);
+      
+      // Skip if price is invalid
+      if (isNaN(price) || price <= 0) return;
+
       const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
       const quantity = (Math.random() * 1000) / price; // ~$1000 position size
       const pnl = (Math.random() - 0.45) * 50; // Slight positive bias
