@@ -1,5 +1,5 @@
 {
-  "name": "orion-narrative-engine",
+  "name": "trading-agent-engine",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -15,5 +15,5 @@
     "typescript": "^5.9.3",
     "wrangler": "^4.50.0"
   },
-  "description": "ORION Narrative Engine - AI-powered trading log generator"
+  "description": "Trading Agent Engine - AI-powered trading log generator and balance API"
 }
