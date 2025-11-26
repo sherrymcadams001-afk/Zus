@@ -31,8 +31,10 @@ export function MainChart() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lastCandleTimeRef = useRef<number | null>(null);
+  const historicalLoadedRef = useRef<boolean>(false);
 
   const activeCandle = useMarketStore((state) => state.activeCandle);
+  const historicalCandles = useMarketStore((state) => state.historicalCandles);
   const klineConnected = useMarketStore((state) => state.klineConnected);
 
   // Initialize chart on mount
@@ -99,6 +101,15 @@ export function MainChart() {
       seriesRef.current = null;
     };
   }, []);
+
+  // Load historical candles when available
+  useEffect(() => {
+    if (!seriesRef.current || historicalCandles.length === 0 || historicalLoadedRef.current) return;
+
+    const chartData = historicalCandles.map(candleToChartData);
+    seriesRef.current.setData(chartData);
+    historicalLoadedRef.current = true;
+  }, [historicalCandles]);
 
   // Update chart with new candle data
   useEffect(() => {

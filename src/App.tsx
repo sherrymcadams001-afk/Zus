@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Activity, Zap, Radio } from 'lucide-react';
+import { Activity, Zap, Radio, TrendingUp, TrendingDown } from 'lucide-react';
 import { streamEngine } from './core/StreamEngine';
 import { useMarketStore } from './store/useMarketStore';
 import { Watchlist } from './components/Watchlist';
@@ -8,6 +8,10 @@ import { OrderBook } from './components/OrderBook';
 import { BotActivityLog } from './components/BotActivityLog';
 import { FundsOverview } from './components/FundsOverview';
 import { LiveTrades } from './components/LiveTrades';
+
+// Simulated portfolio data (in real app, this would come from store)
+const TOTAL_VALUE = 24580.45;
+const SESSION_PNL = 270.60;
 
 function App() {
   const { tickerConnected, klineConnected, tickers } = useMarketStore();
@@ -37,6 +41,29 @@ function App() {
         </div>
 
         <div className="flex items-center gap-6 text-[10px]">
+          {/* Scoreboard - Total Value & Session PnL */}
+          <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+            <div className="text-right">
+              <div className="text-[9px] uppercase text-slate-600">Total Value</div>
+              <div className="text-lg font-semibold tabular-nums text-white">
+                ${TOTAL_VALUE.toLocaleString()}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[9px] uppercase text-slate-600">Session P&L</div>
+              <div className={`flex items-center justify-end gap-1 text-lg font-semibold tabular-nums ${
+                SESSION_PNL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
+              }`}>
+                {SESSION_PNL >= 0 ? (
+                  <TrendingUp className="h-4 w-4" />
+                ) : (
+                  <TrendingDown className="h-4 w-4" />
+                )}
+                {SESSION_PNL >= 0 ? '+' : ''}${SESSION_PNL.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
           {/* Ticker Status */}
           <div className="flex items-center gap-2">
             <Radio className={`h-3 w-3 ${tickerConnected ? 'text-orion-neon-green' : 'text-orion-neon-red'}`} />
@@ -82,19 +109,19 @@ function App() {
 
       {/* Bottom Console - col-span-12 h-48 grid grid-cols-3 */}
       <div className="col-span-12 grid grid-cols-3 gap-1">
-        {/* Bot Activity Log */}
+        {/* System Terminal (Bot Activity Log) */}
         <div className="overflow-hidden">
           <BotActivityLog />
         </div>
 
-        {/* Funds Overview */}
-        <div className="overflow-hidden">
-          <FundsOverview />
-        </div>
-
-        {/* Live Trades */}
+        {/* Ledger (Live Trades) */}
         <div className="overflow-hidden">
           <LiveTrades />
+        </div>
+
+        {/* Treasury (Funds Overview - now just positions/transfers) */}
+        <div className="overflow-hidden">
+          <FundsOverview />
         </div>
       </div>
     </div>

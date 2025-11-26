@@ -84,6 +84,7 @@ class StreamEngine {
   private reconnectTimeouts: { ticker?: ReturnType<typeof setTimeout>; kline?: ReturnType<typeof setTimeout> } = {};
   private readonly RECONNECT_DELAY = 3000;
   private readonly DEFAULT_LOG_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
+  private readonly API_BASE_URL = 'https://api.binance.com/api/v3';
 
   private constructor(config: StreamEngineConfig = {}) {
     this.config = {
@@ -201,6 +202,9 @@ class StreamEngine {
     this.activeSymbol = normalizedSymbol;
     this.log(`Setting active symbol: ${symbol}`);
 
+    // Fetch historical candles for the new symbol
+    this.fetchHistoricalCandles(symbol);
+
     // Reconnect kline stream with new symbol
     if (this.klineSocket) {
       this.klineSocket.close();
@@ -216,6 +220,41 @@ class StreamEngine {
    */
   public subscribeToChart(symbol: string): void {
     this.setActiveSymbol(symbol);
+  }
+
+  /**
+   * Fetch historical candles from Binance REST API
+   */
+  private async fetchHistoricalCandles(symbol: string): Promise<void> {
+    const url = `${this.API_BASE_URL}/klines?symbol=${symbol.toUpperCase()}&interval=1m&limit=1000`;
+    this.log(`Fetching historical candles: ${url}`);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Binance klines format: [openTime, open, high, low, close, volume, closeTime, ...]
+      const candles: Candle[] = data.map((kline: (string | number)[]) => ({
+        time: kline[0] as number,
+        open: parseFloat(kline[1] as string),
+        high: parseFloat(kline[2] as string),
+        low: parseFloat(kline[3] as string),
+        close: parseFloat(kline[4] as string),
+        volume: parseFloat(kline[5] as string),
+        symbol: symbol.toUpperCase(),
+        isClosed: true,
+      }));
+
+      useMarketStore.getState().setHistoricalCandles(candles);
+      this.log(`Loaded ${candles.length} historical candles for ${symbol}`);
+    } catch (error) {
+      // CORS or network error - log warning but keep socket open
+      this.log(`Warning: Failed to fetch historical candles (CORS?):`, error);
+    }
   }
 
   /**

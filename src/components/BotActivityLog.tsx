@@ -89,7 +89,7 @@ export function BotActivityLog() {
         <div className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-orion-neon-green animate-pulse" />
           <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
-            Bot Activity
+            System Terminal
           </h3>
         </div>
       </div>
