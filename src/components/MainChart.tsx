@@ -7,7 +7,6 @@ import { BarChart3 } from 'lucide-react';
 const CHART_UP_COLOR = '#00C087';
 const CHART_DOWN_COLOR = '#F6465D';
 const CHART_BG_COLOR = '#0B0E11';
-const CHART_GRID_COLOR = '#1E2329';
 const CHART_TEXT_COLOR = '#848E9C';
 
 function candleToChartData(candle: Candle): CandlestickData<Time> {
