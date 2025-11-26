@@ -56,6 +56,25 @@ interface BinanceKlineEvent {
 }
 
 /**
+ * Raw kline data from Binance REST API (array format)
+ * [openTime, open, high, low, close, volume, closeTime, quoteVolume, trades, takerBuyBase, takerBuyQuote, ignore]
+ */
+type BinanceKlineArray = [
+  number,   // 0: Open time
+  string,   // 1: Open price
+  string,   // 2: High price
+  string,   // 3: Low price
+  string,   // 4: Close price
+  string,   // 5: Volume
+  number,   // 6: Close time
+  string,   // 7: Quote asset volume
+  number,   // 8: Number of trades
+  string,   // 9: Taker buy base asset volume
+  string,   // 10: Taker buy quote asset volume
+  string    // 11: Ignore
+];
+
+/**
  * StreamEngine - Singleton class for managing Binance WebSocket connections
  *
  * Features:
@@ -84,6 +103,7 @@ class StreamEngine {
   private reconnectTimeouts: { ticker?: ReturnType<typeof setTimeout>; kline?: ReturnType<typeof setTimeout> } = {};
   private readonly RECONNECT_DELAY = 3000;
   private readonly DEFAULT_LOG_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
+  private readonly API_BASE_URL = 'https://api.binance.com/api/v3';
 
   private constructor(config: StreamEngineConfig = {}) {
     this.config = {
@@ -201,6 +221,9 @@ class StreamEngine {
     this.activeSymbol = normalizedSymbol;
     this.log(`Setting active symbol: ${symbol}`);
 
+    // Fetch historical candles for the new symbol
+    this.fetchHistoricalCandles(symbol);
+
     // Reconnect kline stream with new symbol
     if (this.klineSocket) {
       this.klineSocket.close();
@@ -216,6 +239,40 @@ class StreamEngine {
    */
   public subscribeToChart(symbol: string): void {
     this.setActiveSymbol(symbol);
+  }
+
+  /**
+   * Fetch historical candles from Binance REST API
+   */
+  private async fetchHistoricalCandles(symbol: string): Promise<void> {
+    const url = `${this.API_BASE_URL}/klines?symbol=${symbol.toUpperCase()}&interval=1m&limit=1000`;
+    this.log(`Fetching historical candles: ${url}`);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: BinanceKlineArray[] = await response.json();
+      
+      const candles: Candle[] = data.map((kline) => ({
+        time: kline[0],
+        open: parseFloat(kline[1]),
+        high: parseFloat(kline[2]),
+        low: parseFloat(kline[3]),
+        close: parseFloat(kline[4]),
+        volume: parseFloat(kline[5]),
+        symbol: symbol.toUpperCase(),
+        isClosed: true,
+      }));
+
+      useMarketStore.getState().setHistoricalCandles(candles);
+      this.log(`Loaded ${candles.length} historical candles for ${symbol}`);
+    } catch (error) {
+      // CORS or network error - log warning but keep socket open
+      this.log(`Warning: Failed to fetch historical candles (CORS?):`, error);
+    }
   }
 
   /**

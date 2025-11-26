@@ -44,7 +44,7 @@ const OrderBookRow = memo(function OrderBookRow({ level, side, maxTotal }: Order
   return (
     <div
       ref={rowRef}
-      className="relative grid grid-cols-3 gap-1 px-2 py-0.5 text-[10px] tabular-nums transition-colors"
+      className="relative grid grid-cols-3 gap-0.5 px-1.5 py-px text-[9px] tabular-nums transition-colors"
     >
       {/* Depth gradient background */}
       <div
@@ -129,14 +129,14 @@ export function OrderBook() {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded border border-white/5 bg-orion-panel">
       {/* Header */}
-      <div className="border-b border-white/5 px-2 py-1">
-        <h3 className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="border-b border-white/5 px-1.5 py-0.5">
+        <h3 className="text-[9px] font-medium uppercase tracking-wider text-slate-500">
           Order Book
         </h3>
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-3 gap-1 border-b border-white/5 px-2 py-1 text-[9px] uppercase tracking-wider text-slate-600">
+      <div className="grid grid-cols-3 gap-0.5 border-b border-white/5 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-slate-600">
         <span>Price</span>
         <span className="text-right">Size</span>
         <span className="text-right">Total</span>
@@ -156,8 +156,8 @@ export function OrderBook() {
         </div>
 
         {/* Spread Indicator */}
-        <div className="border-y border-white/10 bg-orion-bg px-2 py-1">
-          <div className="flex items-center justify-between text-[10px]">
+        <div className="border-y border-white/10 bg-orion-bg px-1.5 py-0.5">
+          <div className="flex items-center justify-between text-[9px]">
             <span className="text-orion-neon-cyan font-medium">
               {currentPrice.toFixed(2)}
             </span>

@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Wallet } from 'lucide-react';
 
 interface Position {
   id: number;
@@ -23,12 +23,9 @@ const POSITIONS: Position[] = [
 const WALLET_ADDRESS = '0x742d35Cc6634C0532925a3b844Bc9e7595f8AbC1';
 
 /**
- * FundsOverview - Dense table with cognitive economy (icons over text)
+ * FundsOverview - Treasury view showing positions and transfers (balance moved to header)
  */
 export function FundsOverview() {
-  const totalPnL = POSITIONS.reduce((sum, p) => sum + p.pnl, 0);
-  const totalValue = 24580.45;
-
   return (
     <div className="flex h-full flex-col overflow-hidden rounded border border-white/5 bg-orion-panel">
       {/* Header with Wallet */}
@@ -37,7 +34,7 @@ export function FundsOverview() {
           <div className="flex items-center gap-2">
             <Wallet className="h-3 w-3 text-slate-500" />
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
-              Portfolio
+              Treasury
             </span>
           </div>
           <span
@@ -46,29 +43,6 @@ export function FundsOverview() {
           >
             {WALLET_ADDRESS.slice(0, 6)}...{WALLET_ADDRESS.slice(-4)}
           </span>
-        </div>
-      </div>
-
-      {/* Summary Row */}
-      <div className="grid grid-cols-2 gap-2 border-b border-white/5 p-2">
-        <div className="rounded bg-white/5 p-2">
-          <div className="text-[9px] uppercase text-slate-600">Total Value</div>
-          <div className="text-sm font-medium tabular-nums text-white">
-            ${totalValue.toLocaleString()}
-          </div>
-        </div>
-        <div className="rounded bg-white/5 p-2">
-          <div className="text-[9px] uppercase text-slate-600">Session P&L</div>
-          <div className={`flex items-center gap-1 text-sm font-medium tabular-nums ${
-            totalPnL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
-          }`}>
-            {totalPnL >= 0 ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
-          </div>
         </div>
       </div>
 
