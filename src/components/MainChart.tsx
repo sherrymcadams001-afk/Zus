@@ -31,7 +31,7 @@ export function MainChart() {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lastCandleTimeRef = useRef<number | null>(null);
-  const historicalLoadedRef = useRef<boolean>(false);
+  const historicalLoadedRef = useRef<string | null>(null);
 
   const activeCandle = useMarketStore((state) => state.activeCandle);
   const historicalCandles = useMarketStore((state) => state.historicalCandles);
@@ -104,11 +104,15 @@ export function MainChart() {
 
   // Load historical candles when available
   useEffect(() => {
-    if (!seriesRef.current || historicalCandles.length === 0 || historicalLoadedRef.current) return;
+    if (!seriesRef.current || historicalCandles.length === 0) return;
 
-    const chartData = historicalCandles.map(candleToChartData);
-    seriesRef.current.setData(chartData);
-    historicalLoadedRef.current = true;
+    // Check if this is a new set of candles (different symbol or first load)
+    const firstCandle = historicalCandles[0];
+    if (firstCandle && historicalLoadedRef.current !== firstCandle.symbol) {
+      const chartData = historicalCandles.map(candleToChartData);
+      seriesRef.current.setData(chartData);
+      historicalLoadedRef.current = firstCandle.symbol;
+    }
   }, [historicalCandles]);
 
   // Update chart with new candle data

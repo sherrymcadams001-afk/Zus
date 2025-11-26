@@ -56,6 +56,25 @@ interface BinanceKlineEvent {
 }
 
 /**
+ * Raw kline data from Binance REST API (array format)
+ * [openTime, open, high, low, close, volume, closeTime, quoteVolume, trades, takerBuyBase, takerBuyQuote, ignore]
+ */
+type BinanceKlineArray = [
+  number,   // 0: Open time
+  string,   // 1: Open price
+  string,   // 2: High price
+  string,   // 3: Low price
+  string,   // 4: Close price
+  string,   // 5: Volume
+  number,   // 6: Close time
+  string,   // 7: Quote asset volume
+  number,   // 8: Number of trades
+  string,   // 9: Taker buy base asset volume
+  string,   // 10: Taker buy quote asset volume
+  string    // 11: Ignore
+];
+
+/**
  * StreamEngine - Singleton class for managing Binance WebSocket connections
  *
  * Features:
@@ -235,16 +254,15 @@ class StreamEngine {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: BinanceKlineArray[] = await response.json();
       
-      // Binance klines format: [openTime, open, high, low, close, volume, closeTime, ...]
-      const candles: Candle[] = data.map((kline: (string | number)[]) => ({
-        time: kline[0] as number,
-        open: parseFloat(kline[1] as string),
-        high: parseFloat(kline[2] as string),
-        low: parseFloat(kline[3] as string),
-        close: parseFloat(kline[4] as string),
-        volume: parseFloat(kline[5] as string),
+      const candles: Candle[] = data.map((kline) => ({
+        time: kline[0],
+        open: parseFloat(kline[1]),
+        high: parseFloat(kline[2]),
+        low: parseFloat(kline[3]),
+        close: parseFloat(kline[4]),
+        volume: parseFloat(kline[5]),
         symbol: symbol.toUpperCase(),
         isClosed: true,
       }));
