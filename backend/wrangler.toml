@@ -1,11 +1,11 @@
-name = "orion-narrative-engine"
+name = "trading-agent-engine"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 # KV Namespace binding
 [[kv_namespaces]]
-binding = "ORION_CACHE"
+binding = "TRADING_CACHE"
 id = "d0853bad5d7b49a5a6a7f872180aae06"
 preview_id = "d0853bad5d7b49a5a6a7f872180aae06"
 

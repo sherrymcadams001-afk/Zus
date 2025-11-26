@@ -8,8 +8,13 @@ import { useMarketStore } from '../store/useMarketStore';
  * - Generates consistent payouts (Treasury Reactor)
  * - Executes simulated trades based on market movements
  * - Ensures mathematical consistency across the dashboard
- * - Enforces a 1.1% - 1.4% daily profit target
+ * - Enforces a 1.1% - 1.4% daily profit target based on user balance
+ * - Integrates market context for more realistic trade outcomes
  */
+
+/** Market volatility levels for contextual trading */
+type MarketVolatility = 'low' | 'medium' | 'high';
+
 class PortfolioManager {
   private static instance: PortfolioManager | null = null;
   private isRunning = false;
@@ -26,6 +31,15 @@ class PortfolioManager {
   private readonly MAX_RECENT_TRADES = 18;
   private readonly MIN_LOSS_RATIO = 0.35;
   private lastDayIndex: number = 0;
+
+  // Market context tracking
+  private recentPriceChanges: Map<string, number[]> = new Map();
+  private readonly PRICE_HISTORY_SIZE = 10;
+
+  // Market context cache for performance
+  private cachedVolatility: MarketVolatility = 'medium';
+  private lastVolatilityUpdate: number = 0;
+  private readonly VOLATILITY_CACHE_TTL = 30000; // 30 seconds cache
 
   private constructor() {
     this.startTime = Date.now() - (Math.random() * 3600000 * 4); // Simulate we started 0-4 hours ago
@@ -61,6 +75,76 @@ class PortfolioManager {
   }
 
   /**
+   * Calculate current market volatility based on recent price changes
+   * Uses caching to improve performance
+   */
+  private calculateMarketVolatility(): MarketVolatility {
+    // Return cached value if still valid
+    const now = Date.now();
+    if (now - this.lastVolatilityUpdate < this.VOLATILITY_CACHE_TTL) {
+      return this.cachedVolatility;
+    }
+
+    const tickers = useMarketStore.getState().tickers;
+    if (tickers.size === 0) {
+      this.cachedVolatility = 'medium';
+      this.lastVolatilityUpdate = now;
+      return 'medium';
+    }
+
+    let totalVolatility = 0;
+    let count = 0;
+
+    for (const [symbol, ticker] of tickers) {
+      const currentPrice = parseFloat(ticker.closePrice);
+      const openPrice = parseFloat(ticker.openPrice);
+      if (isNaN(currentPrice) || isNaN(openPrice) || openPrice === 0) continue;
+
+      // Calculate 24h price change percentage
+      const priceChange = Math.abs((currentPrice - openPrice) / openPrice) * 100;
+      totalVolatility += priceChange;
+      count++;
+
+      // Track price changes for this symbol
+      const history = this.recentPriceChanges.get(symbol) || [];
+      history.push(priceChange);
+      if (history.length > this.PRICE_HISTORY_SIZE) history.shift();
+      this.recentPriceChanges.set(symbol, history);
+    }
+
+    let volatility: MarketVolatility = 'medium';
+    if (count > 0) {
+      const avgVolatility = totalVolatility / count;
+      if (avgVolatility < 2) volatility = 'low';
+      else if (avgVolatility > 5) volatility = 'high';
+    }
+
+    // Cache the result
+    this.cachedVolatility = volatility;
+    this.lastVolatilityUpdate = now;
+    return volatility;
+  }
+
+  /**
+   * Get market trend for a specific symbol
+   */
+  private getMarketTrend(symbol: string): 'bullish' | 'bearish' | 'neutral' {
+    const tickers = useMarketStore.getState().tickers;
+    const ticker = tickers.get(symbol);
+    if (!ticker) return 'neutral';
+
+    const currentPrice = parseFloat(ticker.closePrice);
+    const openPrice = parseFloat(ticker.openPrice);
+    if (isNaN(currentPrice) || isNaN(openPrice) || openPrice === 0) return 'neutral';
+
+    const changePercent = ((currentPrice - openPrice) / openPrice) * 100;
+    
+    if (changePercent > 1) return 'bullish';
+    if (changePercent < -1) return 'bearish';
+    return 'neutral';
+  }
+
+  /**
    * Simulates constant payouts from Pool to Wallet
    * Keeps Wallet balance smaller than Pool but growing
    */
@@ -68,8 +152,10 @@ class PortfolioManager {
     const runPayout = () => {
       if (!this.isRunning) return;
 
-      // Small payouts to keep movement constant but not drain pool
-      const amount = Math.random() * 150 + 20; 
+      // Scale payout based on wallet balance to maintain realistic proportions
+      const { walletBalance } = usePortfolioStore.getState();
+      const baseAmount = Math.max(20, walletBalance * 0.001); // 0.1% of wallet or minimum $20
+      const amount = Math.random() * baseAmount * 2 + baseAmount * 0.5;
       
       // Update store - Mathematically accurate transfer
       // Wallet increases (+), Pool decreases (-)
@@ -88,36 +174,55 @@ class PortfolioManager {
    * "The agent trades should be a fast stream of activity"
    */
   private startActivityCycle() {
-    const actions = [
-      'Scanning market structure...',
-      'Analyzing order book depth...',
-      'Calculating volatility index...',
-      'Checking correlation matrix...',
-      'Validating entry signals...',
-      'Monitoring liquidity pools...',
-      'Adjusting risk parameters...',
-      'Syncing with global nodes...',
-      'Optimizing execution path...',
-      'Detecting arbitrage opportunity...',
-      'Filtering noise...',
-      'Backtesting pattern match...',
-    ];
+    const volatilityActions = {
+      low: [
+        'Market stable, monitoring for breakout...',
+        'Low volatility detected, tightening spreads...',
+        'Consolidation pattern forming...',
+        'Range-bound conditions, setting grid...',
+      ],
+      medium: [
+        'Scanning market structure...',
+        'Analyzing order book depth...',
+        'Calculating volatility index...',
+        'Checking correlation matrix...',
+        'Validating entry signals...',
+        'Monitoring liquidity pools...',
+        'Adjusting risk parameters...',
+        'Syncing with global nodes...',
+        'Optimizing execution path...',
+        'Detecting arbitrage opportunity...',
+        'Filtering noise...',
+        'Backtesting pattern match...',
+      ],
+      high: [
+        'High volatility alert! Adjusting position size...',
+        'Rapid price movement detected, hedging...',
+        'Volatility spike, pausing new entries...',
+        'Emergency risk assessment in progress...',
+        'Large order detected, analyzing impact...',
+      ],
+    };
 
     const runActivity = () => {
       if (!this.isRunning) return;
 
+      const volatility = this.calculateMarketVolatility();
+      const actions = volatilityActions[volatility];
       const action = actions[Math.floor(Math.random() * actions.length)];
       const tickers = useMarketStore.getState().tickers;
       
-      // Occasionally add a symbol specific log
+      // Occasionally add a symbol specific log with market context
       if (Math.random() > 0.7 && tickers.size > 0) {
         const symbols = Array.from(tickers.keys());
         const symbol = symbols[Math.floor(Math.random() * symbols.length)];
         const ticker = tickers.get(symbol);
         if (ticker) {
           const price = parseFloat(ticker.closePrice);
+          const trend = this.getMarketTrend(symbol);
+          const trendEmoji = trend === 'bullish' ? '↑' : trend === 'bearish' ? '↓' : '→';
           usePortfolioStore.getState().addLog(
-            `Tracking ${symbol.replace('USDT', '')} @ $${price.toFixed(2)} - Vol: ${parseFloat(ticker.volume).toFixed(0)}`, 
+            `${trendEmoji} ${symbol.replace('USDT', '')} @ $${price.toFixed(2)} - Vol: ${parseFloat(ticker.volume).toFixed(0)}`, 
             'system'
           );
         }
@@ -125,8 +230,9 @@ class PortfolioManager {
         usePortfolioStore.getState().addLog(action, 'system');
       }
 
-      // Very fast interval: 100ms - 600ms
-      const nextDelay = 100 + Math.random() * 500;
+      // Adjust interval based on volatility - faster during high volatility
+      const baseDelay = volatility === 'high' ? 80 : volatility === 'low' ? 200 : 100;
+      const nextDelay = baseDelay + Math.random() * (baseDelay * 4);
       this.activityInterval = setTimeout(runActivity, nextDelay);
     };
 
@@ -136,7 +242,8 @@ class PortfolioManager {
   /**
    * Simulates trading activity based on current market prices
    * "Ledger should be the averagely moving like a balance sheet"
-   * Enforces 1.1% - 1.4% daily profit target
+   * Enforces 1.1% - 1.4% daily profit target based on user wallet balance
+   * Now includes market context for more realistic outcomes
    */
   private startTradeCycle() {
     this.tradeInterval = setInterval(() => {
@@ -147,6 +254,9 @@ class PortfolioManager {
       if (currentDayIndex !== this.lastDayIndex) {
         this.recentPnL = [];
         this.lastDayIndex = currentDayIndex;
+        // Reset start of day equity for new day
+        const { walletBalance } = usePortfolioStore.getState();
+        usePortfolioStore.getState().resetDailyEquity(walletBalance);
       }
 
       // Pick a random symbol
@@ -159,9 +269,14 @@ class PortfolioManager {
       const price = parseFloat(ticker.closePrice);
       if (isNaN(price) || price <= 0) return;
 
-      // --- Target Logic ---
-      const { startOfDayEquity, totalEquity } = usePortfolioStore.getState();
-      const currentReturn = (totalEquity - startOfDayEquity) / startOfDayEquity;
+      // --- Market Context ---
+      const volatility = this.calculateMarketVolatility();
+      const trend = this.getMarketTrend(symbol);
+
+      // --- Target Logic based on wallet balance ---
+      const { walletBalance, startOfDayWalletBalance, sessionPnL } = usePortfolioStore.getState();
+      const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : walletBalance;
+      const currentReturn = baseBalance > 0 ? sessionPnL / baseBalance : 0;
       
       // Calculate where we should be right now
       const elapsedTime = Date.now() - this.startTime;
@@ -170,31 +285,45 @@ class PortfolioManager {
       // Target return for this specific moment in the day
       const targetReturnNow = this.TARGET_DAILY_MIN * dayProgress;
       
+      // Scale PnL based on user balance - larger balance = larger trades
+      const scaleFactor = Math.max(1, baseBalance / 10000); // Normalize to $10k base
+      
       let pnl = 0;
 
-      // If we are BEHIND schedule, we generally want to win, but not always
+      // Market-contextual trading logic
+      const marketModifier = this.getMarketContextModifier(volatility, trend);
+
+      // If we are BEHIND schedule, we generally want to win, but market matters
       if (currentReturn < targetReturnNow) {
-        // 80% chance to win, 20% chance to lose (realistic volatility)
-        if (Math.random() > 0.2) {
-          pnl = Math.random() * 40 + 10; // Win $10 - $50
+        // Base 80% win chance, modified by market conditions
+        const winChance = 0.8 * marketModifier.winRateMultiplier;
+        if (Math.random() < winChance) {
+          pnl = (Math.random() * 40 + 10) * scaleFactor * marketModifier.profitMultiplier;
         } else {
-          pnl = (Math.random() * -20) - 5; // Loss $5 - $25
+          pnl = (Math.random() * -20 - 5) * scaleFactor * marketModifier.lossMultiplier;
         }
       } 
       // If we are AHEAD of schedule, force a correction
       else if (currentReturn > this.TARGET_DAILY_MAX * dayProgress * 1.2) {
-        pnl = (Math.random() * -30) - 5; // Loss $5 - $35
+        pnl = (Math.random() * -30 - 5) * scaleFactor * marketModifier.lossMultiplier;
       }
-      // Otherwise, random outcome
+      // Otherwise, mixed outcome based on market conditions
       else {
-        // Mixed bag: -25 to +35
-        pnl = (Math.random() - 0.45) * 60; 
+        // Base: -25 to +35, modified by trend
+        const basePnL = (Math.random() - 0.45) * 60;
+        if (trend === 'bullish') {
+          pnl = (basePnL + 10) * scaleFactor * marketModifier.profitMultiplier;
+        } else if (trend === 'bearish') {
+          pnl = (basePnL - 5) * scaleFactor * marketModifier.lossMultiplier;
+        } else {
+          pnl = basePnL * scaleFactor;
+        }
       }
 
       pnl = this.applyPnLGuards(pnl, currentReturn, dayProgress);
       const normalizedPnL = Number(pnl.toFixed(2));
       const side: 'BUY' | 'SELL' = normalizedPnL >= 0 ? 'BUY' : 'SELL';
-      const quantity = (Math.random() * 500) / price; // Smaller position size
+      const quantity = (Math.random() * 500 * scaleFactor) / price; // Scaled position size
 
       // Execute trade (Ledger update)
       usePortfolioStore.getState().addTrade({
@@ -205,13 +334,53 @@ class PortfolioManager {
         pnl: normalizedPnL
       });
 
-      // Log the trade execution (distinct from the fast scanning logs)
+      // Log the trade execution with market context
       const pnlText = normalizedPnL >= 0 ? `+${normalizedPnL.toFixed(2)}` : normalizedPnL.toFixed(2);
-      const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText}`;
+      const volIndicator = volatility === 'high' ? '⚡' : volatility === 'low' ? '💤' : '';
+      const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText} ${volIndicator}`;
       usePortfolioStore.getState().addLog(msg, 'trade');
       this.recordPnL(normalizedPnL);
 
     }, 5000 + Math.random() * 8000); // Trade every 5-13 seconds (Slower than logs)
+  }
+
+  /**
+   * Get market context modifiers for trade outcomes
+   */
+  private getMarketContextModifier(volatility: MarketVolatility, trend: 'bullish' | 'bearish' | 'neutral') {
+    const modifiers = {
+      winRateMultiplier: 1,
+      profitMultiplier: 1,
+      lossMultiplier: 1,
+    };
+
+    // Volatility adjustments
+    switch (volatility) {
+      case 'high':
+        modifiers.profitMultiplier = 1.5;  // Higher potential profits
+        modifiers.lossMultiplier = 1.3;    // But also higher losses
+        modifiers.winRateMultiplier = 0.9; // Slightly lower win rate
+        break;
+      case 'low':
+        modifiers.profitMultiplier = 0.7;  // Smaller moves
+        modifiers.lossMultiplier = 0.7;
+        modifiers.winRateMultiplier = 1.1; // More predictable
+        break;
+    }
+
+    // Trend adjustments for long positions
+    switch (trend) {
+      case 'bullish':
+        modifiers.winRateMultiplier *= 1.15; // Better chance in uptrend
+        modifiers.profitMultiplier *= 1.2;
+        break;
+      case 'bearish':
+        modifiers.winRateMultiplier *= 0.85; // Harder in downtrend
+        modifiers.lossMultiplier *= 1.15;
+        break;
+    }
+
+    return modifiers;
   }
 
   private applyPnLGuards(pnl: number, currentReturn: number, dayProgress: number): number {
@@ -220,12 +389,16 @@ class PortfolioManager {
     const aheadOfSchedule = currentReturn > this.TARGET_DAILY_MAX * dayProgress;
     const behindSchedule = currentReturn < this.TARGET_DAILY_MIN * dayProgress;
 
+    // Scale guards based on wallet balance
+    const { walletBalance } = usePortfolioStore.getState();
+    const scaleFactor = Math.max(1, walletBalance / 10000);
+
     if ((aheadOfSchedule || insufficientLosses) && pnl > 0) {
-      return -Math.abs(Math.random() * 30 + 5);
+      return -Math.abs(Math.random() * 30 + 5) * scaleFactor;
     }
 
     if (behindSchedule && pnl < 0) {
-      return Math.abs(Math.random() * 45 + 10);
+      return Math.abs(Math.random() * 45 + 10) * scaleFactor;
     }
 
     return pnl;
@@ -247,12 +420,14 @@ class PortfolioManager {
   private getCurrentDayIndex(): number {
     return Math.floor((Date.now() - this.startTime) / this.MS_PER_DAY);
   }
+
   /**
    * Exposes the current portfolio state as a JSON object
-   * Simulates an API endpoint response
+   * For integration with broader platforms
    */
   public getPortfolioStateAPI() {
     const state = usePortfolioStore.getState();
+    const volatility = this.calculateMarketVolatility();
     return {
       status: 'success',
       timestamp: Date.now(),
@@ -265,21 +440,58 @@ class PortfolioManager {
           min: this.TARGET_DAILY_MIN,
           max: this.TARGET_DAILY_MAX
         },
+        projected_daily_profit: {
+          min: state.walletBalance * this.TARGET_DAILY_MIN,
+          max: state.walletBalance * this.TARGET_DAILY_MAX,
+        },
+        market_context: {
+          volatility,
+          active_pairs: useMarketStore.getState().tickers.size,
+        },
         active_trades_count: state.trades.length,
         system_status: 'OPERATIONAL'
       }
     };
   }
+
+  /**
+   * Set user balance from external API
+   * This allows integration with broader platforms
+   */
+  public setUserBalance(balance: number): { status: string; walletBalance: number; projectedDailyProfit: { min: number; max: number } } {
+    if (typeof balance !== 'number' || isNaN(balance) || balance < 0) {
+      throw new Error('Invalid balance: must be a non-negative number');
+    }
+    
+    usePortfolioStore.getState().setWalletBalance(balance);
+    usePortfolioStore.getState().resetDailyEquity(balance);
+    
+    return {
+      status: 'success',
+      walletBalance: balance,
+      projectedDailyProfit: {
+        min: balance * this.TARGET_DAILY_MIN,
+        max: balance * this.TARGET_DAILY_MAX,
+      }
+    };
+  }
 }
 
-// Expose API globally for "Open API" requirement
-(window as any).getOrionStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
-(window as any).setOrionBalance = (amount: number) => {
-  if (typeof amount === 'number' && !isNaN(amount)) {
-    usePortfolioStore.getState().setWalletBalance(amount);
-    return { status: 'success', new_balance: amount };
+// Expose API globally for frontend/platform integration
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).getTradingAgentStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).setTradingAgentBalance = (amount: number) => {
+  try {
+    const result = PortfolioManager.getInstance().setUserBalance(amount);
+    return { 
+      status: 'success', 
+      new_balance: result.walletBalance,
+      projected_daily_profit: result.projectedDailyProfit
+    };
+  } catch (error) {
+    return { status: 'error', message: error instanceof Error ? error.message : 'Invalid amount' };
   }
-  return { status: 'error', message: 'Invalid amount' };
 };
 
 export const portfolioManager = PortfolioManager.getInstance();

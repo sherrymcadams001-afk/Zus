@@ -24,6 +24,7 @@ interface PortfolioState {
   totalEquity: number;
   sessionPnL: number;
   startOfDayEquity: number;
+  startOfDayWalletBalance: number;
   
   // History
   trades: Trade[];
@@ -35,18 +36,29 @@ interface PortfolioState {
   updateBalances: (walletDelta: number, poolDelta: number) => void;
   setEquity: (equity: number) => void;
   setWalletBalance: (balance: number) => void;
+  resetDailyEquity: (walletBalance: number) => void;
 }
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
-  walletBalance: 10000.00, // Simulated user funds
+  walletBalance: 10000.00, // Simulated user funds (can be set via API)
   poolBalance: 142500000.00, // Large liquidity pool
   totalEquity: 142510000.00,
   sessionPnL: 0.00,
   startOfDayEquity: 142510000.00, // Baseline for daily target
+  startOfDayWalletBalance: 10000.00, // User's balance at start of day for profit calculation
   trades: [],
   logs: [],
 
-  setWalletBalance: (balance) => set({ walletBalance: balance }),
+  setWalletBalance: (balance) => set((state) => ({ 
+    walletBalance: balance,
+    totalEquity: balance + state.poolBalance,
+  })),
+
+  resetDailyEquity: (walletBalance) => set((state) => ({
+    startOfDayEquity: walletBalance + state.poolBalance,
+    startOfDayWalletBalance: walletBalance,
+    sessionPnL: 0,
+  })),
 
   addTrade: (tradeData) => {
     const state = get();
