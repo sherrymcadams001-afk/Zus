@@ -1,5 +1,6 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { BookOpen, MoreHorizontal } from 'lucide-react';
+import { useMarketStore } from '../store/useMarketStore';
 
 interface OrderLevel {
   price: number;
@@ -39,12 +40,12 @@ function generateOrderBook(basePrice: number): { bids: OrderLevel[]; asks: Order
   let askTotal = 0;
 
   for (let i = 0; i < 15; i++) {
-    const bidPrice = basePrice - (i + 1) * (basePrice * 0.0001) - Math.random() * 0.5;
+    const bidPrice = basePrice - (i + 1) * (basePrice * 0.0005) - Math.random() * (basePrice * 0.0002);
     const bidQty = Math.random() * 2 + 0.1;
     bidTotal += bidQty;
     bids.push({ price: bidPrice, quantity: bidQty, total: bidTotal });
 
-    const askPrice = basePrice + (i + 1) * (basePrice * 0.0001) + Math.random() * 0.5;
+    const askPrice = basePrice + (i + 1) * (basePrice * 0.0005) + Math.random() * (basePrice * 0.0002);
     const askQty = Math.random() * 2 + 0.1;
     askTotal += askQty;
     asks.push({ price: askPrice, quantity: askQty, total: askTotal });
@@ -52,23 +53,27 @@ function generateOrderBook(basePrice: number): { bids: OrderLevel[]; asks: Order
   return { bids, asks };
 }
 
-const INITIAL_BASE_PRICE = 97500;
-
 export function OrderBook() {
   const [orderBook, setOrderBook] = useState<{ bids: OrderLevel[]; asks: OrderLevel[] }>({ bids: [], asks: [] });
-  const [currentPrice, setCurrentPrice] = useState(INITIAL_BASE_PRICE);
+  const { activeSymbol, tickers } = useMarketStore();
+  
+  // Get current price from ticker or default
+  const ticker = tickers.get(activeSymbol);
+  const currentPrice = ticker ? parseFloat(ticker.closePrice) : 0;
 
   useEffect(() => {
-    const basePrice = INITIAL_BASE_PRICE + (Math.random() - 0.5) * 100;
+    if (!currentPrice) return;
+
     const updateOrderBook = () => {
-      const jitteredPrice = basePrice + (Math.random() - 0.5) * 20;
-      setCurrentPrice(jitteredPrice);
+      // Add slight jitter to make it look alive even if price is static
+      const jitteredPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.0002);
       setOrderBook(generateOrderBook(jitteredPrice));
     };
+
     updateOrderBook();
-    const interval = setInterval(updateOrderBook, 100);
+    const interval = setInterval(updateOrderBook, 500); // Update every 500ms
     return () => clearInterval(interval);
-  }, []);
+  }, [currentPrice, activeSymbol]);
 
   const maxBidTotal = orderBook.bids[orderBook.bids.length - 1]?.total || 1;
   const maxAskTotal = orderBook.asks[orderBook.asks.length - 1]?.total || 1;
@@ -99,8 +104,12 @@ export function OrderBook() {
 
         {/* Spread */}
         <div className="h-6 flex-shrink-0 flex items-center justify-between border-y border-white/10 bg-[#0B0E11] px-2 text-[10px]">
-          <span className={`font-bold text-lg ${currentPrice > INITIAL_BASE_PRICE ? 'text-orion-neon-green' : 'text-orion-neon-red'}`}>
-            {currentPrice.toFixed(2)}
+          <span className={`font-bold text-lg ${
+            ticker && parseFloat(ticker.closePrice) >= parseFloat(ticker.openPrice) 
+              ? 'text-orion-neon-green' 
+              : 'text-orion-neon-red'
+          }`}>
+            {currentPrice > 0 ? currentPrice.toFixed(2) : '---'}
           </span>
           <span className="text-slate-500 text-[9px]">Spread: {((orderBook.asks[0]?.price || 0) - (orderBook.bids[0]?.price || 0)).toFixed(2)}</span>
         </div>
