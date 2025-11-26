@@ -23,6 +23,7 @@ interface PortfolioState {
   poolBalance: number;
   totalEquity: number;
   sessionPnL: number;
+  startOfDayEquity: number;
   
   // History
   trades: Trade[];
@@ -40,6 +41,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   poolBalance: 142500000.00, // Large liquidity pool
   totalEquity: 142512588.00,
   sessionPnL: 270.60,
+  startOfDayEquity: 142512588.00, // Baseline for daily target
   trades: [],
   logs: [],
 
@@ -55,9 +57,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     const newPnL = state.sessionPnL + tradeData.pnl;
     
     // Update balances (simplified: profit adds to wallet)
-    const walletDelta = tradeData.pnl > 0 ? tradeData.pnl : 0;
-    const poolDelta = tradeData.pnl < 0 ? tradeData.pnl : 0; // Losses taken from pool? Or just wallet?
-    // Let's keep it simple: PnL affects wallet directly for now
+    // We want the wallet to grow with profits, but stay smaller than pool
     
     set((state) => ({
       trades: [newTrade, ...state.trades].slice(0, 50),
