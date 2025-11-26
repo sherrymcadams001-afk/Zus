@@ -41,6 +41,8 @@ interface MarketState {
   klineConnected: boolean;
   /** Currently selected symbol for the chart */
   activeSymbol: string;
+  /** Currently selected time interval for the chart */
+  activeInterval: string;
 
   // Actions
   updateTickers: (tickers: Map<string, Ticker>) => void;
@@ -49,6 +51,7 @@ interface MarketState {
   setTickerConnected: (connected: boolean) => void;
   setKlineConnected: (connected: boolean) => void;
   setActiveSymbol: (symbol: string) => void;
+  setActiveInterval: (interval: string) => void;
 }
 
 export const useMarketStore = create<MarketState>((set) => ({
@@ -58,6 +61,7 @@ export const useMarketStore = create<MarketState>((set) => ({
   tickerConnected: false,
   klineConnected: false,
   activeSymbol: 'BTCUSDT',
+  activeInterval: '1m',
 
   updateTickers: (tickers) => set({ tickers }),
   setActiveCandle: (candle) => set({ activeCandle: candle }),
@@ -65,4 +69,5 @@ export const useMarketStore = create<MarketState>((set) => ({
   setTickerConnected: (connected) => set({ tickerConnected: connected }),
   setKlineConnected: (connected) => set({ klineConnected: connected }),
   setActiveSymbol: (symbol) => set({ activeSymbol: symbol }),
+  setActiveInterval: (activeInterval) => set({ activeInterval }),
 }));

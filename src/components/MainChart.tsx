@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, type Time, CandlestickSeries } from 'lightweight-charts';
+import { useEffect, useRef, useState } from 'react';
+import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, type HistogramData, type LineData, type Time, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { useMarketStore, type Candle } from '../store/useMarketStore';
 import { streamEngine } from '../core/StreamEngine';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Settings2 } from 'lucide-react';
 
 const CHART_UP_COLOR = '#00C087';
 const CHART_DOWN_COLOR = '#F6465D';
@@ -19,6 +19,28 @@ function candleToChartData(candle: Candle): CandlestickData<Time> {
   };
 }
 
+function candleToVolumeData(candle: Candle): HistogramData<Time> {
+  return {
+    time: (candle.time / 1000) as Time,
+    value: candle.volume,
+    color: candle.close >= candle.open ? 'rgba(0, 192, 135, 0.2)' : 'rgba(246, 70, 93, 0.2)',
+  };
+}
+
+function calculateSMA(data: Candle[], count: number): LineData<Time>[] {
+  const result: LineData<Time>[] = [];
+  for (let i = count - 1; i < data.length; i++) {
+    const slice = data.slice(i - count + 1, i + 1);
+    const sum = slice.reduce((acc, val) => acc + val.close, 0);
+    const avg = sum / count;
+    result.push({
+      time: (data[i].time / 1000) as Time,
+      value: avg,
+    });
+  }
+  return result;
+}
+
 function formatSymbolDisplay(symbol: string): string {
   if (symbol.endsWith('USDT')) return `${symbol.slice(0, -4)}/USDT`;
   return symbol;
@@ -28,13 +50,21 @@ export function MainChart() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const lastCandleTimeRef = useRef<number | null>(null);
   const lastLoadedSymbolRef = useRef<string | null>(null);
 
+  const [showIndicators, setShowIndicators] = useState(false);
+
   const activeSymbol = useMarketStore((state) => state.activeSymbol);
+  const activeInterval = useMarketStore((state) => state.activeInterval);
   const activeCandle = useMarketStore((state) => state.activeCandle);
   const historicalCandles = useMarketStore((state) => state.historicalCandles);
   const klineConnected = useMarketStore((state) => state.klineConnected);
+
+  const [showIndicators, setShowIndicators] = useState(false);
+  const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -68,7 +98,7 @@ export function MainChart() {
         borderColor: '#161A1E',
         scaleMargins: {
           top: 0.1,
-          bottom: 0.1,
+          bottom: 0.2, // Make room for volume
         },
       },
       timeScale: {
@@ -101,8 +131,31 @@ export function MainChart() {
       borderVisible: false,
     });
 
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: '', // Overlay on main chart
+    });
+    
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: {
+        top: 0.8, // Volume takes bottom 20%
+        bottom: 0,
+      },
+    });
+
+    const smaSeries = chart.addSeries(LineSeries, {
+      color: '#2962FF',
+      lineWidth: 2,
+      crosshairMarkerVisible: false,
+      visible: false,
+    });
+
     chartRef.current = chart;
     seriesRef.current = candlestickSeries;
+    volumeSeriesRef.current = volumeSeries;
+    smaSeriesRef.current = smaSeries;
 
     const handleResize = () => {
       if (containerRef.current) {
@@ -125,6 +178,8 @@ export function MainChart() {
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      volumeSeriesRef.current = null;
+      smaSeriesRef.current = null;
     };
   }, []);
 
@@ -135,12 +190,17 @@ export function MainChart() {
   }, [activeSymbol]);
 
   useEffect(() => {
-    if (!seriesRef.current || historicalCandles.length === 0) return;
+    if (!seriesRef.current || !volumeSeriesRef.current || historicalCandles.length === 0) return;
     const firstCandle = historicalCandles[0];
     if (firstCandle && firstCandle.symbol === activeSymbol) {
       // Always update data if symbol matches, to handle re-fetches
       const chartData = historicalCandles.map(candleToChartData);
+      const volumeData = historicalCandles.map(candleToVolumeData);
+      const smaData = calculateSMA(historicalCandles, 20);
+      
       seriesRef.current.setData(chartData);
+      volumeSeriesRef.current.setData(volumeData);
+      if (smaSeriesRef.current) smaSeriesRef.current.setData(smaData);
       
       if (lastLoadedSymbolRef.current !== activeSymbol) {
         lastLoadedSymbolRef.current = activeSymbol;
@@ -150,22 +210,42 @@ export function MainChart() {
   }, [historicalCandles, activeSymbol]);
 
   useEffect(() => {
-    if (seriesRef.current && lastLoadedSymbolRef.current && lastLoadedSymbolRef.current !== activeSymbol) {
+    if (seriesRef.current && volumeSeriesRef.current && smaSeriesRef.current && lastLoadedSymbolRef.current && lastLoadedSymbolRef.current !== activeSymbol) {
       seriesRef.current.setData([]);
+      volumeSeriesRef.current.setData([]);
+      smaSeriesRef.current.setData([]);
       lastLoadedSymbolRef.current = null;
       lastCandleTimeRef.current = null;
     }
   }, [activeSymbol]);
 
   useEffect(() => {
-    if (!activeCandle || !seriesRef.current) return;
+    if (!activeCandle || !seriesRef.current || !volumeSeriesRef.current) return;
     if (activeCandle.symbol !== activeSymbol) return;
+    
     const chartData = candleToChartData(activeCandle);
+    const volumeData = candleToVolumeData(activeCandle);
+    
     seriesRef.current.update(chartData);
+    volumeSeriesRef.current.update(volumeData);
+
+    // Update SMA if we have enough history
+    if (smaSeriesRef.current && historicalCandles.length >= 20) {
+      // Combine last 19 candles + active candle
+      const relevantCandles = [...historicalCandles.slice(-19), activeCandle];
+      const sum = relevantCandles.reduce((acc, val) => acc + val.close, 0);
+      const avg = sum / 20;
+      
+      smaSeriesRef.current.update({
+        time: (activeCandle.time / 1000) as Time,
+        value: avg,
+      });
+    }
+    
     if (lastCandleTimeRef.current !== activeCandle.time) {
       lastCandleTimeRef.current = activeCandle.time;
     }
-  }, [activeCandle, activeSymbol]);
+  }, [activeCandle, activeSymbol, historicalCandles]);
 
   return (
     <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden relative group">
@@ -177,28 +257,40 @@ export function MainChart() {
             <span className="text-xs font-bold text-white tracking-wide">{formatSymbolDisplay(activeSymbol)}</span>
           </div>
           
-          <div className="h-3 w-px bg-white/10" />
+          <div className="h-3 w-px bg-white/10 hidden sm:block" />
           
-          <div className="flex items-center gap-1">
-            {['1m', '5m', '15m', '1h', '4h', 'D'].map((tf) => (
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[150px] sm:max-w-none">
+            {['1m', '5m', '15m', '1h', '4h', '1d'].map((tf) => (
               <button 
                 key={tf}
-                className={`px-1.5 py-0.5 text-[9px] font-medium rounded transition-colors ${
-                  tf === '1m' 
+                onClick={() => streamEngine.setChartInterval(tf)}
+                className={`px-1.5 py-0.5 text-[9px] font-medium rounded transition-colors flex-shrink-0 ${
+                  activeInterval === tf 
                     ? 'bg-white/10 text-orion-neon-cyan' 
                     : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
                 }`}
               >
-                {tf}
+                {tf.toUpperCase()}
               </button>
             ))}
           </div>
 
-          <div className="h-3 w-px bg-white/10" />
+          <div className="h-3 w-px bg-white/10 hidden sm:block" />
 
           <div className="flex items-center gap-2 text-[9px] text-slate-500">
-            <button className="hover:text-slate-300 transition-colors">Indicators</button>
-            <button className="hover:text-slate-300 transition-colors">Display</button>
+            <button 
+              onClick={() => {
+                const newState = !showIndicators;
+                setShowIndicators(newState);
+                if (smaSeriesRef.current) {
+                  smaSeriesRef.current.applyOptions({ visible: newState });
+                }
+              }}
+              className={`hover:text-slate-300 transition-colors flex items-center gap-1 ${showIndicators ? 'text-orion-neon-cyan' : ''}`}
+            >
+              <Settings2 className="h-3 w-3" />
+              <span className="hidden sm:inline">SMA 20</span>
+            </button>
           </div>
         </div>
 

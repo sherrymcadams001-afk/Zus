@@ -50,23 +50,24 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
 
   addTrade: (tradeData) => {
     const state = get();
+    const pnl = Number(tradeData.pnl);
     const newTrade: Trade = {
       ...tradeData,
       id: Date.now(),
       timestamp: Date.now(),
+      pnl,
     };
     
     // Update PnL based on trade result
-    const newPnL = state.sessionPnL + tradeData.pnl;
+    const newPnL = state.sessionPnL + pnl;
     
-    // Update balances (simplified: profit adds to wallet)
-    // We want the wallet to grow with profits, but stay smaller than pool
-    
+    // Update balances (Zero-sum: User profit = Pool loss, User loss = Pool profit)
     set((state) => ({
       trades: [newTrade, ...state.trades].slice(0, 50),
       sessionPnL: newPnL,
-      walletBalance: state.walletBalance + tradeData.pnl,
-      totalEquity: state.totalEquity + tradeData.pnl,
+      walletBalance: state.walletBalance + pnl,
+      poolBalance: state.poolBalance - pnl,
+      totalEquity: state.totalEquity + pnl,
     }));
   },
 

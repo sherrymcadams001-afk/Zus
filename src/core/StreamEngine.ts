@@ -98,6 +98,7 @@ class StreamEngine {
 
   private config: Required<StreamEngineConfig>;
   private activeSymbol: string | null = null;
+  private activeInterval: string = '1m';
 
   private readonly BASE_URL_GLOBAL = 'wss://stream.binance.com:9443/ws';
   private readonly BASE_URL_US = 'wss://stream.binance.us:9443/ws';
@@ -510,6 +511,41 @@ class StreamEngine {
   }
 
   /**
+   * Set the active time interval for the chart
+   */
+  public setChartInterval(interval: string): void {
+    if (this.activeInterval === interval) return;
+
+    this.activeInterval = interval;
+    this.log(`Setting chart interval: ${interval}`);
+    
+    // Update store
+    useMarketStore.getState().setActiveInterval(interval);
+
+    // If we have an active symbol, reload data
+    if (this.activeSymbol) {
+      // Abort pending
+      if (this.currentFetchController) {
+        this.currentFetchController.abort();
+      }
+
+      // Clear candles
+      useMarketStore.getState().setHistoricalCandles([]);
+
+      // Fetch new data
+      this.fetchHistoricalCandles(this.activeSymbol);
+
+      // Reconnect stream
+      if (this.klineSocket) {
+        this.klineSocket.close();
+      }
+      if (this.isRunning) {
+        this.connectKlineStream();
+      }
+    }
+  }
+
+  /**
    * Subscribe to chart data for a symbol (alias for setActiveSymbol)
    */
   public subscribeToChart(symbol: string): void {
@@ -526,7 +562,7 @@ class StreamEngine {
     const { signal } = this.currentFetchController;
 
     const fetchFromUrl = async (baseUrl: string) => {
-      const url = `${baseUrl}/klines?symbol=${symbol.toUpperCase()}&interval=1m&limit=1000`;
+      const url = `${baseUrl}/klines?symbol=${symbol.toUpperCase()}&interval=${this.activeInterval}&limit=1000`;
       this.log(`Fetching historical candles: ${url}`);
       const response = await fetch(url, { signal });
       if (!response.ok) {
@@ -657,7 +693,7 @@ class StreamEngine {
       return;
     }
 
-    const url = `${this.baseUrl}/${this.activeSymbol}@kline_1m`;
+    const url = `${this.baseUrl}/${this.activeSymbol}@kline_${this.activeInterval}`;
     this.log(`Connecting to kline stream: ${url}`);
 
     try {
