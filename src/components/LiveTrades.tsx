@@ -15,7 +15,7 @@ export function LiveTrades() {
         <span>Pair</span>
         <span className="text-right">Price</span>
         <span className="text-right">Size</span>
-        <span className="text-right">P&L</span>
+        <span className="text-right">Cash Flow</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">

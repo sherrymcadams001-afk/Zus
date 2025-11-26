@@ -22,9 +22,14 @@ class PortfolioManager {
   private readonly TARGET_DAILY_MAX = 0.014; // 1.4%
   private readonly MS_PER_DAY = 24 * 60 * 60 * 1000;
   private startTime: number = Date.now();
+  private recentPnL: number[] = [];
+  private readonly MAX_RECENT_TRADES = 18;
+  private readonly MIN_LOSS_RATIO = 0.35;
+  private lastDayIndex: number = 0;
 
   private constructor() {
     this.startTime = Date.now() - (Math.random() * 3600000 * 4); // Simulate we started 0-4 hours ago
+    this.lastDayIndex = this.getCurrentDayIndex();
   }
 
   public static getInstance(): PortfolioManager {
@@ -138,6 +143,12 @@ class PortfolioManager {
       const tickers = useMarketStore.getState().tickers;
       if (tickers.size === 0) return;
 
+      const currentDayIndex = this.getCurrentDayIndex();
+      if (currentDayIndex !== this.lastDayIndex) {
+        this.recentPnL = [];
+        this.lastDayIndex = currentDayIndex;
+      }
+
       // Pick a random symbol
       const symbols = Array.from(tickers.keys());
       const symbol = symbols[Math.floor(Math.random() * symbols.length)];
@@ -160,23 +171,29 @@ class PortfolioManager {
       const targetReturnNow = this.TARGET_DAILY_MIN * dayProgress;
       
       let pnl = 0;
-      let side: 'BUY' | 'SELL' = Math.random() > 0.5 ? 'BUY' : 'SELL';
 
-      // If we are BEHIND schedule, force a win
+      // If we are BEHIND schedule, we generally want to win, but not always
       if (currentReturn < targetReturnNow) {
-        pnl = Math.random() * 40 + 10; // Win $10 - $50 (Scaled for $10k wallet)
+        // 80% chance to win, 20% chance to lose (realistic volatility)
+        if (Math.random() > 0.2) {
+          pnl = Math.random() * 40 + 10; // Win $10 - $50
+        } else {
+          pnl = (Math.random() * -20) - 5; // Loss $5 - $25
+        }
       } 
-      // If we are AHEAD of schedule (by a lot), force a small loss or break even
-      // Use TARGET_DAILY_MAX to determine if we are running too hot
+      // If we are AHEAD of schedule, force a correction
       else if (currentReturn > this.TARGET_DAILY_MAX * dayProgress * 1.2) {
         pnl = (Math.random() * -30) - 5; // Loss $5 - $35
       }
-      // Otherwise, random outcome with slight positive bias
+      // Otherwise, random outcome
       else {
-        // More volatility: -20 to +30 range
-        pnl = (Math.random() - 0.4) * 50; 
+        // Mixed bag: -25 to +35
+        pnl = (Math.random() - 0.45) * 60; 
       }
 
+      pnl = this.applyPnLGuards(pnl, currentReturn, dayProgress);
+      const normalizedPnL = Number(pnl.toFixed(2));
+      const side: 'BUY' | 'SELL' = normalizedPnL >= 0 ? 'BUY' : 'SELL';
       const quantity = (Math.random() * 500) / price; // Smaller position size
 
       // Execute trade (Ledger update)
@@ -185,17 +202,51 @@ class PortfolioManager {
         side,
         price,
         quantity,
-        pnl
+        pnl: normalizedPnL
       });
 
       // Log the trade execution (distinct from the fast scanning logs)
-      const pnlText = pnl >= 0 ? `+${pnl.toFixed(2)}` : pnl.toFixed(2);
+      const pnlText = normalizedPnL >= 0 ? `+${normalizedPnL.toFixed(2)}` : normalizedPnL.toFixed(2);
       const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText}`;
       usePortfolioStore.getState().addLog(msg, 'trade');
+      this.recordPnL(normalizedPnL);
 
     }, 5000 + Math.random() * 8000); // Trade every 5-13 seconds (Slower than logs)
   }
 
+  private applyPnLGuards(pnl: number, currentReturn: number, dayProgress: number): number {
+    const lossRatio = this.getLossRatio();
+    const insufficientLosses = this.recentPnL.length >= 6 && lossRatio < this.MIN_LOSS_RATIO;
+    const aheadOfSchedule = currentReturn > this.TARGET_DAILY_MAX * dayProgress;
+    const behindSchedule = currentReturn < this.TARGET_DAILY_MIN * dayProgress;
+
+    if ((aheadOfSchedule || insufficientLosses) && pnl > 0) {
+      return -Math.abs(Math.random() * 30 + 5);
+    }
+
+    if (behindSchedule && pnl < 0) {
+      return Math.abs(Math.random() * 45 + 10);
+    }
+
+    return pnl;
+  }
+
+  private recordPnL(pnl: number): void {
+    this.recentPnL.push(pnl);
+    if (this.recentPnL.length > this.MAX_RECENT_TRADES) {
+      this.recentPnL.shift();
+    }
+  }
+
+  private getLossRatio(): number {
+    if (this.recentPnL.length === 0) return 0;
+    const losses = this.recentPnL.filter((value) => value < 0).length;
+    return losses / this.recentPnL.length;
+  }
+
+  private getCurrentDayIndex(): number {
+    return Math.floor((Date.now() - this.startTime) / this.MS_PER_DAY);
+  }
   /**
    * Exposes the current portfolio state as a JSON object
    * Simulates an API endpoint response

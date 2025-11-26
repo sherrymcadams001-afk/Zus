@@ -10,9 +10,8 @@ import { MainChart } from './components/MainChart';
 import { OrderBook } from './components/OrderBook';
 import { BotActivityLog } from './components/BotActivityLog';
 import { LiveTrades } from './components/LiveTrades';
-import { TreasuryReactor } from './components/TreasuryReactor';
 
-type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER' | 'FUNDS';
+type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER';
 
 function App() {
   const { tickerConnected, tickers } = useMarketStore();
@@ -72,18 +71,12 @@ function App() {
             {/* Scoreboard */}
             <div className="flex items-center gap-6 border-r border-white/10 pr-6">
               <div className="text-right">
-                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Wallet Balance</div>
-                <div className="text-lg font-bold tabular-nums text-white tracking-tight">
-                  ${usePortfolioStore((state) => state.walletBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Session P&L</div>
+                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Daily Cash Flow</div>
                 <div className={`flex items-center justify-end gap-1 text-lg font-bold tabular-nums tracking-tight ${
                   sessionPnL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
                 }`}>
                   {sessionPnL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  {sessionPnL >= 0 ? '+' : ''}${sessionPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {sessionPnL >= 0 ? '+' : '-'}${Math.abs(sessionPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>
             </div>
@@ -126,10 +119,9 @@ function App() {
             </div>
 
             {/* Bottom Panels - Fixed height */}
-            <div className="h-[180px] flex-shrink-0 grid grid-cols-3 gap-1">
+            <div className="h-[180px] flex-shrink-0 grid grid-cols-2 gap-1">
               <BotActivityLog />
               <LiveTrades />
-              <TreasuryReactor />
             </div>
           </div>
 
@@ -155,9 +147,11 @@ function App() {
           </div>
           
           <div className="flex flex-col items-end">
-            <div className="text-[8px] uppercase text-slate-500 font-medium tracking-wider">Balance</div>
-            <div className="text-sm font-bold tabular-nums text-white tracking-tight leading-none">
-              ${usePortfolioStore((state) => state.walletBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="text-[8px] uppercase text-slate-500 font-medium tracking-wider">Daily Cash Flow</div>
+            <div className={`text-sm font-bold tabular-nums tracking-tight leading-none ${
+              sessionPnL >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
+            }`}>
+              {sessionPnL >= 0 ? '+' : '-'}${Math.abs(sessionPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
         </header>
@@ -169,7 +163,7 @@ function App() {
 
         {/* Mobile Tabs */}
         <div className="h-10 flex-shrink-0 flex items-center bg-[#0B0E11] border-b border-white/5 overflow-x-auto no-scrollbar">
-          {(['WATCH', 'BOOK', 'LOGS', 'LEDGER', 'FUNDS'] as MobileTab[]).map((tab) => (
+          {(['WATCH', 'BOOK', 'LOGS', 'LEDGER'] as MobileTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setMobileTab(tab)}
@@ -190,7 +184,6 @@ function App() {
           {mobileTab === 'BOOK' && <OrderBook />}
           {mobileTab === 'LOGS' && <BotActivityLog />}
           {mobileTab === 'LEDGER' && <LiveTrades />}
-          {mobileTab === 'FUNDS' && <TreasuryReactor />}
         </div>
       </div>
 
