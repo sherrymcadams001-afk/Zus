@@ -1,0 +1,106 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+@config '../tailwind.config.ts';
+
+:root {
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #020408;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Tabular numbers for data alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Flash animations for watchlist price updates - Compositor optimized */
+.flash-green {
+  background-color: rgba(0, 255, 148, 0.1);
+}
+
+.flash-red {
+  background-color: rgba(255, 0, 85, 0.1);
+}
+
+/* Cell flash for signal arrival */
+.cell-flash-green {
+  animation: cellFlashGreen 0.3s ease-out;
+}
+
+.cell-flash-red {
+  animation: cellFlashRed 0.3s ease-out;
+}
+
+@keyframes cellFlashGreen {
+  0% { background-color: rgba(0, 255, 148, 0.2); }
+  100% { background-color: transparent; }
+}
+
+@keyframes cellFlashRed {
+  0% { background-color: rgba(255, 0, 85, 0.2); }
+  100% { background-color: transparent; }
+}
+
+/* Glassmorphism for panels */
+.glass-panel {
+  background: rgba(11, 14, 17, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Living machine pulse */
+@keyframes machinePulse {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.95; }
+  50% { opacity: 0.9; }
+  75% { opacity: 0.92; }
+}
+
+.machine-pulse {
+  animation: machinePulse 3s ease-in-out infinite;
+}
+
+/* Gradient depth bars for order book */
+.depth-bar-bid {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 148, 0.15) 100%);
+}
+
+.depth-bar-ask {
+  background: linear-gradient(270deg, transparent 0%, rgba(255, 0, 85, 0.15) 100%);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0E11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E2329;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2B3139;
+}
