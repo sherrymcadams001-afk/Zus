@@ -36,6 +36,11 @@ class PortfolioManager {
   private recentPriceChanges: Map<string, number[]> = new Map();
   private readonly PRICE_HISTORY_SIZE = 10;
 
+  // Market context cache for performance
+  private cachedVolatility: MarketVolatility = 'medium';
+  private lastVolatilityUpdate: number = 0;
+  private readonly VOLATILITY_CACHE_TTL = 30000; // 30 seconds cache
+
   private constructor() {
     this.startTime = Date.now() - (Math.random() * 3600000 * 4); // Simulate we started 0-4 hours ago
     this.lastDayIndex = this.getCurrentDayIndex();
@@ -71,10 +76,21 @@ class PortfolioManager {
 
   /**
    * Calculate current market volatility based on recent price changes
+   * Uses caching to improve performance
    */
   private calculateMarketVolatility(): MarketVolatility {
+    // Return cached value if still valid
+    const now = Date.now();
+    if (now - this.lastVolatilityUpdate < this.VOLATILITY_CACHE_TTL) {
+      return this.cachedVolatility;
+    }
+
     const tickers = useMarketStore.getState().tickers;
-    if (tickers.size === 0) return 'medium';
+    if (tickers.size === 0) {
+      this.cachedVolatility = 'medium';
+      this.lastVolatilityUpdate = now;
+      return 'medium';
+    }
 
     let totalVolatility = 0;
     let count = 0;
@@ -96,13 +112,17 @@ class PortfolioManager {
       this.recentPriceChanges.set(symbol, history);
     }
 
-    if (count === 0) return 'medium';
-    const avgVolatility = totalVolatility / count;
+    let volatility: MarketVolatility = 'medium';
+    if (count > 0) {
+      const avgVolatility = totalVolatility / count;
+      if (avgVolatility < 2) volatility = 'low';
+      else if (avgVolatility > 5) volatility = 'high';
+    }
 
-    // Classify volatility
-    if (avgVolatility < 2) return 'low';
-    if (avgVolatility > 5) return 'high';
-    return 'medium';
+    // Cache the result
+    this.cachedVolatility = volatility;
+    this.lastVolatilityUpdate = now;
+    return volatility;
   }
 
   /**

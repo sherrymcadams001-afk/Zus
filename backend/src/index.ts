@@ -58,8 +58,31 @@ const KV_EXPIRATION_TTL = 60; // seconds - for KV storage
 const TARGET_DAILY_MIN = 0.011;
 const TARGET_DAILY_MAX = 0.014;
 
+// Supported currencies whitelist
+const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'SGD'];
+
 // Model name constant for type safety
 const AI_MODEL = '@cf/meta/llama-3-8b-instruct';
+
+/**
+ * Validate userId format
+ * - Must be alphanumeric with optional hyphens and underscores
+ * - Length between 1 and 128 characters
+ */
+function isValidUserId(userId: string): boolean {
+  if (!userId || typeof userId !== 'string') return false;
+  if (userId.length < 1 || userId.length > 128) return false;
+  // Only allow alphanumeric, hyphens, underscores
+  return /^[a-zA-Z0-9_-]+$/.test(userId);
+}
+
+/**
+ * Validate currency code
+ * - Must be in the supported currencies whitelist
+ */
+function isValidCurrency(currency: string): boolean {
+  return SUPPORTED_CURRENCIES.includes(currency.toUpperCase());
+}
 
 /**
  * AI prompt for generating trading logs
@@ -222,6 +245,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    if (!isValidUserId(userId)) {
+      return new Response(JSON.stringify({ 
+        status: 'error', 
+        error: 'Invalid userId format. Must be alphanumeric with optional hyphens/underscores, 1-128 characters.' 
+      } as BalanceResponse), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     const userBalance = await getUserBalance(env.TRADING_CACHE, userId);
     
     if (!userBalance) {
@@ -272,6 +305,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
+      if (!isValidUserId(body.userId)) {
+        return new Response(JSON.stringify({ 
+          status: 'error', 
+          error: 'Invalid userId format. Must be alphanumeric with optional hyphens/underscores, 1-128 characters.' 
+        } as BalanceResponse), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
       if (body.balance < 0) {
         return new Response(JSON.stringify({ 
           status: 'error', 
@@ -282,11 +325,22 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
+      const currency = body.currency || 'USD';
+      if (!isValidCurrency(currency)) {
+        return new Response(JSON.stringify({ 
+          status: 'error', 
+          error: `Invalid currency. Supported currencies: ${SUPPORTED_CURRENCIES.join(', ')}` 
+        } as BalanceResponse), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
       const userBalance = await setUserBalance(
         env.TRADING_CACHE, 
         body.userId, 
         body.balance,
-        body.currency || 'USD'
+        currency.toUpperCase()
       );
 
       const response: BalanceResponse = {
@@ -336,6 +390,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    if (!isValidUserId(userId)) {
+      return new Response(JSON.stringify({ 
+        status: 'error', 
+        error: 'Invalid userId format. Must be alphanumeric with optional hyphens/underscores, 1-128 characters.' 
+      } as BalanceResponse), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     try {
       const body = await request.json() as { balance?: number; currency?: string };
       
@@ -359,11 +423,22 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
+      const currency = body.currency || 'USD';
+      if (!isValidCurrency(currency)) {
+        return new Response(JSON.stringify({ 
+          status: 'error', 
+          error: `Invalid currency. Supported currencies: ${SUPPORTED_CURRENCIES.join(', ')}` 
+        } as BalanceResponse), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
       const userBalance = await setUserBalance(
         env.TRADING_CACHE, 
         userId, 
         body.balance,
-        body.currency || 'USD'
+        currency.toUpperCase()
       );
 
       const response: BalanceResponse = {
