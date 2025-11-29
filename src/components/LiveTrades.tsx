@@ -1,4 +1,4 @@
-import { Receipt, TrendingDown } from 'lucide-react';
+import { Receipt, TrendingDown, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolioStore } from '../store/usePortfolioStore';
 
@@ -23,8 +23,38 @@ export function LiveTrades() {
         <AnimatePresence initial={false}>
           {trades.map((trade, idx) => {
             const isNewest = idx === 0;
-            const isNegativePnL = trade.pnl < 0;
-            const showFlashEffect = isNewest && isNegativePnL;
+            const isSell = trade.side === 'SELL';
+            const isBuy = trade.side === 'BUY';
+            // Flash red for SELL, green for BUY on newest trade
+            const showRedFlash = isNewest && isSell;
+            const showGreenFlash = isNewest && isBuy;
+
+            // Determine background color animation based on trade side
+            const getBackgroundAnimation = () => {
+              if (showRedFlash) {
+                return ['rgba(255, 0, 85, 0.15)', 'rgba(255, 255, 255, 0.05)'];
+              }
+              if (showGreenFlash) {
+                return ['rgba(0, 255, 148, 0.15)', 'rgba(255, 255, 255, 0.05)'];
+              }
+              if (isNewest) {
+                return 'rgba(255, 255, 255, 0.05)';
+              }
+              return 'transparent';
+            };
+
+            // Determine box shadow animation based on trade side
+            const getBoxShadowAnimation = () => {
+              if (showRedFlash) {
+                return ['0 0 15px rgba(255, 0, 85, 0.2)', '0 0 0px rgba(255, 0, 85, 0)'];
+              }
+              if (showGreenFlash) {
+                return ['0 0 15px rgba(0, 255, 148, 0.2)', '0 0 0px rgba(0, 255, 148, 0)'];
+              }
+              return '0 0 0px rgba(0, 0, 0, 0)';
+            };
+
+            const hasFlashEffect = showRedFlash || showGreenFlash;
 
             return (
               <motion.div
@@ -33,19 +63,13 @@ export function LiveTrades() {
                 animate={{ 
                   opacity: 1, 
                   y: 0,
-                  backgroundColor: showFlashEffect 
-                    ? ['rgba(255, 0, 85, 0.15)', 'rgba(255, 255, 255, 0.05)']
-                    : isNewest 
-                      ? 'rgba(255, 255, 255, 0.05)' 
-                      : 'transparent',
-                  boxShadow: showFlashEffect 
-                    ? ['0 0 15px rgba(255, 0, 85, 0.2)', '0 0 0px rgba(255, 0, 85, 0)']
-                    : '0 0 0px rgba(255, 0, 85, 0)'
+                  backgroundColor: getBackgroundAnimation(),
+                  boxShadow: getBoxShadowAnimation()
                 }}
                 transition={{ 
-                  duration: showFlashEffect ? 0.8 : 0.3,
-                  backgroundColor: { duration: showFlashEffect ? 1.2 : 0 },
-                  boxShadow: { duration: showFlashEffect ? 1.2 : 0 }
+                  duration: hasFlashEffect ? 0.8 : 0.3,
+                  backgroundColor: { duration: hasFlashEffect ? 1.2 : 0 },
+                  boxShadow: { duration: hasFlashEffect ? 1.2 : 0 }
                 }}
                 className="grid grid-cols-4 gap-1 px-2 py-1 text-[10px] border-b border-white/5 items-center"
               >
@@ -62,8 +86,11 @@ export function LiveTrades() {
                   {trade.quantity.toFixed(trade.symbol === 'BTC' ? 4 : 2)}
                 </div>
                 <div className={`flex items-center justify-end gap-1 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'}`}>
-                  {isNegativePnL && (
+                  {isSell && (
                     <TrendingDown className="h-3 w-3" />
+                  )}
+                  {isBuy && (
+                    <TrendingUp className="h-3 w-3" />
                   )}
                   <span>{trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}</span>
                 </div>
