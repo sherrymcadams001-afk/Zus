@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, Zap, Radio, TrendingUp, TrendingDown, Globe, Shield } from 'lucide-react';
 import { streamEngine } from './core/StreamEngine';
 import { portfolioManager } from './core/PortfolioManager';
 import { useMarketStore } from './store/useMarketStore';
 import { usePortfolioStore } from './store/usePortfolioStore';
+import { useSellFlashEffect } from './hooks/useSellFlashEffect';
 import { MacroTicker } from './components/MacroTicker';
 import { Watchlist } from './components/Watchlist';
 import { MainChart } from './components/MainChart';
@@ -15,34 +16,10 @@ type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER';
 
 function App() {
   const { tickerConnected, tickers } = useMarketStore();
-  const { sessionPnL, lastSellTimestamp, clearSellFlash } = usePortfolioStore();
+  const { sessionPnL } = usePortfolioStore();
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
   const [mobileTab, setMobileTab] = useState<MobileTab>('LOGS');
-  const [sellFlashActive, setSellFlashActive] = useState(false);
-  const prevSellTimestamp = useRef<number | null>(null);
-
-  // Handle sell flash effect
-  useEffect(() => {
-    if (lastSellTimestamp && lastSellTimestamp !== prevSellTimestamp.current) {
-      prevSellTimestamp.current = lastSellTimestamp;
-      
-      // Use setTimeout to avoid synchronous setState within effect
-      const flashTimeout = setTimeout(() => {
-        setSellFlashActive(true);
-      }, 0);
-      
-      // Flash red for ~300ms then return to normal
-      const resetTimeout = setTimeout(() => {
-        setSellFlashActive(false);
-        clearSellFlash();
-      }, 300);
-      
-      return () => {
-        clearTimeout(flashTimeout);
-        clearTimeout(resetTimeout);
-      };
-    }
-  }, [lastSellTimestamp, clearSellFlash]);
+  const sellFlashActive = useSellFlashEffect();
 
   useEffect(() => {
     // Start the stream engine (with auto geo-failover)
