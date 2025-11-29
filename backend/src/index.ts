@@ -18,12 +18,95 @@ interface NarrativeResponse {
 }
 
 /**
+ * Bot tier types for multi-tier trading system
+ */
+type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
+
+/**
+ * Bot tier configuration
+ */
+interface BotTierConfig {
+  name: string;
+  hourlyRoiMin: number;  // Per trade hour (null for Omega which uses daily)
+  hourlyRoiMax: number;
+  dailyRoiMin: number;   // 8 trading hours × hourly rate
+  dailyRoiMax: number;
+  minimumStake: number;
+  tradingHoursPerDay: number;
+  tradingDaysPerWeek: number;
+  roiWithdrawalHours: number;    // Hours after investment
+  capitalWithdrawalDays: number; // Days after investment
+  investmentDurationDays: number;
+}
+
+/**
+ * Bot tier configurations
+ */
+const BOT_TIERS: Record<BotTier, BotTierConfig> = {
+  protobot: {
+    name: 'Protobot',
+    hourlyRoiMin: 0.001,    // 0.1%
+    hourlyRoiMax: 0.0012,   // 0.12%
+    dailyRoiMin: 0.008,     // 0.8% (8 hours × 0.1%)
+    dailyRoiMax: 0.0096,    // 0.96% (8 hours × 0.12%)
+    minimumStake: 100,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 40,
+    investmentDurationDays: 365,
+  },
+  chainpulse: {
+    name: 'Chainpulse Bot',
+    hourlyRoiMin: 0.0012,   // 0.12%
+    hourlyRoiMax: 0.0014,   // 0.14%
+    dailyRoiMin: 0.0096,    // 0.96% (8 hours × 0.12%)
+    dailyRoiMax: 0.0112,    // 1.12% (8 hours × 0.14%)
+    minimumStake: 4000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 45,
+    investmentDurationDays: 365,
+  },
+  titan: {
+    name: 'Titan Bot',
+    hourlyRoiMin: 0.0014,   // 0.14%
+    hourlyRoiMax: 0.0016,   // 0.16%
+    dailyRoiMin: 0.0112,    // 1.12% (8 hours × 0.14%)
+    dailyRoiMax: 0.0128,    // 1.28% (8 hours × 0.16%)
+    minimumStake: 25000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 65,
+    investmentDurationDays: 365,
+  },
+  omega: {
+    name: 'Omega Bot',
+    hourlyRoiMin: 0.00225,  // 0.225% per hour (1.8% / 8)
+    hourlyRoiMax: 0.00225,  // Fixed rate
+    dailyRoiMin: 0.018,     // 1.8% fixed
+    dailyRoiMax: 0.018,     // 1.8% fixed
+    minimumStake: 50000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 85,
+    investmentDurationDays: 365,
+  },
+};
+
+const VALID_BOT_TIERS: BotTier[] = ['protobot', 'chainpulse', 'titan', 'omega'];
+
+/**
  * User balance stored in KV
  */
 interface UserBalance {
   userId: string;
   balance: number;
   currency: string;
+  botTier: BotTier;
   lastUpdated: number;
 }
 
@@ -36,6 +119,8 @@ interface BalanceResponse {
     userId: string;
     balance: number;
     currency: string;
+    botTier: BotTier;
+    botTierConfig: BotTierConfig;
     dailyTargetPct: {
       min: number;
       max: number;
@@ -54,7 +139,7 @@ const USER_BALANCE_PREFIX = 'USER_BALANCE_';
 const HTTP_CACHE_MAX_AGE = 5; // seconds - for CDN caching
 const KV_EXPIRATION_TTL = 60; // seconds - for KV storage
 
-// Daily profit target configuration (1.1% - 1.4%)
+// Legacy daily profit target configuration (used as fallback)
 const TARGET_DAILY_MIN = 0.011;
 const TARGET_DAILY_MAX = 0.014;
 
@@ -82,6 +167,32 @@ function isValidUserId(userId: string): boolean {
  */
 function isValidCurrency(currency: string): boolean {
   return SUPPORTED_CURRENCIES.includes(currency.toUpperCase());
+}
+
+/**
+ * Validate bot tier
+ * - Must be one of the valid bot tiers
+ */
+function isValidBotTier(tier: string): tier is BotTier {
+  return VALID_BOT_TIERS.includes(tier as BotTier);
+}
+
+/**
+ * Get the appropriate bot tier based on stake amount
+ * Returns the highest tier the stake qualifies for
+ */
+function getBotTierForStake(stakeAmount: number): BotTier {
+  if (stakeAmount >= BOT_TIERS.omega.minimumStake) return 'omega';
+  if (stakeAmount >= BOT_TIERS.titan.minimumStake) return 'titan';
+  if (stakeAmount >= BOT_TIERS.chainpulse.minimumStake) return 'chainpulse';
+  return 'protobot';
+}
+
+/**
+ * Validate that stake meets minimum for selected tier
+ */
+function isValidStakeForTier(stakeAmount: number, tier: BotTier): boolean {
+  return stakeAmount >= BOT_TIERS[tier].minimumStake;
 }
 
 /**
@@ -170,11 +281,15 @@ async function getUserBalance(kv: KVNamespace, userId: string): Promise<UserBala
 /**
  * Store user balance in KV
  */
-async function setUserBalance(kv: KVNamespace, userId: string, balance: number, currency = 'USD'): Promise<UserBalance> {
+async function setUserBalance(kv: KVNamespace, userId: string, balance: number, currency = 'USD', botTier?: BotTier): Promise<UserBalance> {
+  // Auto-select tier if not provided, based on stake amount
+  const effectiveTier = botTier || getBotTierForStake(balance);
+  
   const userBalance: UserBalance = {
     userId,
     balance,
     currency,
+    botTier: effectiveTier,
     lastUpdated: Date.now(),
   };
 
@@ -267,19 +382,25 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    // Get tier config - use stored tier or fallback to auto-selected tier
+    const effectiveTier = userBalance.botTier || getBotTierForStake(userBalance.balance);
+    const tierConfig = BOT_TIERS[effectiveTier];
+
     const response: BalanceResponse = {
       status: 'success',
       data: {
         userId: userBalance.userId,
         balance: userBalance.balance,
         currency: userBalance.currency,
+        botTier: effectiveTier,
+        botTierConfig: tierConfig,
         dailyTargetPct: {
-          min: TARGET_DAILY_MIN,
-          max: TARGET_DAILY_MAX,
+          min: tierConfig.dailyRoiMin,
+          max: tierConfig.dailyRoiMax,
         },
         projectedDailyProfit: {
-          min: userBalance.balance * TARGET_DAILY_MIN,
-          max: userBalance.balance * TARGET_DAILY_MAX,
+          min: userBalance.balance * tierConfig.dailyRoiMin,
+          max: userBalance.balance * tierConfig.dailyRoiMax,
         },
         lastUpdated: userBalance.lastUpdated,
       },
@@ -293,7 +414,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // API endpoint: POST /api/balance - Set user balance
   if (url.pathname === '/api/balance' && request.method === 'POST') {
     try {
-      const body = await request.json() as { userId?: string; balance?: number; currency?: string };
+      const body = await request.json() as { userId?: string; balance?: number; currency?: string; botTier?: string };
       
       if (!body.userId || typeof body.balance !== 'number') {
         return new Response(JSON.stringify({ 
@@ -336,26 +457,57 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
+      // Validate and process botTier if provided
+      let selectedTier: BotTier | undefined;
+      if (body.botTier) {
+        if (!isValidBotTier(body.botTier)) {
+          return new Response(JSON.stringify({ 
+            status: 'error', 
+            error: `Invalid botTier. Valid tiers: ${VALID_BOT_TIERS.join(', ')}` 
+          } as BalanceResponse), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
+        }
+        selectedTier = body.botTier as BotTier;
+        
+        // Validate stake meets minimum for selected tier
+        if (!isValidStakeForTier(body.balance, selectedTier)) {
+          const tierConfig = BOT_TIERS[selectedTier];
+          return new Response(JSON.stringify({ 
+            status: 'error', 
+            error: `Insufficient stake for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}` 
+          } as BalanceResponse), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
+        }
+      }
+
       const userBalance = await setUserBalance(
         env.TRADING_CACHE, 
         body.userId, 
         body.balance,
-        currency.toUpperCase()
+        currency.toUpperCase(),
+        selectedTier
       );
 
+      const tierConfig = BOT_TIERS[userBalance.botTier];
       const response: BalanceResponse = {
         status: 'success',
         data: {
           userId: userBalance.userId,
           balance: userBalance.balance,
           currency: userBalance.currency,
+          botTier: userBalance.botTier,
+          botTierConfig: tierConfig,
           dailyTargetPct: {
-            min: TARGET_DAILY_MIN,
-            max: TARGET_DAILY_MAX,
+            min: tierConfig.dailyRoiMin,
+            max: tierConfig.dailyRoiMax,
           },
           projectedDailyProfit: {
-            min: userBalance.balance * TARGET_DAILY_MIN,
-            max: userBalance.balance * TARGET_DAILY_MAX,
+            min: userBalance.balance * tierConfig.dailyRoiMin,
+            max: userBalance.balance * tierConfig.dailyRoiMax,
           },
           lastUpdated: userBalance.lastUpdated,
         },
@@ -401,7 +553,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     }
 
     try {
-      const body = await request.json() as { balance?: number; currency?: string };
+      const body = await request.json() as { balance?: number; currency?: string; botTier?: string };
       
       if (typeof body.balance !== 'number') {
         return new Response(JSON.stringify({ 
@@ -434,26 +586,57 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
+      // Validate and process botTier if provided
+      let selectedTier: BotTier | undefined;
+      if (body.botTier) {
+        if (!isValidBotTier(body.botTier)) {
+          return new Response(JSON.stringify({ 
+            status: 'error', 
+            error: `Invalid botTier. Valid tiers: ${VALID_BOT_TIERS.join(', ')}` 
+          } as BalanceResponse), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
+        }
+        selectedTier = body.botTier as BotTier;
+        
+        // Validate stake meets minimum for selected tier
+        if (!isValidStakeForTier(body.balance, selectedTier)) {
+          const tierConfig = BOT_TIERS[selectedTier];
+          return new Response(JSON.stringify({ 
+            status: 'error', 
+            error: `Insufficient stake for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}` 
+          } as BalanceResponse), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
+        }
+      }
+
       const userBalance = await setUserBalance(
         env.TRADING_CACHE, 
         userId, 
         body.balance,
-        currency.toUpperCase()
+        currency.toUpperCase(),
+        selectedTier
       );
 
+      const tierConfig = BOT_TIERS[userBalance.botTier];
       const response: BalanceResponse = {
         status: 'success',
         data: {
           userId: userBalance.userId,
           balance: userBalance.balance,
           currency: userBalance.currency,
+          botTier: userBalance.botTier,
+          botTierConfig: tierConfig,
           dailyTargetPct: {
-            min: TARGET_DAILY_MIN,
-            max: TARGET_DAILY_MAX,
+            min: tierConfig.dailyRoiMin,
+            max: tierConfig.dailyRoiMax,
           },
           projectedDailyProfit: {
-            min: userBalance.balance * TARGET_DAILY_MIN,
-            max: userBalance.balance * TARGET_DAILY_MAX,
+            min: userBalance.balance * tierConfig.dailyRoiMin,
+            max: userBalance.balance * tierConfig.dailyRoiMax,
           },
           lastUpdated: userBalance.lastUpdated,
         },

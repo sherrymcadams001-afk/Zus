@@ -8,12 +8,94 @@ import { useMarketStore } from '../store/useMarketStore';
  * - Generates consistent payouts (Treasury Reactor)
  * - Executes simulated trades based on market movements
  * - Ensures mathematical consistency across the dashboard
- * - Enforces a 1.1% - 1.4% daily profit target based on user balance
+ * - Supports multi-tier bot system with different ROI rates
  * - Integrates market context for more realistic trade outcomes
  */
 
 /** Market volatility levels for contextual trading */
 type MarketVolatility = 'low' | 'medium' | 'high';
+
+/** Bot tier types for multi-tier trading system */
+export type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
+
+/** Bot tier configuration */
+export interface BotTierConfig {
+  name: string;
+  hourlyRoiMin: number;
+  hourlyRoiMax: number;
+  dailyRoiMin: number;
+  dailyRoiMax: number;
+  minimumStake: number;
+  tradingHoursPerDay: number;
+  tradingDaysPerWeek: number;
+  roiWithdrawalHours: number;
+  capitalWithdrawalDays: number;
+  investmentDurationDays: number;
+}
+
+/** Bot tier configurations - mirroring backend */
+export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
+  protobot: {
+    name: 'Protobot',
+    hourlyRoiMin: 0.001,
+    hourlyRoiMax: 0.0012,
+    dailyRoiMin: 0.008,
+    dailyRoiMax: 0.0096,
+    minimumStake: 100,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 40,
+    investmentDurationDays: 365,
+  },
+  chainpulse: {
+    name: 'Chainpulse Bot',
+    hourlyRoiMin: 0.0012,
+    hourlyRoiMax: 0.0014,
+    dailyRoiMin: 0.0096,
+    dailyRoiMax: 0.0112,
+    minimumStake: 4000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 45,
+    investmentDurationDays: 365,
+  },
+  titan: {
+    name: 'Titan Bot',
+    hourlyRoiMin: 0.0014,
+    hourlyRoiMax: 0.0016,
+    dailyRoiMin: 0.0112,
+    dailyRoiMax: 0.0128,
+    minimumStake: 25000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 65,
+    investmentDurationDays: 365,
+  },
+  omega: {
+    name: 'Omega Bot',
+    hourlyRoiMin: 0.00225,
+    hourlyRoiMax: 0.00225,
+    dailyRoiMin: 0.018,
+    dailyRoiMax: 0.018,
+    minimumStake: 50000,
+    tradingHoursPerDay: 8,
+    tradingDaysPerWeek: 6,
+    roiWithdrawalHours: 24,
+    capitalWithdrawalDays: 85,
+    investmentDurationDays: 365,
+  },
+};
+
+/** Get bot tier based on stake amount */
+export function getBotTierForStake(stakeAmount: number): BotTier {
+  if (stakeAmount >= BOT_TIERS.omega.minimumStake) return 'omega';
+  if (stakeAmount >= BOT_TIERS.titan.minimumStake) return 'titan';
+  if (stakeAmount >= BOT_TIERS.chainpulse.minimumStake) return 'chainpulse';
+  return 'protobot';
+}
 
 class PortfolioManager {
   private static instance: PortfolioManager | null = null;
@@ -22,9 +104,9 @@ class PortfolioManager {
   private tradeInterval: ReturnType<typeof setInterval> | null = null;
   private activityInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Daily Target Configuration
-  private readonly TARGET_DAILY_MIN = 0.011; // 1.1%
-  private readonly TARGET_DAILY_MAX = 0.014; // 1.4%
+  // Current bot tier - defaults to auto-selection based on balance
+  private currentBotTier: BotTier | null = null;
+  
   private readonly MS_PER_DAY = 24 * 60 * 60 * 1000;
   private startTime: number = Date.now();
   private recentPnL: number[] = [];
@@ -51,6 +133,53 @@ class PortfolioManager {
       PortfolioManager.instance = new PortfolioManager();
     }
     return PortfolioManager.instance;
+  }
+
+  /**
+   * Get the current active bot tier
+   * Returns explicitly set tier or auto-selects based on wallet balance
+   */
+  public getActiveBotTier(): BotTier {
+    if (this.currentBotTier) {
+      return this.currentBotTier;
+    }
+    const { walletBalance } = usePortfolioStore.getState();
+    return getBotTierForStake(walletBalance);
+  }
+
+  /**
+   * Get the config for the current active tier
+   */
+  public getActiveTierConfig(): BotTierConfig {
+    return BOT_TIERS[this.getActiveBotTier()];
+  }
+
+  /**
+   * Set the bot tier explicitly
+   */
+  public setBotTier(tier: BotTier): void {
+    const { walletBalance } = usePortfolioStore.getState();
+    const tierConfig = BOT_TIERS[tier];
+    
+    if (walletBalance < tierConfig.minimumStake) {
+      throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
+    }
+    
+    this.currentBotTier = tier;
+  }
+
+  /**
+   * Get daily target min for current tier
+   */
+  private getTargetDailyMin(): number {
+    return this.getActiveTierConfig().dailyRoiMin;
+  }
+
+  /**
+   * Get daily target max for current tier
+   */
+  private getTargetDailyMax(): number {
+    return this.getActiveTierConfig().dailyRoiMax;
   }
 
   public start() {
@@ -242,7 +371,7 @@ class PortfolioManager {
   /**
    * Simulates trading activity based on current market prices
    * "Ledger should be the averagely moving like a balance sheet"
-   * Enforces 1.1% - 1.4% daily profit target based on user wallet balance
+   * Enforces tier-based daily profit target based on user wallet balance
    * Now includes market context for more realistic outcomes
    */
   private startTradeCycle() {
@@ -273,17 +402,21 @@ class PortfolioManager {
       const volatility = this.calculateMarketVolatility();
       const trend = this.getMarketTrend(symbol);
 
-      // --- Target Logic based on wallet balance ---
+      // --- Target Logic based on wallet balance and tier ---
       const { walletBalance, startOfDayWalletBalance, sessionPnL } = usePortfolioStore.getState();
       const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : walletBalance;
       const currentReturn = baseBalance > 0 ? sessionPnL / baseBalance : 0;
+      
+      // Get tier-specific targets
+      const targetDailyMin = this.getTargetDailyMin();
+      const targetDailyMax = this.getTargetDailyMax();
       
       // Calculate where we should be right now
       const elapsedTime = Date.now() - this.startTime;
       const dayProgress = (elapsedTime % this.MS_PER_DAY) / this.MS_PER_DAY;
       
       // Target return for this specific moment in the day
-      const targetReturnNow = this.TARGET_DAILY_MIN * dayProgress;
+      const targetReturnNow = targetDailyMin * dayProgress;
       
       // Scale PnL based on user balance - larger balance = larger trades
       const scaleFactor = Math.max(1, baseBalance / 10000); // Normalize to $10k base
@@ -304,7 +437,7 @@ class PortfolioManager {
         }
       } 
       // If we are AHEAD of schedule, force a correction
-      else if (currentReturn > this.TARGET_DAILY_MAX * dayProgress * 1.2) {
+      else if (currentReturn > targetDailyMax * dayProgress * 1.2) {
         pnl = (Math.random() * -30 - 5) * scaleFactor * marketModifier.lossMultiplier;
       }
       // Otherwise, mixed outcome based on market conditions
@@ -386,8 +519,13 @@ class PortfolioManager {
   private applyPnLGuards(pnl: number, currentReturn: number, dayProgress: number): number {
     const lossRatio = this.getLossRatio();
     const insufficientLosses = this.recentPnL.length >= 6 && lossRatio < this.MIN_LOSS_RATIO;
-    const aheadOfSchedule = currentReturn > this.TARGET_DAILY_MAX * dayProgress;
-    const behindSchedule = currentReturn < this.TARGET_DAILY_MIN * dayProgress;
+    
+    // Use tier-specific targets
+    const targetDailyMin = this.getTargetDailyMin();
+    const targetDailyMax = this.getTargetDailyMax();
+    
+    const aheadOfSchedule = currentReturn > targetDailyMax * dayProgress;
+    const behindSchedule = currentReturn < targetDailyMin * dayProgress;
 
     // Scale guards based on wallet balance
     const { walletBalance } = usePortfolioStore.getState();
@@ -428,6 +566,9 @@ class PortfolioManager {
   public getPortfolioStateAPI() {
     const state = usePortfolioStore.getState();
     const volatility = this.calculateMarketVolatility();
+    const activeTier = this.getActiveBotTier();
+    const tierConfig = BOT_TIERS[activeTier];
+    
     return {
       status: 'success',
       timestamp: Date.now(),
@@ -436,13 +577,15 @@ class PortfolioManager {
         pool_balance: state.poolBalance,
         total_equity: state.totalEquity,
         session_pnl: state.sessionPnL,
+        bot_tier: activeTier,
+        bot_tier_config: tierConfig,
         daily_target_pct: {
-          min: this.TARGET_DAILY_MIN,
-          max: this.TARGET_DAILY_MAX
+          min: tierConfig.dailyRoiMin,
+          max: tierConfig.dailyRoiMax
         },
         projected_daily_profit: {
-          min: state.walletBalance * this.TARGET_DAILY_MIN,
-          max: state.walletBalance * this.TARGET_DAILY_MAX,
+          min: state.walletBalance * tierConfig.dailyRoiMin,
+          max: state.walletBalance * tierConfig.dailyRoiMax,
         },
         market_context: {
           volatility,
@@ -457,21 +600,45 @@ class PortfolioManager {
   /**
    * Set user balance from external API
    * This allows integration with broader platforms
+   * @param balance - The new balance to set
+   * @param botTier - Optional bot tier to use (auto-selected if not provided)
    */
-  public setUserBalance(balance: number): { status: string; walletBalance: number; projectedDailyProfit: { min: number; max: number } } {
+  public setUserBalance(balance: number, botTier?: BotTier): { 
+    status: string; 
+    walletBalance: number; 
+    botTier: BotTier;
+    botTierConfig: BotTierConfig;
+    projectedDailyProfit: { min: number; max: number } 
+  } {
     if (typeof balance !== 'number' || isNaN(balance) || balance < 0) {
       throw new Error('Invalid balance: must be a non-negative number');
+    }
+    
+    // Set or auto-select tier
+    if (botTier) {
+      const tierConfig = BOT_TIERS[botTier];
+      if (balance < tierConfig.minimumStake) {
+        throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
+      }
+      this.currentBotTier = botTier;
+    } else {
+      this.currentBotTier = getBotTierForStake(balance);
     }
     
     usePortfolioStore.getState().setWalletBalance(balance);
     usePortfolioStore.getState().resetDailyEquity(balance);
     
+    const effectiveTier = this.getActiveBotTier();
+    const tierConfig = BOT_TIERS[effectiveTier];
+    
     return {
       status: 'success',
       walletBalance: balance,
+      botTier: effectiveTier,
+      botTierConfig: tierConfig,
       projectedDailyProfit: {
-        min: balance * this.TARGET_DAILY_MIN,
-        max: balance * this.TARGET_DAILY_MAX,
+        min: balance * tierConfig.dailyRoiMin,
+        max: balance * tierConfig.dailyRoiMax,
       }
     };
   }
@@ -481,17 +648,34 @@ class PortfolioManager {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).getTradingAgentStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).setTradingAgentBalance = (amount: number) => {
+(window as any).setTradingAgentBalance = (amount: number, botTier?: BotTier) => {
   try {
-    const result = PortfolioManager.getInstance().setUserBalance(amount);
+    const result = PortfolioManager.getInstance().setUserBalance(amount, botTier);
     return { 
       status: 'success', 
       new_balance: result.walletBalance,
+      bot_tier: result.botTier,
+      bot_tier_config: result.botTierConfig,
       projected_daily_profit: result.projectedDailyProfit
     };
   } catch (error) {
     return { status: 'error', message: error instanceof Error ? error.message : 'Invalid amount' };
   }
 };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).setBotTier = (tier: BotTier) => {
+  try {
+    PortfolioManager.getInstance().setBotTier(tier);
+    return { 
+      status: 'success', 
+      bot_tier: tier,
+      bot_tier_config: BOT_TIERS[tier]
+    };
+  } catch (error) {
+    return { status: 'error', message: error instanceof Error ? error.message : 'Invalid tier' };
+  }
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).getBotTiers = () => BOT_TIERS;
 
 export const portfolioManager = PortfolioManager.getInstance();

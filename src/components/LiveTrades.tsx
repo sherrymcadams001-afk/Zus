@@ -1,4 +1,5 @@
-import { Receipt } from 'lucide-react';
+import { Receipt, TrendingDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolioStore } from '../store/usePortfolioStore';
 
 export function LiveTrades() {
@@ -19,25 +20,53 @@ export function LiveTrades() {
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {trades.map((trade, idx) => (
-          <div key={trade.id} className={`grid grid-cols-4 gap-1 px-2 py-1 text-[10px] border-b border-white/5 items-center ${idx === 0 ? 'bg-white/5' : ''}`}>
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-slate-200">{trade.symbol}</span>
-              <span className={`text-[8px] px-1 rounded-sm font-bold ${trade.side === 'BUY' ? 'bg-orion-neon-green/10 text-orion-neon-green' : 'bg-orion-neon-red/10 text-orion-neon-red'}`}>
-                {trade.side}
-              </span>
-            </div>
-            <div className="text-right tabular-nums text-slate-400 font-mono">
-              {trade.price < 10 ? trade.price.toFixed(4) : trade.price < 1000 ? trade.price.toFixed(2) : trade.price.toFixed(0)}
-            </div>
-            <div className="text-right tabular-nums text-slate-500 font-mono">
-              {trade.quantity.toFixed(trade.symbol === 'BTC' ? 4 : 2)}
-            </div>
-            <div className={`text-right tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'}`}>
-              {trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}
-            </div>
-          </div>
-        ))}
+        <AnimatePresence initial={false}>
+          {trades.map((trade, idx) => {
+            const isNewest = idx === 0;
+            const isNegativePnL = trade.pnl < 0;
+            const showFlashEffect = isNewest && isNegativePnL;
+
+            return (
+              <motion.div
+                key={trade.id}
+                initial={isNewest ? { opacity: 0, y: -10 } : false}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  backgroundColor: showFlashEffect 
+                    ? ['rgba(255, 0, 85, 0.15)', 'rgba(255, 255, 255, 0.05)']
+                    : isNewest 
+                      ? 'rgba(255, 255, 255, 0.05)' 
+                      : 'transparent'
+                }}
+                transition={{ 
+                  duration: showFlashEffect ? 0.8 : 0.3,
+                  backgroundColor: { duration: showFlashEffect ? 1.2 : 0 }
+                }}
+                className={`grid grid-cols-4 gap-1 px-2 py-1 text-[10px] border-b border-white/5 items-center ${showFlashEffect ? 'shadow-glow-red' : ''}`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-slate-200">{trade.symbol}</span>
+                  <span className={`text-[8px] px-1 rounded-sm font-bold ${trade.side === 'BUY' ? 'bg-orion-neon-green/10 text-orion-neon-green' : 'bg-orion-neon-red/10 text-orion-neon-red'}`}>
+                    {trade.side}
+                  </span>
+                </div>
+                <div className="text-right tabular-nums text-slate-400 font-mono">
+                  {trade.price < 10 ? trade.price.toFixed(4) : trade.price < 1000 ? trade.price.toFixed(2) : trade.price.toFixed(0)}
+                </div>
+                <div className="text-right tabular-nums text-slate-500 font-mono">
+                  {trade.quantity.toFixed(trade.symbol === 'BTC' ? 4 : 2)}
+                </div>
+                <div className={`flex items-center justify-end gap-1 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'}`}>
+                  {isNegativePnL && (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  <span>{trade.pnl >= 0 ? '+' : ''}{trade.pnl.toFixed(2)}</span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );
