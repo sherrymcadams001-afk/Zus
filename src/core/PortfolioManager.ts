@@ -15,6 +15,9 @@ import { useMarketStore } from '../store/useMarketStore';
 /** Market volatility levels for contextual trading */
 type MarketVolatility = 'low' | 'medium' | 'high';
 
+/** Bot mode types for smart/dumb trading simulation */
+type BotMode = 'smart' | 'dumb' | 'recovering';
+
 /** Bot tier types for multi-tier trading system */
 export type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
 
@@ -123,9 +126,128 @@ class PortfolioManager {
   private lastVolatilityUpdate: number = 0;
   private readonly VOLATILITY_CACHE_TTL = 30000; // 30 seconds cache
 
+  // Bot mode system for smart/dumb trading simulation
+  private currentBotMode: BotMode = 'smart';
+  private modeStartTime: number = Date.now();
+  private modeDuration: number = 0;
+  private dumbModeAccumulatedLoss: number = 0;
+  
+  // Crypto pairs filter - only trade crypto, no stocks
+  private readonly CRYPTO_SUFFIX_PATTERNS = ['USDT', 'BUSD', 'BTC', 'ETH', 'BNB', 'USD'];
+
   private constructor() {
     this.startTime = Date.now() - (Math.random() * 3600000 * 4); // Simulate we started 0-4 hours ago
     this.lastDayIndex = this.getCurrentDayIndex();
+    this.initializeBotMode();
+  }
+
+  /**
+   * Initialize or reset bot mode cycle
+   * Creates variance with smart/dumb periods to simulate realistic bot behavior
+   */
+  private initializeBotMode(): void {
+    // Start with a random mode, but weighted toward smart (60% smart, 30% dumb, 10% recovering)
+    const roll = Math.random();
+    if (roll < 0.6) {
+      this.currentBotMode = 'smart';
+      this.modeDuration = this.getSmartModeDuration();
+    } else if (roll < 0.9) {
+      this.currentBotMode = 'dumb';
+      this.modeDuration = this.getDumbModeDuration();
+    } else {
+      this.currentBotMode = 'recovering';
+      this.modeDuration = this.getRecoveringModeDuration();
+    }
+    this.modeStartTime = Date.now();
+    this.dumbModeAccumulatedLoss = 0;
+  }
+
+  /**
+   * Get duration for smart mode (longer periods of good trading)
+   */
+  private getSmartModeDuration(): number {
+    // 45-90 seconds of smart trading
+    return 45000 + Math.random() * 45000;
+  }
+
+  /**
+   * Get duration for dumb mode (shorter scary periods)
+   */
+  private getDumbModeDuration(): number {
+    // 15-35 seconds of dumb trading (scary for user)
+    return 15000 + Math.random() * 20000;
+  }
+
+  /**
+   * Get duration for recovering mode (moderate periods to reclaim losses)
+   */
+  private getRecoveringModeDuration(): number {
+    // 25-50 seconds of recovery trading
+    return 25000 + Math.random() * 25000;
+  }
+
+  /**
+   * Update bot mode based on elapsed time and current state
+   */
+  private updateBotMode(): void {
+    const elapsed = Date.now() - this.modeStartTime;
+    if (elapsed < this.modeDuration) return;
+
+    // Transition to next mode
+    switch (this.currentBotMode) {
+      case 'smart':
+        // After smart mode, sometimes go dumb (40% chance) or stay smart (60%)
+        if (Math.random() < 0.4) {
+          this.currentBotMode = 'dumb';
+          this.modeDuration = this.getDumbModeDuration();
+          this.dumbModeAccumulatedLoss = 0;
+        } else {
+          this.modeDuration = this.getSmartModeDuration();
+        }
+        break;
+      case 'dumb':
+        // After dumb mode, always go to recovering to reclaim losses
+        this.currentBotMode = 'recovering';
+        this.modeDuration = this.getRecoveringModeDuration();
+        break;
+      case 'recovering':
+        // After recovering, go back to smart mode
+        this.currentBotMode = 'smart';
+        this.modeDuration = this.getSmartModeDuration();
+        this.dumbModeAccumulatedLoss = 0;
+        break;
+    }
+    this.modeStartTime = Date.now();
+  }
+
+  /**
+   * Get current bot mode
+   */
+  public getCurrentBotMode(): BotMode {
+    return this.currentBotMode;
+  }
+
+  /**
+   * Check if a symbol is a valid crypto trading pair (not a stock)
+   */
+  private isCryptoTradingPair(symbol: string): boolean {
+    return this.CRYPTO_SUFFIX_PATTERNS.some(suffix => symbol.endsWith(suffix));
+  }
+
+  /**
+   * Filter tickers to only include crypto trading pairs
+   */
+  private getCryptoTickers(): Map<string, { symbol: string; closePrice: string; openPrice: string }> {
+    const tickers = useMarketStore.getState().tickers;
+    const cryptoTickers = new Map<string, { symbol: string; closePrice: string; openPrice: string }>();
+    
+    for (const [symbol, ticker] of tickers) {
+      if (this.isCryptoTradingPair(symbol)) {
+        cryptoTickers.set(symbol, ticker);
+      }
+    }
+    
+    return cryptoTickers;
   }
 
   public static getInstance(): PortfolioManager {
@@ -199,8 +321,8 @@ class PortfolioManager {
   public stop() {
     this.isRunning = false;
     if (this.payoutInterval) clearTimeout(this.payoutInterval);
-    if (this.tradeInterval) clearInterval(this.tradeInterval);
-    if (this.activityInterval) clearInterval(this.activityInterval);
+    if (this.tradeInterval) clearTimeout(this.tradeInterval);
+    if (this.activityInterval) clearTimeout(this.activityInterval);
   }
 
   /**
@@ -301,6 +423,7 @@ class PortfolioManager {
   /**
    * Generates a fast stream of agent activity logs
    * "The agent trades should be a fast stream of activity"
+   * Now includes bot mode context for more realistic feedback
    */
   private startActivityCycle() {
     const volatilityActions = {
@@ -333,34 +456,82 @@ class PortfolioManager {
       ],
     };
 
+    // Bot mode specific messages
+    const botModeActions = {
+      smart: [
+        '🎯 Strategy optimized, executing calculated entries...',
+        '🎯 Pattern confidence high, proceeding with plan...',
+        '🎯 Risk/reward favorable, increasing position...',
+        '🎯 Market conditions ideal for strategy...',
+        '🎯 Precision mode: tight stop-losses set...',
+      ],
+      dumb: [
+        '⚠️ Signal unclear, taking speculative position...',
+        '⚠️ High uncertainty, reducing confidence threshold...',
+        '⚠️ Conflicting indicators, proceeding with caution...',
+        '⚠️ Market noise elevated, signals degraded...',
+        '⚠️ Strategy deviation detected, recalibrating...',
+        '⚠️ Unexpected price action, adjusting model...',
+      ],
+      recovering: [
+        '🔄 Recovery mode: targeting previous loss levels...',
+        '🔄 Reclaiming position, strategy realigning...',
+        '🔄 Profit target locked, executing recovery...',
+        '🔄 Drawdown recovery in progress...',
+        '🔄 Strategy confidence restored, accelerating...',
+      ],
+    };
+
     const runActivity = () => {
       if (!this.isRunning) return;
 
       const volatility = this.calculateMarketVolatility();
-      const actions = volatilityActions[volatility];
-      const action = actions[Math.floor(Math.random() * actions.length)];
-      const tickers = useMarketStore.getState().tickers;
+      const botMode = this.currentBotMode;
       
-      // Occasionally add a symbol specific log with market context
-      if (Math.random() > 0.7 && tickers.size > 0) {
-        const symbols = Array.from(tickers.keys());
+      // Use crypto tickers only
+      const cryptoTickers = this.getCryptoTickers();
+      
+      // Mix between volatility actions and bot mode actions
+      let action: string;
+      const roll = Math.random();
+      
+      if (roll < 0.35) {
+        // Show bot mode specific message
+        const modeActions = botModeActions[botMode];
+        action = modeActions[Math.floor(Math.random() * modeActions.length)];
+      } else if (roll < 0.55 && cryptoTickers.size > 0) {
+        // Show symbol specific log with market context
+        const symbols = Array.from(cryptoTickers.keys());
         const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-        const ticker = tickers.get(symbol);
+        const ticker = cryptoTickers.get(symbol);
         if (ticker) {
           const price = parseFloat(ticker.closePrice);
           const trend = this.getMarketTrend(symbol);
           const trendEmoji = trend === 'bullish' ? '↑' : trend === 'bearish' ? '↓' : '→';
-          usePortfolioStore.getState().addLog(
-            `${trendEmoji} ${symbol.replace('USDT', '')} @ $${price.toFixed(2)} - Vol: ${parseFloat(ticker.volume).toFixed(0)}`, 
-            'system'
-          );
+          action = `${trendEmoji} ${symbol.replace('USDT', '')} @ $${price.toFixed(2)} - Analyzing crypto pair...`;
+        } else {
+          const actions = volatilityActions[volatility];
+          action = actions[Math.floor(Math.random() * actions.length)];
         }
       } else {
-        usePortfolioStore.getState().addLog(action, 'system');
+        // Show volatility-based action
+        const actions = volatilityActions[volatility];
+        action = actions[Math.floor(Math.random() * actions.length)];
       }
 
-      // Adjust interval based on volatility - faster during high volatility
-      const baseDelay = volatility === 'high' ? 80 : volatility === 'low' ? 200 : 100;
+      usePortfolioStore.getState().addLog(action, 'system');
+
+      // Adjust interval based on volatility and bot mode
+      // Dumb mode = faster, more chaotic logging to increase tension
+      let baseDelay: number;
+      if (botMode === 'dumb') {
+        baseDelay = volatility === 'high' ? 50 : volatility === 'low' ? 120 : 70;
+      } else if (botMode === 'recovering') {
+        baseDelay = volatility === 'high' ? 70 : volatility === 'low' ? 150 : 90;
+      } else {
+        baseDelay = volatility === 'high' ? 80 : volatility === 'low' ? 200 : 100;
+      }
+      
       const nextDelay = baseDelay + Math.random() * (baseDelay * 4);
       this.activityInterval = setTimeout(runActivity, nextDelay);
     };
@@ -373,11 +544,21 @@ class PortfolioManager {
    * "Ledger should be the averagely moving like a balance sheet"
    * Enforces tier-based daily profit target based on user wallet balance
    * Now includes market context for more realistic outcomes
+   * Includes smart/dumb bot mode cycles to create variance and tension
    */
   private startTradeCycle() {
-    this.tradeInterval = setInterval(() => {
-      const tickers = useMarketStore.getState().tickers;
-      if (tickers.size === 0) return;
+    const executeTrade = () => {
+      if (!this.isRunning) return;
+      
+      // Update bot mode based on elapsed time
+      this.updateBotMode();
+      
+      // Only use crypto trading pairs (filter out stocks)
+      const cryptoTickers = this.getCryptoTickers();
+      if (cryptoTickers.size === 0) {
+        this.scheduleNextTrade();
+        return;
+      }
 
       const currentDayIndex = this.getCurrentDayIndex();
       if (currentDayIndex !== this.lastDayIndex) {
@@ -386,17 +567,25 @@ class PortfolioManager {
         // Reset start of day equity for new day
         const { walletBalance } = usePortfolioStore.getState();
         usePortfolioStore.getState().resetDailyEquity(walletBalance);
+        // Reset dumb mode accumulated loss for new day
+        this.dumbModeAccumulatedLoss = 0;
       }
 
-      // Pick a random symbol
-      const symbols = Array.from(tickers.keys());
+      // Pick a random crypto symbol
+      const symbols = Array.from(cryptoTickers.keys());
       const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-      const ticker = tickers.get(symbol);
+      const ticker = cryptoTickers.get(symbol);
       
-      if (!ticker) return;
+      if (!ticker) {
+        this.scheduleNextTrade();
+        return;
+      }
 
       const price = parseFloat(ticker.closePrice);
-      if (isNaN(price) || price <= 0) return;
+      if (isNaN(price) || price <= 0) {
+        this.scheduleNextTrade();
+        return;
+      }
 
       // --- Market Context ---
       const volatility = this.calculateMarketVolatility();
@@ -423,40 +612,41 @@ class PortfolioManager {
       
       let pnl = 0;
 
-      // Market-contextual trading logic
+      // Get base market modifiers
       const marketModifier = this.getMarketContextModifier(volatility, trend);
+      
+      // Apply bot mode modifiers for variance
+      const botModeModifier = this.getBotModeModifier();
 
-      // If we are BEHIND schedule, we generally want to win, but market matters
-      if (currentReturn < targetReturnNow) {
-        // Base 80% win chance, modified by market conditions
-        const winChance = 0.8 * marketModifier.winRateMultiplier;
-        if (Math.random() < winChance) {
-          pnl = (Math.random() * 40 + 10) * scaleFactor * marketModifier.profitMultiplier;
-        } else {
-          pnl = (Math.random() * -20 - 5) * scaleFactor * marketModifier.lossMultiplier;
-        }
-      } 
-      // If we are AHEAD of schedule, force a correction
-      else if (currentReturn > targetDailyMax * dayProgress * 1.2) {
-        pnl = (Math.random() * -30 - 5) * scaleFactor * marketModifier.lossMultiplier;
-      }
-      // Otherwise, mixed outcome based on market conditions
-      else {
-        // Base: -25 to +35, modified by trend
-        const basePnL = (Math.random() - 0.45) * 60;
-        if (trend === 'bullish') {
-          pnl = (basePnL + 10) * scaleFactor * marketModifier.profitMultiplier;
-        } else if (trend === 'bearish') {
-          pnl = (basePnL - 5) * scaleFactor * marketModifier.lossMultiplier;
-        } else {
-          pnl = basePnL * scaleFactor;
-        }
-      }
+      // Calculate PnL based on bot mode
+      pnl = this.calculateTradeOutcome(
+        currentReturn,
+        targetReturnNow,
+        targetDailyMax,
+        dayProgress,
+        scaleFactor,
+        marketModifier,
+        botModeModifier
+      );
 
+      // Apply PnL guards to ensure we stay on track for daily target
       pnl = this.applyPnLGuards(pnl, currentReturn, dayProgress);
+      
+      // Apply variance to trade amount (dumb mode = larger risky trades, smart mode = calculated)
+      const amountVariance = this.getAmountVariance();
+      pnl = pnl * amountVariance;
+      
       const normalizedPnL = Number(pnl.toFixed(2));
       const side: 'BUY' | 'SELL' = normalizedPnL >= 0 ? 'BUY' : 'SELL';
-      const quantity = (Math.random() * 500 * scaleFactor) / price; // Scaled position size
+      
+      // Quantity also varies based on bot mode
+      const baseQuantity = (Math.random() * 500 * scaleFactor) / price;
+      const quantity = baseQuantity * amountVariance;
+
+      // Track accumulated losses in dumb mode for recovery calculation
+      if (this.currentBotMode === 'dumb' && normalizedPnL < 0) {
+        this.dumbModeAccumulatedLoss += Math.abs(normalizedPnL);
+      }
 
       // Execute trade (Ledger update)
       usePortfolioStore.getState().addTrade({
@@ -467,14 +657,189 @@ class PortfolioManager {
         pnl: normalizedPnL
       });
 
-      // Log the trade execution with market context
+      // Log the trade execution with bot mode context
       const pnlText = normalizedPnL >= 0 ? `+${normalizedPnL.toFixed(2)}` : normalizedPnL.toFixed(2);
+      const modeIndicator = this.getBotModeIndicator();
       const volIndicator = volatility === 'high' ? '⚡' : volatility === 'low' ? '💤' : '';
-      const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText} ${volIndicator}`;
+      const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText} ${modeIndicator}${volIndicator}`;
       usePortfolioStore.getState().addLog(msg, 'trade');
       this.recordPnL(normalizedPnL);
 
-    }, 5000 + Math.random() * 8000); // Trade every 5-13 seconds (Slower than logs)
+      // Schedule next trade with variance based on bot mode
+      this.scheduleNextTrade();
+    };
+
+    executeTrade();
+  }
+
+  /**
+   * Schedule next trade with timing variance based on bot mode
+   * Smart mode: slower, more calculated (6-12s)
+   * Dumb mode: faster, more chaotic (2-5s) 
+   * Recovering mode: moderate pace (4-8s)
+   */
+  private scheduleNextTrade(): void {
+    let baseDelay: number;
+    let variance: number;
+    
+    switch (this.currentBotMode) {
+      case 'smart':
+        baseDelay = 6000;
+        variance = 6000;
+        break;
+      case 'dumb':
+        baseDelay = 2000;
+        variance = 3000;
+        break;
+      case 'recovering':
+        baseDelay = 4000;
+        variance = 4000;
+        break;
+      default:
+        baseDelay = 5000;
+        variance = 8000;
+    }
+    
+    const nextDelay = baseDelay + Math.random() * variance;
+    this.tradeInterval = setTimeout(() => this.startTradeCycle(), nextDelay);
+  }
+
+  /**
+   * Get bot mode modifier for trade outcomes
+   */
+  private getBotModeModifier(): {
+    winRateMultiplier: number;
+    profitMultiplier: number;
+    lossMultiplier: number;
+  } {
+    const modifiers = {
+      winRateMultiplier: 1,
+      profitMultiplier: 1,
+      lossMultiplier: 1,
+    };
+
+    switch (this.currentBotMode) {
+      case 'smart':
+        // Smart mode: high win rate, moderate profits, small losses
+        modifiers.winRateMultiplier = 1.3;
+        modifiers.profitMultiplier = 1.2;
+        modifiers.lossMultiplier = 0.6;
+        break;
+      case 'dumb':
+        // Dumb mode: low win rate, smaller profits when winning, larger losses (scary!)
+        modifiers.winRateMultiplier = 0.35;
+        modifiers.profitMultiplier = 0.5;
+        modifiers.lossMultiplier = 1.8;
+        break;
+      case 'recovering':
+        // Recovery mode: very high win rate to reclaim losses, good profits
+        modifiers.winRateMultiplier = 1.6;
+        modifiers.profitMultiplier = 1.5;
+        modifiers.lossMultiplier = 0.3;
+        
+        // If we have accumulated losses to recover, boost even more
+        if (this.dumbModeAccumulatedLoss > 0) {
+          modifiers.winRateMultiplier = 1.9;
+          modifiers.profitMultiplier = 2.0;
+        }
+        break;
+    }
+
+    return modifiers;
+  }
+
+  /**
+   * Calculate trade outcome based on all modifiers
+   */
+  private calculateTradeOutcome(
+    currentReturn: number,
+    targetReturnNow: number,
+    targetDailyMax: number,
+    dayProgress: number,
+    scaleFactor: number,
+    marketModifier: { winRateMultiplier: number; profitMultiplier: number; lossMultiplier: number },
+    botModeModifier: { winRateMultiplier: number; profitMultiplier: number; lossMultiplier: number }
+  ): number {
+    let pnl = 0;
+    const combinedWinRate = 0.55 * marketModifier.winRateMultiplier * botModeModifier.winRateMultiplier;
+    const combinedProfitMult = marketModifier.profitMultiplier * botModeModifier.profitMultiplier;
+    const combinedLossMult = marketModifier.lossMultiplier * botModeModifier.lossMultiplier;
+
+    // In recovery mode with accumulated losses, ensure we're winning
+    if (this.currentBotMode === 'recovering' && this.dumbModeAccumulatedLoss > 0) {
+      // 90% chance to win in recovery with accumulated losses
+      if (Math.random() < 0.9) {
+        // Win back a portion of accumulated losses
+        const recoverAmount = Math.min(
+          this.dumbModeAccumulatedLoss * 0.3,
+          (Math.random() * 60 + 30) * scaleFactor
+        );
+        pnl = recoverAmount * combinedProfitMult;
+        this.dumbModeAccumulatedLoss -= recoverAmount;
+      } else {
+        pnl = (Math.random() * -15 - 5) * scaleFactor * combinedLossMult;
+      }
+    }
+    // If we are BEHIND schedule, we generally want to win (unless in dumb mode)
+    else if (currentReturn < targetReturnNow) {
+      if (Math.random() < combinedWinRate) {
+        pnl = (Math.random() * 40 + 10) * scaleFactor * combinedProfitMult;
+      } else {
+        pnl = (Math.random() * -20 - 5) * scaleFactor * combinedLossMult;
+      }
+    }
+    // If we are AHEAD of schedule, force a correction (use this as a "dumb mode" opportunity)
+    else if (currentReturn > targetDailyMax * dayProgress * 1.2) {
+      pnl = (Math.random() * -30 - 5) * scaleFactor * combinedLossMult;
+    }
+    // Otherwise, mixed outcome based on bot mode
+    else {
+      const basePnL = (Math.random() - 0.45) * 60;
+      if (Math.random() < combinedWinRate) {
+        pnl = (Math.abs(basePnL) + 5) * scaleFactor * combinedProfitMult;
+      } else {
+        pnl = -Math.abs(basePnL) * scaleFactor * combinedLossMult;
+      }
+    }
+
+    return pnl;
+  }
+
+  /**
+   * Get amount variance multiplier based on bot mode
+   * Dumb mode: larger, riskier position sizes
+   * Smart mode: calculated, optimal position sizes
+   */
+  private getAmountVariance(): number {
+    switch (this.currentBotMode) {
+      case 'smart':
+        // Consistent, calculated trades (0.8 - 1.2x)
+        return 0.8 + Math.random() * 0.4;
+      case 'dumb':
+        // Wild variance - sometimes too big, sometimes too small (0.5 - 2.5x)
+        return 0.5 + Math.random() * 2.0;
+      case 'recovering':
+        // Slightly larger to recover faster (1.0 - 1.5x)
+        return 1.0 + Math.random() * 0.5;
+      default:
+        return 1.0;
+    }
+  }
+
+  /**
+   * Get visual indicator for current bot mode
+   */
+  private getBotModeIndicator(): string {
+    switch (this.currentBotMode) {
+      case 'smart':
+        return '🎯';
+      case 'dumb':
+        return '⚠️';
+      case 'recovering':
+        return '🔄';
+      default:
+        return '';
+    }
   }
 
   /**
@@ -568,6 +933,7 @@ class PortfolioManager {
     const volatility = this.calculateMarketVolatility();
     const activeTier = this.getActiveBotTier();
     const tierConfig = BOT_TIERS[activeTier];
+    const cryptoTickers = this.getCryptoTickers();
     
     return {
       status: 'success',
@@ -579,6 +945,8 @@ class PortfolioManager {
         session_pnl: state.sessionPnL,
         bot_tier: activeTier,
         bot_tier_config: tierConfig,
+        bot_mode: this.currentBotMode,
+        bot_mode_description: this.getBotModeDescription(),
         daily_target_pct: {
           min: tierConfig.dailyRoiMin,
           max: tierConfig.dailyRoiMax
@@ -589,12 +957,29 @@ class PortfolioManager {
         },
         market_context: {
           volatility,
-          active_pairs: useMarketStore.getState().tickers.size,
+          active_crypto_pairs: cryptoTickers.size,
+          total_pairs: useMarketStore.getState().tickers.size,
         },
         active_trades_count: state.trades.length,
         system_status: 'OPERATIONAL'
       }
     };
+  }
+
+  /**
+   * Get human-readable description of current bot mode
+   */
+  private getBotModeDescription(): string {
+    switch (this.currentBotMode) {
+      case 'smart':
+        return 'Optimized trading - high accuracy, calculated positions';
+      case 'dumb':
+        return 'Volatile trading - experiencing temporary setbacks';
+      case 'recovering':
+        return 'Recovery mode - reclaiming previous losses';
+      default:
+        return 'Normal operation';
+    }
   }
 
   /**
