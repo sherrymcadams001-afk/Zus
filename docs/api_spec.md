@@ -221,6 +221,8 @@ curl -X PUT https://your-worker.workers.dev/api/balance/user123 \
 
 **Auto-selection:** If `botTier` is omitted, the highest qualifying tier is selected.
 
+> **Note:** The `botTierConfig` object in API responses contains the authoritative configuration values including hourly ROI rates, trading hours, and withdrawal periods.
+
 ---
 
 ## How-To Guides
@@ -268,10 +270,11 @@ setInterval(pollNarrative, 5000);
 
 ```javascript
 // User has $60,000 but wants Titan instead of Omega
-const response = await fetch('https://your-worker.workers.dev/api/balance', {
-  method: 'POST',
+// Use PUT to update an existing user's tier preference
+const response = await fetch('https://your-worker.workers.dev/api/balance/user123', {
+  method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ userId: 'user123', balance: 60000, botTier: 'titan' })
+  body: JSON.stringify({ balance: 60000, botTier: 'titan' })
 });
 ```
 
@@ -307,7 +310,7 @@ print(response.json()['log'])
 
 ## Frontend JavaScript API
 
-When embedding the Trading Agent frontend, use these global functions:
+When using the full-stack fork with the React frontend, these global functions are available after the frontend loads:
 
 ```javascript
 // Set balance (auto-selects tier)
