@@ -8,6 +8,9 @@ import { isAxiosError } from 'axios';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/useAuthStore';
 
+// Password validation constant (should match backend MIN_PASSWORD_LENGTH)
+const MIN_PASSWORD_LENGTH = 8;
+
 export default function Register() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -27,8 +30,8 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
       return;
     }
 
