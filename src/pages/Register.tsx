@@ -1,10 +1,11 @@
 /**
- * Register Page
+ * Register Page - Enterprise Grade
  */
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { isAxiosError } from 'axios';
+import { Zap, Mail, Lock, ArrowRight, Shield, UserPlus, Key } from 'lucide-react';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -58,97 +59,198 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0B0D] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-slate-400">Start your trading journey today</p>
-        </div>
-
-        <div className="bg-[#1A1D24] rounded-lg p-8 border border-white/10">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded">
-                {error}
+    <div className="min-h-screen bg-gradient-to-br from-[#0A0B0D] via-[#0B0E11] to-[#0A0B0D] flex">
+      {/* Left Section - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#00D4AA]/10 to-transparent" />
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(0, 212, 170, 0.05) 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }} />
+        
+        <div className="relative z-10 flex flex-col justify-center p-12 text-white w-full">
+          {/* Logo & Brand */}
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00D4AA]/20 border border-[#00D4AA]/30 backdrop-blur-sm">
+                <Zap className="h-7 w-7 text-[#00D4AA]" />
               </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-1 focus:ring-[#00D4AA]/50"
-                placeholder="your@email.com"
-              />
+              <div>
+                <h1 className="text-2xl font-bold tracking-wider">TRADING <span className="text-[#00D4AA]">AGENT</span></h1>
+                <p className="text-xs text-slate-400 tracking-widest uppercase">Enterprise Trading Platform</p>
+              </div>
             </div>
+            
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-4xl font-bold mb-4">Start Your Trading Journey</h2>
+                <p className="text-lg text-slate-300">Join thousands of traders using our AI-powered platform</p>
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-1 focus:ring-[#00D4AA]/50"
-                placeholder="••••••••"
-              />
+              <div className="space-y-4 pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center h-8 w-8 rounded bg-[#00D4AA]/20">
+                    <Shield className="h-4 w-4 text-[#00D4AA]" />
+                  </div>
+                  <span className="text-slate-300">Enterprise-grade security and encryption</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center h-8 w-8 rounded bg-[#00D4AA]/20">
+                    <UserPlus className="h-4 w-4 text-[#00D4AA]" />
+                  </div>
+                  <span className="text-slate-300">Instant account activation</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center h-8 w-8 rounded bg-[#00D4AA]/20">
+                    <Zap className="h-4 w-4 text-[#00D4AA]" />
+                  </div>
+                  <span className="text-slate-300">Real-time market data and analytics</span>
+                </div>
+              </div>
             </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-1 focus:ring-[#00D4AA]/50"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="referralCode" className="block text-sm font-medium text-slate-300 mb-2">
-                Referral Code (Optional)
-              </label>
-              <input
-                id="referralCode"
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="w-full px-4 py-3 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-1 focus:ring-[#00D4AA]/50"
-                placeholder="ABCD1234"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#00D4AA] hover:bg-[#00D4AA]/90 text-black font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Creating account...' : 'Create Account'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-slate-400 text-sm">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[#00D4AA] hover:underline">
-                Sign in
-              </Link>
-            </p>
           </div>
+        </div>
+      </div>
+
+      {/* Right Section - Registration Form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00D4AA]/20 border border-[#00D4AA]/30">
+              <Zap className="h-7 w-7 text-[#00D4AA]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-wider text-white">TRADING <span className="text-[#00D4AA]">AGENT</span></h1>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
+            <p className="text-slate-400">Begin your journey to financial freedom</p>
+          </div>
+
+          <div className="bg-[#0B0E11]/80 backdrop-blur-sm rounded-xl p-8 border border-white/10 shadow-2xl">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg flex items-start gap-3">
+                  <Shield className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-2 focus:ring-[#00D4AA]/20 transition-all"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-2 focus:ring-[#00D4AA]/20 transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">Minimum {MIN_PASSWORD_LENGTH} characters</p>
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-2 focus:ring-[#00D4AA]/20 transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="referralCode" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                  Referral Code <span className="text-slate-500 font-normal">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Key className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    id="referralCode"
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00D4AA]/50 focus:ring-2 focus:ring-[#00D4AA]/20 transition-all uppercase"
+                    placeholder="ABCD1234"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-[#00D4AA] to-[#00B890] hover:from-[#00B890] hover:to-[#00D4AA] text-black font-bold py-3.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#00D4AA]/20 hover:shadow-[#00D4AA]/40"
+              >
+                {isLoading ? (
+                  <>
+                    <UserPlus className="h-5 w-5 animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <p className="text-slate-400 text-sm text-center">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#00D4AA] hover:text-[#00B890] font-semibold transition-colors">
+                  Sign In →
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-slate-500 mt-6">
+            By creating an account, you agree to our Terms of Service
+          </p>
         </div>
       </div>
     </div>
