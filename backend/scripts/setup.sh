@@ -100,7 +100,8 @@ echo -e "${CYAN}Updating wrangler.toml with database ID...${NC}"
 # Check if we need to update the file
 if grep -q "YOUR_D1_DATABASE_ID_HERE\|preview-database-id" "$WRANGLER_CONFIG"; then
     # Use sed to replace the placeholder
-    if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Using uname for portable OS detection
+    if [ "$(uname)" = "Darwin" ]; then
         # macOS
         sed -i '' "s/database_id = \"YOUR_D1_DATABASE_ID_HERE\"/database_id = \"$DATABASE_ID\"/" "$WRANGLER_CONFIG"
         sed -i '' "s/database_id = \"preview-database-id\"/database_id = \"$DATABASE_ID\"/" "$WRANGLER_CONFIG"
