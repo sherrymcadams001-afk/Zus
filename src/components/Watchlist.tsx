@@ -59,25 +59,25 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
     <div
       ref={rowRef}
       onClick={handleClick}
-      className={`grid grid-cols-[1fr_80px_60px] gap-2 px-2 py-1 text-[10px] cursor-pointer transition-all hover:bg-white/5 border-l-2 items-center ${
-        isActive ? 'border-l-orion-neon-cyan bg-white/5' : 'border-l-transparent border-b border-white/5'
+      className={`grid grid-cols-[1fr_80px_60px] gap-2 px-2 py-1 text-[10px] cursor-pointer transition-all hover:bg-orion-bg-hover border-l-2 items-center ${
+        isActive ? 'border-l-orion-cyan bg-orion-cyan/5' : 'border-l-transparent border-b border-[rgba(255,255,255,0.05)]'
       }`}
     >
       <div className="flex flex-col">
-        <span className={`font-bold leading-none ${isActive ? 'text-orion-neon-cyan' : 'text-slate-200'}`}>
+        <span className={`font-bold leading-none ${isActive ? 'text-orion-cyan' : 'text-orion-slate'}`}>
           {symbol.replace('USDT', '')}
         </span>
-        <span className="text-[8px] text-slate-500 leading-none mt-0.5">
+        <span className="text-[8px] text-orion-slate-dark leading-none mt-0.5">
           {volume ? `Vol ${formatVolume(volume)}` : 'Loading...'}
         </span>
       </div>
       
-      <div className="text-right font-mono text-slate-200">
+      <div className="text-right font-mono text-orion-slate">
         {price ? price.toFixed(price < 1 ? 4 : 2) : '---'}
       </div>
       
       <div className={`text-right font-medium ${
-        change === null ? 'text-slate-500' : change >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red'
+        change === null ? 'text-orion-slate-dark' : change >= 0 ? 'text-orion-success' : 'text-orion-danger'
       }`}>
         {change === null ? '---' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`}
       </div>
@@ -96,16 +96,16 @@ export function Watchlist() {
   }, [setActiveSymbol]);
 
   return (
-    <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden">
-      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3 bg-[#0B0E11]">
+    <div className="h-full flex flex-col rounded border border-[rgba(255,255,255,0.08)] bg-orion-bg overflow-hidden">
+      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-3 bg-orion-bg-secondary">
         <div className="flex items-center gap-2">
-          <Eye className="h-3.5 w-3.5 text-orion-neon-cyan" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Market Watch</span>
+          <Eye className="h-3.5 w-3.5 text-orion-cyan" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-orion-slate">Market Watch</span>
         </div>
-        <Search className="h-3 w-3 text-slate-500" />
+        <Search className="h-3 w-3 text-orion-slate-dark" />
       </div>
       
-      <div className="grid grid-cols-[1fr_80px_60px] gap-2 px-2 py-1.5 text-[9px] font-semibold uppercase text-slate-500 bg-[#0B0E11]/50 border-b border-white/5">
+      <div className="grid grid-cols-[1fr_80px_60px] gap-2 px-2 py-1.5 text-[9px] font-semibold uppercase text-orion-slate-dark bg-orion-bg-secondary/50 border-b border-[rgba(255,255,255,0.08)]">
         <span>Pair</span>
         <span className="text-right">Price</span>
         <span className="text-right">24h %</span>
@@ -123,7 +123,7 @@ export function Watchlist() {
         ))}
         {/* Fill remaining space with empty rows if needed to maintain grid look */}
         {Array.from({ length: Math.max(0, 15 - WATCHLIST_PAIRS.length) }).map((_, i) => (
-           <div key={`empty-${i}`} className="h-[34px] border-b border-white/5" />
+           <div key={`empty-${i}`} className="h-[34px] border-b border-[rgba(255,255,255,0.05)]" />
         ))}
       </div>
     </div>

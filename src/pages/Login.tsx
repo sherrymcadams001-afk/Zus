@@ -1,5 +1,5 @@
 /**
- * Login Page - Orion Enterprise
+ * Login Page - Orion Enterprise Design System
  */
 
 import { useState } from 'react';
@@ -43,12 +43,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#020408] via-[#0B0E11] to-[#020408] flex">
+    <div className="min-h-screen bg-gradient-to-br from-orion-bg via-orion-bg-secondary to-orion-bg flex">
       {/* Left Section - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00A3FF]/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-orion-cyan/10 to-transparent" />
         <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(0, 163, 255, 0.05) 1px, transparent 0)',
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(69, 162, 158, 0.05) 1px, transparent 0)',
           backgroundSize: '40px 40px'
         }} />
         
@@ -56,61 +56,61 @@ export default function Login() {
           {/* Logo & Brand */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/30 backdrop-blur-sm">
-                <Zap className="h-7 w-7 text-[#00A3FF]" />
+              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orion-cyan/20 border border-orion-cyan/30 backdrop-blur-sm">
+                <Zap className="h-7 w-7 text-orion-cyan" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-wider">ORION</h1>
-                <p className="text-xs text-[#00A3FF] tracking-widest uppercase">Trading Agent Platform</p>
+                <p className="text-xs text-orion-cyan tracking-widest uppercase">Trading Agent Platform</p>
               </div>
             </div>
             
             <div className="mt-16 space-y-8">
               <div className="flex items-start gap-4">
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#00A3FF]/10 border border-[#00A3FF]/20">
-                  <Shield className="h-5 w-5 text-[#00A3FF]" />
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-orion-cyan/10 border border-orion-cyan/20">
+                  <Shield className="h-5 w-5 text-orion-cyan" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-1">Enterprise Security</h3>
-                  <p className="text-slate-400 text-sm">Bank-grade encryption and multi-factor authentication</p>
+                  <p className="text-orion-slate-dark text-sm">Bank-grade encryption and multi-factor authentication</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4">
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#00A3FF]/10 border border-[#00A3FF]/20">
-                  <TrendingUp className="h-5 w-5 text-[#00A3FF]" />
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-orion-cyan/10 border border-orion-cyan/20">
+                  <TrendingUp className="h-5 w-5 text-orion-cyan" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-1">Real-Time Analytics</h3>
-                  <p className="text-slate-400 text-sm">Advanced AI-powered trading insights and predictions</p>
+                  <p className="text-orion-slate-dark text-sm">Advanced AI-powered trading insights and predictions</p>
                 </div>
               </div>
               
               <div className="flex items-start gap-4">
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#00A3FF]/10 border border-[#00A3FF]/20">
-                  <Activity className="h-5 w-5 text-[#00A3FF]" />
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-orion-cyan/10 border border-orion-cyan/20">
+                  <Activity className="h-5 w-5 text-orion-cyan" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-1">24/7 Trading</h3>
-                  <p className="text-slate-400 text-sm">Autonomous bot execution across global markets</p>
+                  <p className="text-orion-slate-dark text-sm">Autonomous bot execution across global markets</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer Stats */}
-          <div className="grid grid-cols-3 gap-6 pt-8 border-t border-white/10">
+          <div className="grid grid-cols-3 gap-6 pt-8 border-t border-[rgba(255,255,255,0.08)]">
             <div>
-              <div className="text-2xl font-bold text-[#00A3FF]">99.9%</div>
-              <div className="text-xs text-slate-400 uppercase tracking-wide">Uptime</div>
+              <div className="text-2xl font-bold text-orion-cyan">99.9%</div>
+              <div className="text-xs text-orion-slate-dark uppercase tracking-wide">Uptime</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#00A3FF]">$2.4B+</div>
-              <div className="text-xs text-slate-400 uppercase tracking-wide">Volume</div>
+              <div className="text-2xl font-bold text-orion-cyan">$2.4B+</div>
+              <div className="text-xs text-orion-slate-dark uppercase tracking-wide">Volume</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#00A3FF]">50K+</div>
-              <div className="text-xs text-slate-400 uppercase tracking-wide">Traders</div>
+              <div className="text-2xl font-bold text-orion-cyan">50K+</div>
+              <div className="text-xs text-orion-slate-dark uppercase tracking-wide">Traders</div>
             </div>
           </div>
         </div>
@@ -121,36 +121,36 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/30">
-              <Zap className="h-7 w-7 text-[#00A3FF]" />
+            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orion-cyan/20 border border-orion-cyan/30">
+              <Zap className="h-7 w-7 text-orion-cyan" />
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-wider text-white">ORION</h1>
-              <p className="text-xs text-[#00A3FF] tracking-widest uppercase">Trading Agent Platform</p>
+              <p className="text-xs text-orion-cyan tracking-widest uppercase">Trading Agent Platform</p>
             </div>
           </div>
 
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-            <p className="text-slate-400">Access your trading dashboard</p>
+            <p className="text-orion-slate-dark">Access your trading dashboard</p>
           </div>
 
-          <div className="bg-[#0B0E11]/80 backdrop-blur-sm rounded-xl p-8 border border-white/10 shadow-2xl">
+          <div className="bg-orion-bg-secondary/80 backdrop-blur-sm rounded-xl p-8 border border-[rgba(255,255,255,0.08)] shadow-2xl">
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg flex items-start gap-3">
+                <div className="bg-orion-danger/10 border border-orion-danger/30 text-orion-danger px-4 py-3 rounded-lg flex items-start gap-3">
                   <Shield className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <span className="text-sm">{error}</span>
                 </div>
               )}
 
               <div>
-                <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                <label htmlFor="email" className="block text-xs font-semibold text-orion-slate mb-2 uppercase tracking-wider">
                   Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-slate-500" />
+                    <Mail className="h-5 w-5 text-orion-slate-dark" />
                   </div>
                   <input
                     id="email"
@@ -158,19 +158,19 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00A3FF]/50 focus:ring-2 focus:ring-[#00A3FF]/20 transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 bg-orion-bg-elevated border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-orion-slate-dark focus:outline-none focus:border-orion-cyan/50 focus:ring-2 focus:ring-orion-cyan/20 transition-all"
                     placeholder="your@email.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                <label htmlFor="password" className="block text-xs font-semibold text-orion-slate mb-2 uppercase tracking-wider">
                   Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-slate-500" />
+                    <Lock className="h-5 w-5 text-orion-slate-dark" />
                   </div>
                   <input
                     id="password"
@@ -178,7 +178,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-11 pr-4 py-3.5 bg-[#12141A] border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-[#00A3FF]/50 focus:ring-2 focus:ring-[#00A3FF]/20 transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 bg-orion-bg-elevated border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-orion-slate-dark focus:outline-none focus:border-orion-cyan/50 focus:ring-2 focus:ring-orion-cyan/20 transition-all"
                     placeholder="••••••••"
                   />
                 </div>
@@ -187,7 +187,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-[#00A3FF] to-[#0080FF] hover:from-[#0080FF] hover:to-[#00A3FF] text-white font-bold py-3.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#00A3FF]/20 hover:shadow-[#00A3FF]/40"
+                className="w-full bg-orion-cyan hover:bg-orion-cyan-bright text-white font-bold py-3.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-orion-cyan/20 hover:shadow-orion-cyan/40 glow-cyan-md hover:glow-cyan-lg"
               >
                 {isLoading ? (
                   <>
@@ -203,18 +203,18 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-slate-400 text-sm text-center">
+            <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.08)]">
+              <p className="text-orion-slate-dark text-sm text-center">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-[#00A3FF] hover:text-[#0080FF] font-semibold transition-colors">
+                <Link to="/register" className="text-orion-cyan hover:text-orion-cyan-bright font-semibold transition-colors">
                   Create Account →
                 </Link>
               </p>
             </div>
           </div>
 
-          <p className="text-center text-xs text-slate-500 mt-6">
-            Protected by enterprise-grade security • <span className="text-[#00A3FF]">SSL Encrypted</span>
+          <p className="text-center text-xs text-orion-slate-dark mt-6">
+            Protected by enterprise-grade security • <span className="text-orion-cyan">SSL Encrypted</span>
           </p>
         </div>
       </div>
