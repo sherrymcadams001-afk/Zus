@@ -5,99 +5,26 @@
  * using Workers AI (Llama-3) and stores them in KV.
  * Also provides API endpoints for user balance management
  * to integrate with broader platforms.
+ * 
+ * Now includes enterprise features:
+ * - User authentication and management
+ * - D1 database integration
+ * - Multi-user support
  */
 
-export interface Env {
-  TRADING_CACHE: KVNamespace;
-  AI: Ai;
-}
+import { Env } from './types';
+import { handleAuthRoutes } from './routes/auth';
+import { handleWalletRoutes } from './routes/wallet';
+import { handlePortfolioRoutes } from './routes/portfolio';
+import { BOT_TIERS, VALID_BOT_TIERS, getBotTierForStake, isValidBotTier, isValidStakeForTier } from './engine/BotTiers';
+import type { BotTier, BotTierConfig } from './types';
 
 interface NarrativeResponse {
   log: string;
   timestamp: number;
 }
 
-/**
- * Bot tier types for multi-tier trading system
- */
-type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
-
-/**
- * Bot tier configuration
- */
-interface BotTierConfig {
-  name: string;
-  hourlyRoiMin: number;  // Per trade hour (null for Omega which uses daily)
-  hourlyRoiMax: number;
-  dailyRoiMin: number;   // 8 trading hours × hourly rate
-  dailyRoiMax: number;
-  minimumStake: number;
-  tradingHoursPerDay: number;
-  tradingDaysPerWeek: number;
-  roiWithdrawalHours: number;    // Hours after investment
-  capitalWithdrawalDays: number; // Days after investment
-  investmentDurationDays: number;
-}
-
-/**
- * Bot tier configurations
- */
-const BOT_TIERS: Record<BotTier, BotTierConfig> = {
-  protobot: {
-    name: 'Protobot',
-    hourlyRoiMin: 0.001,    // 0.1%
-    hourlyRoiMax: 0.0012,   // 0.12%
-    dailyRoiMin: 0.008,     // 0.8% (8 hours × 0.1%)
-    dailyRoiMax: 0.0096,    // 0.96% (8 hours × 0.12%)
-    minimumStake: 100,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 40,
-    investmentDurationDays: 365,
-  },
-  chainpulse: {
-    name: 'Chainpulse Bot',
-    hourlyRoiMin: 0.0012,   // 0.12%
-    hourlyRoiMax: 0.0014,   // 0.14%
-    dailyRoiMin: 0.0096,    // 0.96% (8 hours × 0.12%)
-    dailyRoiMax: 0.0112,    // 1.12% (8 hours × 0.14%)
-    minimumStake: 4000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 45,
-    investmentDurationDays: 365,
-  },
-  titan: {
-    name: 'Titan Bot',
-    hourlyRoiMin: 0.0014,   // 0.14%
-    hourlyRoiMax: 0.0016,   // 0.16%
-    dailyRoiMin: 0.0112,    // 1.12% (8 hours × 0.14%)
-    dailyRoiMax: 0.0128,    // 1.28% (8 hours × 0.16%)
-    minimumStake: 25000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 65,
-    investmentDurationDays: 365,
-  },
-  omega: {
-    name: 'Omega Bot',
-    hourlyRoiMin: 0.00225,  // 0.225% per hour (1.8% / 8)
-    hourlyRoiMax: 0.00225,  // Fixed rate
-    dailyRoiMin: 0.018,     // 1.8% fixed
-    dailyRoiMax: 0.018,     // 1.8% fixed
-    minimumStake: 50000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 85,
-    investmentDurationDays: 365,
-  },
-};
-
-const VALID_BOT_TIERS: BotTier[] = ['protobot', 'chainpulse', 'titan', 'omega'];
+// Legacy bot tier types removed - now using types from ./types
 
 /**
  * User balance stored in KV
@@ -167,32 +94,6 @@ function isValidUserId(userId: string): boolean {
  */
 function isValidCurrency(currency: string): boolean {
   return SUPPORTED_CURRENCIES.includes(currency.toUpperCase());
-}
-
-/**
- * Validate bot tier
- * - Must be one of the valid bot tiers
- */
-function isValidBotTier(tier: string): tier is BotTier {
-  return VALID_BOT_TIERS.includes(tier as BotTier);
-}
-
-/**
- * Get the appropriate bot tier based on stake amount
- * Returns the highest tier the stake qualifies for
- */
-function getBotTierForStake(stakeAmount: number): BotTier {
-  if (stakeAmount >= BOT_TIERS.omega.minimumStake) return 'omega';
-  if (stakeAmount >= BOT_TIERS.titan.minimumStake) return 'titan';
-  if (stakeAmount >= BOT_TIERS.chainpulse.minimumStake) return 'chainpulse';
-  return 'protobot';
-}
-
-/**
- * Validate that stake meets minimum for selected tier
- */
-function isValidStakeForTier(stakeAmount: number, tier: BotTier): boolean {
-  return stakeAmount >= BOT_TIERS[tier].minimumStake;
 }
 
 /**
@@ -328,13 +229,28 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // CORS headers for frontend access
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Auth routes
+  if (url.pathname.startsWith('/api/auth/')) {
+    return handleAuthRoutes(request, env, url.pathname);
+  }
+
+  // Wallet routes
+  if (url.pathname.startsWith('/api/wallet')) {
+    return handleWalletRoutes(request, env, url.pathname);
+  }
+
+  // Portfolio routes
+  if (url.pathname.startsWith('/api/portfolio')) {
+    return handlePortfolioRoutes(request, env, url.pathname);
   }
 
   // API endpoint: GET /api/narrative
