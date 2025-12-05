@@ -13,6 +13,12 @@ preview_id = "d0853bad5d7b49a5a6a7f872180aae06"
 [ai]
 binding = "AI"
 
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "trading-platform"
+database_id = "preview-database-id" # Will be created on first deploy
+
 # Scheduled tasks (cron triggers)
 # Runs every minute (minimum production interval)
 [triggers]
