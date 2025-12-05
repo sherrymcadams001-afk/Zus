@@ -19,16 +19,16 @@ const OrderBookRow = memo(function OrderBookRow({ level, side, maxTotal }: Order
   const isBid = side === 'bid';
 
   return (
-    <div className="relative grid grid-cols-3 gap-1 px-2 py-0.5 text-[10px] tabular-nums font-mono cursor-pointer hover:bg-white/5">
+    <div className="relative grid grid-cols-3 gap-1 px-2 py-0.5 text-[10px] tabular-nums font-mono cursor-pointer hover:bg-orion-bg-hover">
       <div
-        className={`absolute inset-y-0 right-0 opacity-10 ${isBid ? 'bg-orion-neon-green' : 'bg-orion-neon-red'}`}
+        className={`absolute inset-y-0 right-0 opacity-10 ${isBid ? 'bg-orion-success' : 'bg-orion-danger'}`}
         style={{ width: `${depthPercent}%` }}
       />
-      <span className={`relative z-10 ${isBid ? 'text-orion-neon-green' : 'text-orion-neon-red'}`}>
+      <span className={`relative z-10 ${isBid ? 'text-orion-success' : 'text-orion-danger'}`}>
         {level.price.toFixed(2)}
       </span>
-      <span className="relative z-10 text-right text-slate-300">{level.quantity.toFixed(4)}</span>
-      <span className="relative z-10 text-right text-slate-500">{level.total.toFixed(2)}</span>
+      <span className="relative z-10 text-right text-orion-slate">{level.quantity.toFixed(4)}</span>
+      <span className="relative z-10 text-right text-orion-slate-dark">{level.total.toFixed(2)}</span>
     </div>
   );
 });
@@ -79,16 +79,16 @@ export function OrderBook() {
   const maxAskTotal = orderBook.asks[orderBook.asks.length - 1]?.total || 1;
 
   return (
-    <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden">
-      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3 bg-[#0B0E11]">
+    <div className="h-full flex flex-col rounded border border-[rgba(255,255,255,0.08)] bg-orion-bg overflow-hidden">
+      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-3 bg-orion-bg-secondary">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-3.5 w-3.5 text-orion-neon-cyan" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Order Book</span>
+          <BookOpen className="h-3.5 w-3.5 text-orion-cyan" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-orion-slate">Order Book</span>
         </div>
-        <MoreHorizontal className="h-3 w-3 text-slate-500" />
+        <MoreHorizontal className="h-3 w-3 text-orion-slate-dark" />
       </div>
 
-      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 text-[9px] font-semibold uppercase text-slate-500 bg-[#0B0E11]/50 border-b border-white/5">
+      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 text-[9px] font-semibold uppercase text-orion-slate-dark bg-orion-bg-secondary/50 border-b border-[rgba(255,255,255,0.08)]">
         <span>Price</span>
         <span className="text-right">Size</span>
         <span className="text-right">Total</span>
@@ -103,15 +103,15 @@ export function OrderBook() {
         </div>
 
         {/* Spread */}
-        <div className="h-6 flex-shrink-0 flex items-center justify-between border-y border-white/10 bg-[#0B0E11] px-2 text-[10px]">
+        <div className="h-6 flex-shrink-0 flex items-center justify-between border-y border-[rgba(255,255,255,0.08)] bg-orion-bg-secondary px-2 text-[10px]">
           <span className={`font-bold text-lg ${
             ticker && parseFloat(ticker.closePrice) >= parseFloat(ticker.openPrice) 
-              ? 'text-orion-neon-green' 
-              : 'text-orion-neon-red'
+              ? 'text-orion-cyan' 
+              : 'text-orion-danger'
           }`}>
             {currentPrice > 0 ? currentPrice.toFixed(2) : '---'}
           </span>
-          <span className="text-slate-500 text-[9px]">Spread: {((orderBook.asks[0]?.price || 0) - (orderBook.bids[0]?.price || 0)).toFixed(2)}</span>
+          <span className="text-orion-slate-dark text-[9px]">Spread: {((orderBook.asks[0]?.price || 0) - (orderBook.bids[0]?.price || 0)).toFixed(2)}</span>
         </div>
 
         {/* Bids */}

@@ -1,16 +1,52 @@
 @import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 @config '../tailwind.config.ts';
 
+/* ==============================================================================
+   ORION DESIGN SYSTEM - "Institutional Cybernetics"
+   Combining high-finance reliability with modern tech visual language
+   ============================================================================== */
+
 :root {
-  font-family: 'JetBrains Mono', monospace;
+  /* Primary Backgrounds - Deep Space */
+  --orion-bg: #0B0C10;
+  --orion-bg-secondary: #1F2833;
+  --orion-bg-elevated: #2A3140;
+  --orion-bg-hover: #343D4D;
+
+  /* Primary Accent - Electric Pulse */
+  --orion-cyan: #45A29E;
+  --orion-cyan-bright: #66FCF1;
+  --orion-cyan-glow: rgba(69, 162, 158, 0.4);
+
+  /* Secondary */
+  --orion-slate: #C5C6C7;
+  --orion-slate-dark: #8B8D8F;
+
+  /* Status Colors */
+  --orion-success: #10B981;
+  --orion-danger: #EF4444;
+  --orion-warning: #F59E0B;
+
+  /* Text */
+  --orion-text-primary: #FFFFFF;
+  --orion-text-secondary: #C5C6C7;
+  --orion-text-muted: #8B8D8F;
+
+  /* Borders */
+  --orion-border: rgba(255, 255, 255, 0.08);
+  --orion-border-hover: rgba(255, 255, 255, 0.15);
+  --orion-border-cyan: rgba(69, 162, 158, 0.3);
+
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #020408;
+  color: var(--orion-text-primary);
+  background-color: var(--orion-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,18 +60,125 @@ body {
   min-height: 100vh;
 }
 
+/* ==============================================================================
+   TYPOGRAPHY UTILITIES
+   ============================================================================== */
+
+/* Monospace for data/numbers */
+.font-data {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
 /* Tabular numbers for data alignment */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Flash animations for watchlist price updates - Compositor optimized */
+/* ==============================================================================
+   GLOW EFFECTS
+   ============================================================================== */
+
+/* Subtle glow - for accents */
+.glow-cyan {
+  box-shadow: 0 0 10px rgba(69, 162, 158, 0.4);
+}
+
+/* Medium glow - for buttons */
+.glow-cyan-md {
+  box-shadow: 0 0 20px rgba(69, 162, 158, 0.5);
+}
+
+/* Intense glow - for primary CTAs */
+.glow-cyan-lg {
+  box-shadow: 0 0 30px rgba(69, 162, 158, 0.6),
+              0 0 60px rgba(69, 162, 158, 0.3);
+}
+
+/* Success glow */
+.glow-success {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+/* Danger glow */
+.glow-danger {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+/* Pulsing glow animation */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(69, 162, 158, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(69, 162, 158, 0.6); }
+}
+
+.glow-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ==============================================================================
+   GLASSMORPHISM
+   ============================================================================== */
+
+.glass {
+  background: rgba(31, 40, 51, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--orion-border);
+}
+
+.glass-panel {
+  background: rgba(11, 14, 17, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(31, 40, 51, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--orion-border);
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--orion-border-hover);
+  box-shadow: 0 0 20px rgba(69, 162, 158, 0.1);
+}
+
+/* ==============================================================================
+   SHIMMER LOADING ANIMATION
+   ============================================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--orion-bg-secondary) 25%,
+    rgba(69, 162, 158, 0.1) 50%,
+    var(--orion-bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* ==============================================================================
+   FLASH ANIMATIONS FOR PRICE UPDATES
+   ============================================================================== */
+
 .flash-green {
-  background-color: rgba(0, 255, 148, 0.1);
+  background-color: rgba(16, 185, 129, 0.1);
 }
 
 .flash-red {
-  background-color: rgba(255, 0, 85, 0.1);
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* Cell flash for signal arrival */
@@ -48,24 +191,19 @@ body {
 }
 
 @keyframes cellFlashGreen {
-  0% { background-color: rgba(0, 255, 148, 0.2); }
+  0% { background-color: rgba(16, 185, 129, 0.2); }
   100% { background-color: transparent; }
 }
 
 @keyframes cellFlashRed {
-  0% { background-color: rgba(255, 0, 85, 0.2); }
+  0% { background-color: rgba(239, 68, 68, 0.2); }
   100% { background-color: transparent; }
 }
 
-/* Glassmorphism for panels */
-.glass-panel {
-  background: rgba(11, 14, 17, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
+/* ==============================================================================
+   LIVING MACHINE PULSE
+   ============================================================================== */
 
-/* Living machine pulse */
 @keyframes machinePulse {
   0%, 100% { opacity: 1; }
   25% { opacity: 0.95; }
@@ -77,16 +215,41 @@ body {
   animation: machinePulse 3s ease-in-out infinite;
 }
 
-/* Gradient depth bars for order book */
+/* ==============================================================================
+   STATUS INDICATOR PULSE
+   ============================================================================== */
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.status-pulse {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+/* ==============================================================================
+   GRADIENT DEPTH BARS FOR ORDER BOOK
+   ============================================================================== */
+
 .depth-bar-bid {
-  background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 148, 0.15) 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(16, 185, 129, 0.15) 100%);
 }
 
 .depth-bar-ask {
-  background: linear-gradient(270deg, transparent 0%, rgba(255, 0, 85, 0.15) 100%);
+  background: linear-gradient(270deg, transparent 0%, rgba(239, 68, 68, 0.15) 100%);
 }
 
-/* Marquee animation for MacroTicker */
+/* ==============================================================================
+   MARQUEE ANIMATION FOR MACROTICKER
+   ============================================================================== */
+
 .marquee-container {
   display: flex;
   overflow: hidden;
@@ -114,21 +277,134 @@ body {
   animation-play-state: paused;
 }
 
-/* Scrollbar styling */
+/* ==============================================================================
+   SCROLLBAR STYLING
+   ============================================================================== */
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0E11;
+  background: var(--orion-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E2329;
+  background: var(--orion-bg-secondary);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2B3139;
+  background: var(--orion-bg-elevated);
+}
+
+/* ==============================================================================
+   BUTTON UTILITIES
+   ============================================================================== */
+
+.btn-primary {
+  background-color: var(--orion-cyan);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--orion-cyan-bright);
+  box-shadow: 0 0 20px rgba(69, 162, 158, 0.5);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--orion-border-cyan);
+  color: var(--orion-cyan);
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background-color: rgba(69, 162, 158, 0.1);
+  border-color: var(--orion-cyan);
+  box-shadow: 0 0 15px rgba(69, 162, 158, 0.3);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--orion-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background-color: var(--orion-bg-hover);
+  color: var(--orion-text-primary);
+}
+
+/* ==============================================================================
+   INPUT UTILITIES
+   ============================================================================== */
+
+.input-terminal {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--orion-border);
+  padding: 0.5rem 0;
+  color: var(--orion-text-primary);
+  transition: all 0.2s ease;
+}
+
+.input-terminal:focus {
+  outline: none;
+  border-bottom-color: var(--orion-cyan);
+  box-shadow: 0 2px 10px rgba(69, 162, 158, 0.2);
+}
+
+.input-terminal.error {
+  border-bottom-color: var(--orion-danger);
+}
+
+/* ==============================================================================
+   CARD VARIANTS
+   ============================================================================== */
+
+.card-elevated {
+  background-color: var(--orion-bg-elevated);
+  border: 1px solid var(--orion-border);
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.card-elevated:hover {
+  border-color: var(--orion-border-hover);
+  transform: translateY(-2px);
+}
+
+/* ==============================================================================
+   PAGE TRANSITIONS
+   ============================================================================== */
+
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 0.3s ease-out;
+}
+
+/* ==============================================================================
+   NO SCROLLBAR UTILITY
+   ============================================================================== */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

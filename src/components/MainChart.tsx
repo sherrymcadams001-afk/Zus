@@ -4,10 +4,11 @@ import { useMarketStore, type Candle } from '../store/useMarketStore';
 import { streamEngine } from '../core/StreamEngine';
 import { BarChart3, Settings2 } from 'lucide-react';
 
-const CHART_UP_COLOR = '#00C087';
-const CHART_DOWN_COLOR = '#F6465D';
-const CHART_BG_COLOR = '#0B0E11';
-const CHART_TEXT_COLOR = '#848E9C';
+// Orion Design System Colors - Institutional Cybernetics
+const CHART_UP_COLOR = '#45A29E';    // Orion Cyan for up candles
+const CHART_DOWN_COLOR = '#8B8D8F';  // Slate gray for down candles
+const CHART_BG_COLOR = '#0B0C10';    // Deep Charcoal background
+const CHART_TEXT_COLOR = '#C5C6C7';  // Slate text
 
 function candleToChartData(candle: Candle): CandlestickData<Time> {
   return {
@@ -23,7 +24,7 @@ function candleToVolumeData(candle: Candle): HistogramData<Time> {
   return {
     time: (candle.time / 1000) as Time,
     value: candle.volume,
-    color: candle.close >= candle.open ? 'rgba(0, 192, 135, 0.2)' : 'rgba(246, 70, 93, 0.2)',
+    color: candle.close >= candle.open ? 'rgba(69, 162, 158, 0.2)' : 'rgba(139, 141, 143, 0.2)',
   };
 }
 
@@ -73,33 +74,33 @@ export function MainChart() {
         fontFamily: 'JetBrains Mono',
       },
       grid: {
-        vertLines: { color: '#161A1E' },
-        horzLines: { color: '#161A1E' },
+        vertLines: { color: '#1F2833' },
+        horzLines: { color: '#1F2833' },
       },
       crosshair: {
         mode: 1, // CrosshairMode.Normal
         vertLine: {
           width: 1,
-          color: '#2E3238',
+          color: '#2A3140',
           style: 3, // LineStyle.Dashed
-          labelBackgroundColor: '#2E3238',
+          labelBackgroundColor: '#2A3140',
         },
         horzLine: {
           width: 1,
-          color: '#2E3238',
+          color: '#2A3140',
           style: 3, // LineStyle.Dashed
-          labelBackgroundColor: '#2E3238',
+          labelBackgroundColor: '#2A3140',
         },
       },
       rightPriceScale: {
-        borderColor: '#161A1E',
+        borderColor: '#1F2833',
         scaleMargins: {
           top: 0.1,
           bottom: 0.2, // Make room for volume
         },
       },
       timeScale: {
-        borderColor: '#161A1E',
+        borderColor: '#1F2833',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 5,
@@ -143,7 +144,7 @@ export function MainChart() {
     });
 
     const smaSeries = chart.addSeries(LineSeries, {
-      color: '#2962FF',
+      color: '#45A29E',
       lineWidth: 2,
       crosshairMarkerVisible: false,
       visible: false,
@@ -245,24 +246,24 @@ export function MainChart() {
   }, [activeCandle, activeSymbol, historicalCandles]);
 
   return (
-    <div className="h-full flex flex-col rounded border border-white/5 bg-orion-panel overflow-hidden relative group">
+    <div className="h-full flex flex-col rounded border border-[rgba(255,255,255,0.08)] bg-orion-bg overflow-hidden relative group">
       {/* Chart Toolbar */}
-      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3 bg-[#0B0E11]">
+      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] px-3 bg-orion-bg-secondary">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-3.5 w-3.5 text-orion-neon-cyan" />
+            <BarChart3 className="h-3.5 w-3.5 text-orion-cyan" />
             <span className="text-xs font-bold text-white tracking-wide">{formatSymbolDisplay(activeSymbol)}</span>
             {activeCandle && (
               <div className="hidden md:flex items-center gap-2 text-[9px] font-mono ml-2">
-                <span className="text-slate-400">O:<span className="text-slate-200">{activeCandle.open.toFixed(2)}</span></span>
-                <span className="text-slate-400">H:<span className="text-slate-200">{activeCandle.high.toFixed(2)}</span></span>
-                <span className="text-slate-400">L:<span className="text-slate-200">{activeCandle.low.toFixed(2)}</span></span>
-                <span className="text-slate-400">C:<span className={activeCandle.close >= activeCandle.open ? 'text-orion-neon-green' : 'text-orion-neon-red'}>{activeCandle.close.toFixed(2)}</span></span>
+                <span className="text-orion-slate-dark">O:<span className="text-orion-slate">{activeCandle.open.toFixed(2)}</span></span>
+                <span className="text-orion-slate-dark">H:<span className="text-orion-slate">{activeCandle.high.toFixed(2)}</span></span>
+                <span className="text-orion-slate-dark">L:<span className="text-orion-slate">{activeCandle.low.toFixed(2)}</span></span>
+                <span className="text-orion-slate-dark">C:<span className={activeCandle.close >= activeCandle.open ? 'text-orion-cyan' : 'text-orion-danger'}>{activeCandle.close.toFixed(2)}</span></span>
               </div>
             )}
           </div>
           
-          <div className="h-3 w-px bg-white/10 hidden sm:block" />
+          <div className="h-3 w-px bg-[rgba(255,255,255,0.08)] hidden sm:block" />
           
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[150px] sm:max-w-none">
             {['1m', '5m', '15m', '1h', '4h', '1d'].map((tf) => (
@@ -271,8 +272,8 @@ export function MainChart() {
                 onClick={() => streamEngine.setChartInterval(tf)}
                 className={`px-1.5 py-0.5 text-[9px] font-medium rounded transition-colors flex-shrink-0 ${
                   activeInterval === tf 
-                    ? 'bg-white/10 text-orion-neon-cyan' 
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                    ? 'bg-orion-cyan/10 text-orion-cyan' 
+                    : 'text-orion-slate-dark hover:text-orion-slate hover:bg-orion-bg-hover'
                 }`}
               >
                 {tf.toUpperCase()}
@@ -280,9 +281,9 @@ export function MainChart() {
             ))}
           </div>
 
-          <div className="h-3 w-px bg-white/10 hidden sm:block" />
+          <div className="h-3 w-px bg-[rgba(255,255,255,0.08)] hidden sm:block" />
 
-          <div className="flex items-center gap-2 text-[9px] text-slate-500">
+          <div className="flex items-center gap-2 text-[9px] text-orion-slate-dark">
             <button 
               onClick={() => {
                 const newState = !showIndicators;
@@ -291,7 +292,7 @@ export function MainChart() {
                   smaSeriesRef.current.applyOptions({ visible: newState });
                 }
               }}
-              className={`hover:text-slate-300 transition-colors flex items-center gap-1 ${showIndicators ? 'text-orion-neon-cyan' : ''}`}
+              className={`hover:text-orion-slate transition-colors flex items-center gap-1 ${showIndicators ? 'text-orion-cyan' : ''}`}
             >
               <Settings2 className="h-3 w-3" />
               <span className="hidden sm:inline">SMA 20</span>
@@ -301,8 +302,8 @@ export function MainChart() {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className={`h-1.5 w-1.5 rounded-full ${klineConnected ? 'bg-orion-neon-green shadow-[0_0_4px_rgba(0,255,157,0.5)]' : 'bg-orion-neon-red'}`} />
-            <span className="text-[9px] font-medium text-slate-500">{klineConnected ? 'Realtime' : 'Disconnected'}</span>
+            <span className={`h-1.5 w-1.5 rounded-full ${klineConnected ? 'bg-orion-cyan shadow-[0_0_4px_rgba(69,162,158,0.5)]' : 'bg-orion-danger'}`} />
+            <span className="text-[9px] font-medium text-orion-slate-dark">{klineConnected ? 'Realtime' : 'Disconnected'}</span>
           </div>
         </div>
       </div>
@@ -313,10 +314,10 @@ export function MainChart() {
         
         {/* Loading / No Data State */}
         {historicalCandles.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0B0E11]/80 backdrop-blur-sm z-10 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center bg-orion-bg/80 backdrop-blur-sm z-10 pointer-events-none">
             <div className="flex flex-col items-center gap-2">
-              <div className="h-4 w-4 border-2 border-orion-neon-cyan border-t-transparent rounded-full animate-spin" />
-              <span className="text-[10px] text-slate-400">Loading Market Data...</span>
+              <div className="h-4 w-4 border-2 border-orion-cyan border-t-transparent rounded-full animate-spin" />
+              <span className="text-[10px] text-orion-slate-dark">Loading Market Data...</span>
             </div>
           </div>
         )}

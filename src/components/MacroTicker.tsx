@@ -102,19 +102,19 @@ export function MacroTicker() {
   const duplicatedItems = [...tickerItems, ...tickerItems];
 
   return (
-    <div className="h-full w-full bg-[#0B0E11] border-b border-white/5 flex items-center overflow-hidden relative">
-      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#0B0E11] to-transparent z-10" />
-      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#0B0E11] to-transparent z-10" />
+    <div className="h-full w-full bg-orion-bg-secondary border-b border-[rgba(255,255,255,0.05)] flex items-center overflow-hidden relative">
+      <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-orion-bg-secondary to-transparent z-10" />
+      <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-orion-bg-secondary to-transparent z-10" />
       
       <div className="flex items-center animate-marquee whitespace-nowrap">
         {duplicatedItems.map((item, idx) => (
-          <div key={`${item.symbol}-${idx}`} className="flex items-center gap-2 px-4 border-r border-white/5">
-            <span className="text-[10px] font-bold text-slate-300">{item.displayName}</span>
+          <div key={`${item.symbol}-${idx}`} className="flex items-center gap-2 px-4 border-r border-[rgba(255,255,255,0.05)]">
+            <span className="text-[10px] font-bold text-orion-slate">{item.displayName}</span>
             <span className="text-[10px] font-mono tabular-nums text-white">
               ${item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <div className={`flex items-center gap-0.5 text-[9px] font-medium transition-colors duration-150 ${
-              sellFlashActive ? 'text-orion-neon-red' : (item.change >= 0 ? 'text-orion-neon-green' : 'text-orion-neon-red')
+              sellFlashActive ? 'text-orion-danger' : (item.change >= 0 ? 'text-orion-success' : 'text-orion-danger')
             }`}>
               {item.change >= 0 ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
               <span>{Math.abs(item.change).toFixed(2)}%</span>

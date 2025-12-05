@@ -6,36 +6,100 @@ A Cloudflare Worker that generates AI-powered trading logs using Workers AI (Lla
 
 - **Workers AI**: Uses `@cf/meta/llama-3-8b-instruct` to generate realistic trading logs
 - **KV Storage**: Caches the latest log and stores user balances in `TRADING_CACHE` namespace
+- **D1 Database**: SQLite database for persistent data storage
 - **Cron Trigger**: Generates new logs every minute
 - **HTTP API**: Serves cached logs and user balance management via REST endpoints
 
-## Setup
+## Quick Start (Automated Setup)
+
+The easiest way to set up the Trading Agent Engine is using the automated setup script:
+
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Run the automated setup script
+./scripts/setup.sh
+```
+
+The setup script will:
+1. ✅ Check for Wrangler CLI and authenticate if needed
+2. ✅ Create the D1 database
+3. ✅ Automatically update `wrangler.toml` with the database ID
+4. ✅ Run database migrations
+
+## Manual Setup
+
+If you prefer to set up manually, follow these steps:
 
 ### Prerequisites
 
 1. [Cloudflare account](https://dash.cloudflare.com/sign-up)
 2. [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
 
-### Configuration
+### Step 1: Install Dependencies
 
-1. Create a KV namespace:
-   ```bash
-   wrangler kv:namespace create TRADING_CACHE
-   wrangler kv:namespace create TRADING_CACHE --preview
-   ```
+```bash
+cd backend
+npm install
+```
 
-2. Update `wrangler.toml` with your namespace IDs:
-   ```toml
-   [[kv_namespaces]]
-   binding = "TRADING_CACHE"
-   id = "your-production-namespace-id"
-   preview_id = "your-preview-namespace-id"
-   ```
+### Step 2: Authenticate with Cloudflare
+
+```bash
+wrangler login
+```
+
+### Step 3: Create the D1 Database
+
+```bash
+wrangler d1 create trading-platform
+```
+
+You will see output similar to:
+
+```
+✅ Successfully created DB 'trading-platform' in region WNAM
+Created your new D1 database.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trading-platform"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+```
+
+### Step 4: Update wrangler.toml
+
+Copy the `database_id` from the output above and update `wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "trading-platform"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Replace with your actual ID
+```
+
+### Step 5: Run Migrations
+
+```bash
+wrangler d1 execute trading-platform --file=migrations/0001_initial_schema.sql --remote
+```
+
+### Step 6: Create KV Namespace (if not exists)
+
+```bash
+wrangler kv:namespace create TRADING_CACHE
+wrangler kv:namespace create TRADING_CACHE --preview
+```
+
+Update `wrangler.toml` with the namespace IDs from the output.
 
 ### Development
 
 ```bash
-npm install
 npm run dev
 ```
 
@@ -43,6 +107,67 @@ npm run dev
 
 ```bash
 npm run deploy
+```
+
+## Troubleshooting
+
+### Error: `binding DB of type d1 must have a valid 'id' specified [code: 10021]`
+
+**Cause**: The `database_id` in `wrangler.toml` is not a valid D1 database UUID.
+
+**Solution**:
+1. Create the D1 database: `wrangler d1 create trading-platform`
+2. Copy the UUID from the output (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+3. Update `wrangler.toml` with the actual UUID
+4. Alternatively, run `./scripts/setup.sh` to automate this process
+
+### Error: `You must be logged in to use this command`
+
+**Cause**: Not authenticated with Cloudflare.
+
+**Solution**:
+```bash
+wrangler login
+```
+
+### Error: `Database not found`
+
+**Cause**: The D1 database doesn't exist or the database name doesn't match.
+
+**Solution**:
+1. List existing databases: `wrangler d1 list`
+2. Create the database if missing: `wrangler d1 create trading-platform`
+3. Verify the `database_name` in `wrangler.toml` matches
+
+### Error: `Migration failed`
+
+**Cause**: Migration may have already been applied or there's a syntax error.
+
+**Solution**:
+1. Check if the migration was already applied
+2. Verify SQL syntax in the migration file
+3. You can check the database state: `wrangler d1 execute trading-platform --command="SELECT name FROM sqlite_master WHERE type='table'" --remote`
+
+### KV Namespace Errors
+
+**Cause**: KV namespace not configured or doesn't exist.
+
+**Solution**:
+```bash
+# Create the namespace
+wrangler kv:namespace create TRADING_CACHE
+
+# Update wrangler.toml with the ID from the output
+```
+
+### Local Development Issues
+
+For local development without cloud resources:
+```bash
+# Start local dev server (uses local D1 and KV)
+npm run dev
+
+# This creates local `.wrangler` directory for local storage
 ```
 
 ## API Specification
