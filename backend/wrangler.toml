@@ -31,7 +31,7 @@ binding = "DB"
 database_name = "trading-platform"
 # TODO: Replace this placeholder with your actual D1 database UUID
 # You can also set the D1_DATABASE_ID environment variable as a fallback
-database_id = "YOUR_D1_DATABASE_ID_HERE"
+database_id = "6c7b7d64-5641-4b37-be0b-4e3ce1cbef06"
 
 # Scheduled tasks (cron triggers)
 # Runs every minute (minimum production interval)
