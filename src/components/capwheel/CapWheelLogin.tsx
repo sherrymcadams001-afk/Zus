@@ -12,6 +12,9 @@ import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { Github, Mail, KeyRound, Building2 } from 'lucide-react';
 
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const CapWheelLogin = () => {
   const navigate = useNavigate();
   const { setEnterpriseUser } = useCapWheel();
@@ -24,8 +27,7 @@ export const CapWheelLogin = () => {
     e.preventDefault();
     
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email || !emailRegex.test(email)) {
+    if (!email || !EMAIL_REGEX.test(email)) {
       setEmailError('Please enter a valid email address');
       return;
     }
