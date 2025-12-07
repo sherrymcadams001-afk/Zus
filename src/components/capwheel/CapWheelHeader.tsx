@@ -4,7 +4,7 @@
  * Enterprise header with market session indicator, UTC clock, and user profile
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CapWheelLogoStatic } from '../../assets/capwheel-logo';
 import { useCapWheel } from '../../contexts/CapWheelContext';
@@ -25,21 +25,20 @@ export const CapWheelHeader = () => {
   }, []);
 
   // Handle outside click to close user menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-    };
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setShowUserMenu(false);
+    }
+  }, []);
 
+  useEffect(() => {
     if (showUserMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showUserMenu]);
+  }, [showUserMenu, handleClickOutside]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {

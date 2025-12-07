@@ -5,7 +5,7 @@
  * Manages RWA positions, hedge metrics, and portfolio data
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
 // ========== Type Definitions ==========
@@ -187,6 +187,9 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
   const [marketSession, setMarketSession] = useState<MarketSession>(getCurrentMarketSession());
   const [enterpriseUser, setEnterpriseUser] = useState<EnterpriseUser | null>(null);
 
+  // Store base metrics for bounds calculation
+  const baseMetrics = useMemo(() => generateMockPortfolioMetrics(), []);
+
   // Update market session every minute
   useEffect(() => {
     const interval = setInterval(() => {
@@ -198,7 +201,6 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
 
   // Simulate live portfolio updates with bounds
   useEffect(() => {
-    const baseMetrics = generateMockPortfolioMetrics();
     const interval = setInterval(() => {
       setPortfolioMetrics((prev) => {
         const newDailyPnL = prev.dailyPnL + (Math.random() - 0.5) * 5000;
