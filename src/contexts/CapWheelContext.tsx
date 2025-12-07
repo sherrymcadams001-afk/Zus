@@ -267,6 +267,7 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
 
 // ========== Hook ==========
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCapWheel = () => {
   const context = useContext(CapWheelContext);
   if (context === undefined) {

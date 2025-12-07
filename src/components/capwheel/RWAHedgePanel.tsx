@@ -30,13 +30,12 @@ export const RWAHedgePanel = () => {
   };
 
   // Calculate donut segments
-  let currentAngle = -90; // Start from top
-  const segments = rwaPositions.map((position) => {
+  const segments = rwaPositions.reduce((acc, position) => {
     const percentage = position.allocation;
     const angle = (percentage / 100) * 360;
+    const currentAngle = acc.length === 0 ? -90 : acc[acc.length - 1].endAngle;
     const startAngle = currentAngle;
     const endAngle = currentAngle + angle;
-    currentAngle = endAngle;
 
     // Calculate arc path
     const startRad = (startAngle * Math.PI) / 180;
@@ -47,12 +46,16 @@ export const RWAHedgePanel = () => {
     const y2 = chartCenterY + chartRadius * Math.sin(endRad);
     const largeArc = angle > 180 ? 1 : 0;
 
-    return {
-      ...position,
-      path: `M ${chartCenterX} ${chartCenterY} L ${x1} ${y1} A ${chartRadius} ${chartRadius} 0 ${largeArc} 1 ${x2} ${y2} Z`,
-      color: rwaColors[position.type] || '#888',
-    };
-  });
+    return [
+      ...acc,
+      {
+        ...position,
+        path: `M ${chartCenterX} ${chartCenterY} L ${x1} ${y1} A ${chartRadius} ${chartRadius} 0 ${largeArc} 1 ${x2} ${y2} Z`,
+        color: rwaColors[position.type] || '#888',
+        endAngle, // Store for next iteration
+      },
+    ];
+  }, [] as Array<typeof rwaPositions[0] & { path: string; color: string; endAngle: number }>);
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
