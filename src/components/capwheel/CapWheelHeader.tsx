@@ -4,16 +4,17 @@
  * Enterprise header with market session indicator, UTC clock, and user profile
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CapWheelLogoStatic } from '../../assets/capwheel-logo';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { Clock, TrendingUp, User, LogOut, Settings } from 'lucide-react';
 
 export const CapWheelHeader = () => {
-  const { marketSession, enterpriseUser } = useCapWheel();
+  const { marketSession, enterpriseUser, portfolioMetrics } = useCapWheel();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,6 +23,23 @@ export const CapWheelHeader = () => {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Handle outside click to close user menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -104,16 +122,18 @@ export const CapWheelHeader = () => {
             <div className="flex items-center gap-2 px-4 py-2 bg-capwheel-surface rounded-lg border border-capwheel-border-subtle">
               <TrendingUp size={16} className="text-capwheel-gold" />
               <span className="text-sm font-mono font-semibold text-capwheel-profit">
-                +18.6%
+                +{portfolioMetrics.timeWeightedReturn.toFixed(1)}%
               </span>
               <span className="text-xs text-gray-500">TWR</span>
             </div>
           </div>
 
           {/* User Profile */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
+              aria-haspopup="true"
+              aria-expanded={showUserMenu}
               className="flex items-center gap-3 px-4 py-2 bg-capwheel-surface rounded-lg border border-capwheel-border-subtle hover:border-capwheel-gold transition-all duration-200"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-capwheel-gold to-capwheel-gold-light flex items-center justify-center">
@@ -152,11 +172,25 @@ export const CapWheelHeader = () => {
                 </div>
                 
                 <div className="p-2">
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150">
+                  <button 
+                    onClick={() => {
+                      // Placeholder for settings functionality
+                      console.log('Settings clicked');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150"
+                  >
                     <Settings size={16} />
                     Settings
                   </button>
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150">
+                  <button 
+                    onClick={() => {
+                      // Placeholder for sign out functionality
+                      console.log('Sign out clicked');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150"
+                  >
                     <LogOut size={16} />
                     Sign Out
                   </button>

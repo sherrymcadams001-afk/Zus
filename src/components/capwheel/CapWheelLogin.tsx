@@ -21,6 +21,14 @@ export const CapWheelLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      console.warn('Invalid email format');
+      return;
+    }
+    
     setIsLoading(true);
     
     // Simulate authentication
@@ -87,23 +95,26 @@ export const CapWheelLogin = () => {
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
               Email
             </label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@enterprise.com"
+              required
               className="w-full px-4 py-3 bg-capwheel-surface border border-capwheel-border-subtle rounded-lg focus:outline-none focus:border-capwheel-gold text-white placeholder-gray-500 transition-all duration-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
               Password
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

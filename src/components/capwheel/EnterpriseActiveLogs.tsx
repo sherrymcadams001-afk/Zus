@@ -153,6 +153,7 @@ export const EnterpriseActiveLogs = () => {
             <button
               key={f}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                 filter === f
                   ? 'bg-capwheel-gold text-capwheel-navy'
@@ -180,6 +181,8 @@ export const EnterpriseActiveLogs = () => {
               {/* Log Header */}
               <button
                 onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                aria-expanded={expandedLog === log.id}
+                aria-controls={`log-details-${log.id}`}
                 className="w-full p-4 flex items-center justify-between hover:bg-capwheel-surface-hover transition-all duration-150"
               >
                 <div className="flex items-center gap-4">
@@ -238,6 +241,7 @@ export const EnterpriseActiveLogs = () => {
               <AnimatePresence>
                 {expandedLog === log.id && log.details && (
                   <motion.div
+                    id={`log-details-${log.id}`}
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -268,7 +272,13 @@ export const EnterpriseActiveLogs = () => {
           <span className="font-mono">
             Showing {filteredLogs.length} of {logs.length} logs
           </span>
-          <button className="text-capwheel-gold hover:text-capwheel-gold-light transition-colors duration-150 font-medium">
+          <button 
+            onClick={() => {
+              // Placeholder for export functionality
+              console.log('Exporting logs...', logs);
+            }}
+            className="text-capwheel-gold hover:text-capwheel-gold-light transition-colors duration-150 font-medium"
+          >
             Export All →
           </button>
         </div>

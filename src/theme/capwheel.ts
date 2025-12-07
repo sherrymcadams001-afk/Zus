@@ -91,7 +91,7 @@ export const capwheelTheme = {
     '3xl': '4rem',   // 64px
   },
 
-  // Shadows - Diffused elevation (Glass & Steel principle)
+  // Shadows - Diffuse elevation (Glass & Steel principle)
   shadows: {
     // Subtle lift
     sm: '0 2px 8px rgba(0, 0, 0, 0.1)',

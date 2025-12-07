@@ -91,13 +91,15 @@ export const RWAHedgePanel = () => {
         </div>
         <button
           onClick={toggleAutoRebalance}
+          aria-pressed={hedgeMetrics.autoRebalanceEnabled}
+          aria-label={`Toggle auto-rebalance ${hedgeMetrics.autoRebalanceEnabled ? 'off' : 'on'}`}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 ${
             hedgeMetrics.autoRebalanceEnabled
               ? 'bg-capwheel-profit/10 border-capwheel-profit text-capwheel-profit'
               : 'bg-capwheel-surface border-capwheel-border-subtle text-gray-400 hover:border-capwheel-gold'
           }`}
         >
-          <RefreshCw size={16} className={hedgeMetrics.autoRebalanceEnabled ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={hedgeMetrics.isRebalancing ? 'animate-spin' : ''} />
           <span className="text-sm font-medium">
             Auto-Rebalance {hedgeMetrics.autoRebalanceEnabled ? 'ON' : 'OFF'}
           </span>
@@ -106,8 +108,16 @@ export const RWAHedgePanel = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Donut Chart */}
-        <div className="flex flex-col items-center justify-center">
-          <svg width="200" height="200" viewBox="0 0 200 200" className="transform -rotate-90">
+        <div className="flex flex-col items-center justify-center relative">
+          <svg 
+            width="200" 
+            height="200" 
+            viewBox="0 0 200 200" 
+            className="transform -rotate-90"
+            role="img"
+            aria-label="RWA allocation donut chart"
+          >
+            <title>RWA Allocation Distribution</title>
             {/* Background circle */}
             <circle
               cx={chartCenterX}
@@ -132,8 +142,8 @@ export const RWAHedgePanel = () => {
             ))}
           </svg>
 
-          {/* Center stats */}
-          <div className="text-center -mt-32 z-10">
+          {/* Center stats - using absolute positioning instead of negative margin */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
             <p className="text-sm text-gray-400 font-medium mb-1">Total RWA</p>
             <p className="text-2xl font-bold text-white font-mono">
               {formatCurrency(totalRWAValue)}

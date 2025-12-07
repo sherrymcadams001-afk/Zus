@@ -6,6 +6,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { useId } from 'react';
 
 interface CapWheelLogoProps {
   size?: number;
@@ -18,6 +19,9 @@ export const CapWheelLogo = ({
   className = '',
   animate = true 
 }: CapWheelLogoProps) => {
+  const gradientId = useId();
+  const glowId = useId();
+  
   return (
     <motion.svg
       width={size}
@@ -38,7 +42,7 @@ export const CapWheelLogo = ({
         cx="50"
         cy="50"
         r="45"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="2"
         fill="none"
         initial={animate ? { pathLength: 0, opacity: 0 } : undefined}
@@ -58,7 +62,7 @@ export const CapWheelLogo = ({
           y1="50"
           x2={50 + Math.cos((angle * Math.PI) / 180) * 35}
           y2={50 + Math.sin((angle * Math.PI) / 180) * 35}
-          stroke="url(#goldGradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth="1"
           opacity="0.3"
           initial={animate ? { pathLength: 0, opacity: 0 } : undefined}
@@ -74,7 +78,7 @@ export const CapWheelLogo = ({
       {/* "C" letterform */}
       <motion.path
         d="M 35 25 Q 25 25, 25 35 L 25 65 Q 25 75, 35 75"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="6"
         strokeLinecap="round"
         fill="none"
@@ -90,7 +94,7 @@ export const CapWheelLogo = ({
       {/* "W" letterform */}
       <motion.path
         d="M 52 30 L 57 70 L 62 50 L 67 70 L 72 30"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -106,14 +110,14 @@ export const CapWheelLogo = ({
 
       {/* Premium gold gradient definition */}
       <defs>
-        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#D4AF37" />
           <stop offset="50%" stopColor="#E5C158" />
           <stop offset="100%" stopColor="#D4AF37" />
         </linearGradient>
         
         {/* Glow filter for premium effect */}
-        <filter id="glow">
+        <filter id={glowId}>
           <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
           <feMerge>
             <feMergeNode in="coloredBlur"/>
@@ -132,6 +136,8 @@ export const CapWheelLogoStatic = ({
   size = 48, 
   className = '' 
 }: Omit<CapWheelLogoProps, 'animate'>) => {
+  const gradientId = useId();
+  
   return (
     <svg
       width={size}
@@ -145,7 +151,7 @@ export const CapWheelLogoStatic = ({
         cx="50"
         cy="50"
         r="45"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="2"
         fill="none"
       />
@@ -157,7 +163,7 @@ export const CapWheelLogoStatic = ({
           y1="50"
           x2={50 + Math.cos((angle * Math.PI) / 180) * 35}
           y2={50 + Math.sin((angle * Math.PI) / 180) * 35}
-          stroke="url(#goldGradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth="1"
           opacity="0.3"
         />
@@ -165,7 +171,7 @@ export const CapWheelLogoStatic = ({
 
       <path
         d="M 35 25 Q 25 25, 25 35 L 25 65 Q 25 75, 35 75"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="6"
         strokeLinecap="round"
         fill="none"
@@ -173,7 +179,7 @@ export const CapWheelLogoStatic = ({
 
       <path
         d="M 52 30 L 57 70 L 62 50 L 67 70 L 72 30"
-        stroke="url(#goldGradient)"
+        stroke={`url(#${gradientId})`}
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -181,7 +187,7 @@ export const CapWheelLogoStatic = ({
       />
 
       <defs>
-        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#D4AF37" />
           <stop offset="50%" stopColor="#E5C158" />
           <stop offset="100%" stopColor="#D4AF37" />

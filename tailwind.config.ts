@@ -57,10 +57,13 @@ const config: Config = {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       boxShadow: {
-        // Orion glows
+        // Orion glows - Subtle glow for accents
         'glow-cyan': '0 0 10px rgba(69, 162, 158, 0.4)',
+        // Medium glow - for buttons
         'glow-cyan-md': '0 0 20px rgba(69, 162, 158, 0.5)',
+        // Intense glow - for primary CTAs
         'glow-cyan-lg': '0 0 30px rgba(69, 162, 158, 0.6), 0 0 60px rgba(69, 162, 158, 0.3)',
+        // Status glows
         'glow-green': '0 0 15px rgba(16, 185, 129, 0.4)',
         'glow-red': '0 0 15px rgba(239, 68, 68, 0.4)',
         // CapWheel glows

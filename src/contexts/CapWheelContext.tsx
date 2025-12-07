@@ -24,6 +24,7 @@ export interface HedgeMetrics {
   cryptoAllocation: number; // Percentage of portfolio in crypto
   hedgeEfficiency: number; // 0-100 score
   autoRebalanceEnabled: boolean;
+  isRebalancing: boolean; // Whether rebalancing is currently active
   lastRebalance: string; // ISO date string
   targetHedgeRatio: number; // Target RWA percentage
 }
@@ -120,6 +121,7 @@ const generateMockHedgeMetrics = (): HedgeMetrics => ({
   cryptoAllocation: 40,
   hedgeEfficiency: 87.5,
   autoRebalanceEnabled: true,
+  isRebalancing: false,
   lastRebalance: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   targetHedgeRatio: 60,
 });
@@ -194,14 +196,30 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate live portfolio updates
+  // Simulate live portfolio updates with bounds
   useEffect(() => {
+    const baseMetrics = generateMockPortfolioMetrics();
     const interval = setInterval(() => {
-      setPortfolioMetrics((prev) => ({
-        ...prev,
-        dailyPnL: prev.dailyPnL + (Math.random() - 0.5) * 5000,
-        dailyPnLPercent: prev.dailyPnLPercent + (Math.random() - 0.5) * 0.1,
-      }));
+      setPortfolioMetrics((prev) => {
+        const newDailyPnL = prev.dailyPnL + (Math.random() - 0.5) * 5000;
+        const newDailyPnLPercent = prev.dailyPnLPercent + (Math.random() - 0.5) * 0.1;
+        
+        // Keep values within reasonable bounds (±50% of baseline)
+        const boundedDailyPnL = Math.max(
+          baseMetrics.dailyPnL * 0.5,
+          Math.min(baseMetrics.dailyPnL * 1.5, newDailyPnL)
+        );
+        const boundedDailyPnLPercent = Math.max(
+          baseMetrics.dailyPnLPercent * 0.5,
+          Math.min(baseMetrics.dailyPnLPercent * 1.5, newDailyPnLPercent)
+        );
+        
+        return {
+          ...prev,
+          dailyPnL: boundedDailyPnL,
+          dailyPnLPercent: boundedDailyPnLPercent,
+        };
+      });
     }, 5000);
     
     return () => clearInterval(interval);
