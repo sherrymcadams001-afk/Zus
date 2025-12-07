@@ -32,21 +32,42 @@ const config: Config = {
           'neon-red': '#EF4444',     // Updated to danger red
           'neon-blue': '#45A29E',    // Updated to match cyan
         },
+        // CapWheel Enterprise Theme
+        capwheel: {
+          navy: '#0A1628',
+          'navy-light': '#0F1E35',
+          'navy-dark': '#050B14',
+          gold: '#D4AF37',
+          'gold-light': '#E5C158',
+          'gold-dark': '#B89421',
+          electric: '#00D4FF',
+          'electric-light': '#33DDFF',
+          'electric-dark': '#00A8CC',
+          profit: '#00FF88',
+          loss: '#FF3366',
+          surface: '#111827',
+          'surface-elevated': '#1A2332',
+          'surface-hover': '#212D3F',
+          border: 'rgba(212, 175, 55, 0.2)',
+          'border-subtle': 'rgba(255, 255, 255, 0.08)',
+        },
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       boxShadow: {
-        // Subtle glow - for accents
+        // Orion glows
         'glow-cyan': '0 0 10px rgba(69, 162, 158, 0.4)',
-        // Medium glow - for buttons
         'glow-cyan-md': '0 0 20px rgba(69, 162, 158, 0.5)',
-        // Intense glow - for primary CTAs
         'glow-cyan-lg': '0 0 30px rgba(69, 162, 158, 0.6), 0 0 60px rgba(69, 162, 158, 0.3)',
-        // Status glows
         'glow-green': '0 0 15px rgba(16, 185, 129, 0.4)',
         'glow-red': '0 0 15px rgba(239, 68, 68, 0.4)',
+        // CapWheel glows
+        'capwheel-glow-gold': '0 0 20px rgba(212, 175, 55, 0.4), 0 0 40px rgba(212, 175, 55, 0.2)',
+        'capwheel-glow-electric': '0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(0, 212, 255, 0.15)',
+        'capwheel-card': '0 4px 16px rgba(0, 0, 0, 0.15), 0 0 1px rgba(212, 175, 55, 0.1)',
+        'capwheel-rim': 'inset 0 1px 1px rgba(255, 255, 255, 0.08)',
       },
       animation: {
         'pulse-machine': 'pulseMachine 2s ease-in-out infinite',

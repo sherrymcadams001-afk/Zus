@@ -408,3 +408,104 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ==============================================================================
+   CAPWHEEL ENTERPRISE UTILITIES - "Glass & Steel" Aesthetic
+   ============================================================================== */
+
+/* Premium glass card with gold border */
+.capwheel-card {
+  background: rgba(26, 35, 50, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 
+              0 0 1px rgba(212, 175, 55, 0.1),
+              inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0.1, 1);
+}
+
+.capwheel-card:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2),
+              0 0 2px rgba(212, 175, 55, 0.2),
+              inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Gold glow effect */
+.capwheel-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4),
+              0 0 40px rgba(212, 175, 55, 0.2);
+}
+
+.capwheel-glow-pulse {
+  animation: capwheelGlowPulse 2s ease-in-out infinite;
+}
+
+@keyframes capwheelGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4),
+                0 0 40px rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.6),
+                0 0 60px rgba(212, 175, 55, 0.3);
+  }
+}
+
+/* Gold text gradient */
+.capwheel-text-gradient {
+  background: linear-gradient(135deg, #D4AF37 0%, #E5C158 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium gradient backgrounds */
+.capwheel-gradient-navy {
+  background: linear-gradient(135deg, #0A1628 0%, #0F1E35 100%);
+}
+
+.capwheel-gradient-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #E5C158 50%, #D4AF37 100%);
+}
+
+.capwheel-gradient-electric {
+  background: linear-gradient(135deg, #00D4FF 0%, #33DDFF 100%);
+}
+
+/* Jet-glide entrance animation */
+@keyframes capwheelEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.capwheel-enter {
+  animation: capwheelEnter 0.2s cubic-bezier(0.2, 0, 0.1, 1);
+}
+
+/* Status indicators with CapWheel styling */
+.capwheel-status-profit {
+  color: #00FF88;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.capwheel-status-loss {
+  color: #FF3366;
+  text-shadow: 0 0 8px rgba(255, 51, 102, 0.3);
+}
+
+/* Frosted overlay for modals/headers */
+.capwheel-frosted {
+  background: rgba(10, 22, 40, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
