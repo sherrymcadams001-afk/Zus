@@ -30,32 +30,34 @@ export const RWAHedgePanel = () => {
   };
 
   // Calculate donut segments
-  const segments = rwaPositions.reduce((acc, position) => {
-    const percentage = position.allocation;
-    const angle = (percentage / 100) * 360;
-    const currentAngle = acc.length === 0 ? -90 : acc[acc.length - 1].endAngle;
-    const startAngle = currentAngle;
-    const endAngle = currentAngle + angle;
+  const segments = rwaPositions.reduce<Array<typeof rwaPositions[0] & { path: string; color: string; endAngle: number }>>(
+    (acc, position, index) => {
+      const percentage = position.allocation;
+      const angle = (percentage / 100) * 360;
+      const currentAngle = index === 0 ? -90 : acc[index - 1].endAngle;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
 
-    // Calculate arc path
-    const startRad = (startAngle * Math.PI) / 180;
-    const endRad = (endAngle * Math.PI) / 180;
-    const x1 = chartCenterX + chartRadius * Math.cos(startRad);
-    const y1 = chartCenterY + chartRadius * Math.sin(startRad);
-    const x2 = chartCenterX + chartRadius * Math.cos(endRad);
-    const y2 = chartCenterY + chartRadius * Math.sin(endRad);
-    const largeArc = angle > 180 ? 1 : 0;
+      // Calculate arc path
+      const startRad = (startAngle * Math.PI) / 180;
+      const endRad = (endAngle * Math.PI) / 180;
+      const x1 = chartCenterX + chartRadius * Math.cos(startRad);
+      const y1 = chartCenterY + chartRadius * Math.sin(startRad);
+      const x2 = chartCenterX + chartRadius * Math.cos(endRad);
+      const y2 = chartCenterY + chartRadius * Math.sin(endRad);
+      const largeArc = angle > 180 ? 1 : 0;
 
-    return [
-      ...acc,
-      {
+      acc.push({
         ...position,
         path: `M ${chartCenterX} ${chartCenterY} L ${x1} ${y1} A ${chartRadius} ${chartRadius} 0 ${largeArc} 1 ${x2} ${y2} Z`,
         color: rwaColors[position.type] || '#888',
-        endAngle, // Store for next iteration
-      },
-    ];
-  }, [] as Array<typeof rwaPositions[0] & { path: string; color: string; endAngle: number }>);
+        endAngle,
+      });
+      
+      return acc;
+    },
+    []
+  );
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {

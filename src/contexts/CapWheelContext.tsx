@@ -204,15 +204,14 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
         const newDailyPnL = prev.dailyPnL + (Math.random() - 0.5) * 5000;
         const newDailyPnLPercent = prev.dailyPnLPercent + (Math.random() - 0.5) * 0.1;
         
-        // Keep values within reasonable bounds (±50% of baseline)
-        const boundedDailyPnL = Math.max(
-          baseMetrics.dailyPnL * 0.5,
-          Math.min(baseMetrics.dailyPnL * 1.5, newDailyPnL)
-        );
-        const boundedDailyPnLPercent = Math.max(
-          baseMetrics.dailyPnLPercent * 0.5,
-          Math.min(baseMetrics.dailyPnLPercent * 1.5, newDailyPnLPercent)
-        );
+        // Keep values within reasonable absolute bounds
+        const maxPnL = Math.abs(baseMetrics.dailyPnL) * 1.5;
+        const minPnL = baseMetrics.dailyPnL >= 0 ? -maxPnL : -Math.abs(baseMetrics.dailyPnL) * 0.5;
+        const boundedDailyPnL = Math.max(minPnL, Math.min(maxPnL, newDailyPnL));
+        
+        const maxPnLPercent = Math.abs(baseMetrics.dailyPnLPercent) * 1.5;
+        const minPnLPercent = baseMetrics.dailyPnLPercent >= 0 ? -maxPnLPercent : -Math.abs(baseMetrics.dailyPnLPercent) * 0.5;
+        const boundedDailyPnLPercent = Math.max(minPnLPercent, Math.min(maxPnLPercent, newDailyPnLPercent));
         
         return {
           ...prev,

@@ -174,8 +174,7 @@ export const CapWheelHeader = () => {
                 <div className="p-2">
                   <button 
                     onClick={() => {
-                      // Placeholder for settings functionality
-                      console.log('Settings clicked');
+                      // TODO: Implement settings functionality
                       setShowUserMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150"
@@ -185,8 +184,7 @@ export const CapWheelHeader = () => {
                   </button>
                   <button 
                     onClick={() => {
-                      // Placeholder for sign out functionality
-                      console.log('Sign out clicked');
+                      // TODO: Implement sign out functionality
                       setShowUserMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-capwheel-surface-hover rounded transition-all duration-150"

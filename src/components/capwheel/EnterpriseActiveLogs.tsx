@@ -275,7 +275,7 @@ export const EnterpriseActiveLogs = () => {
           <button 
             onClick={() => {
               // Placeholder for export functionality
-              console.log('Exporting logs...', logs);
+              // TODO: Implement proper export logic
             }}
             className="text-capwheel-gold hover:text-capwheel-gold-light transition-colors duration-150 font-medium"
           >

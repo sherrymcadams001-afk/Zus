@@ -18,6 +18,7 @@ export const CapWheelLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,10 +26,11 @@ export const CapWheelLogin = () => {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
-      console.warn('Invalid email format');
+      setEmailError('Please enter a valid email address');
       return;
     }
     
+    setEmailError('');
     setIsLoading(true);
     
     // Simulate authentication
@@ -102,11 +104,19 @@ export const CapWheelLogin = () => {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError('');
+              }}
               placeholder="user@enterprise.com"
               required
-              className="w-full px-4 py-3 bg-capwheel-surface border border-capwheel-border-subtle rounded-lg focus:outline-none focus:border-capwheel-gold text-white placeholder-gray-500 transition-all duration-200"
+              className={`w-full px-4 py-3 bg-capwheel-surface border rounded-lg focus:outline-none text-white placeholder-gray-500 transition-all duration-200 ${
+                emailError ? 'border-capwheel-loss focus:border-capwheel-loss' : 'border-capwheel-border-subtle focus:border-capwheel-gold'
+              }`}
             />
+            {emailError && (
+              <p className="mt-1 text-sm text-capwheel-loss">{emailError}</p>
+            )}
           </div>
 
           <div>
