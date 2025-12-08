@@ -240,5 +240,6 @@ export const formatCurrency = (value: number, showCents = true): string => {
  * Format percentage with consistent style
  */
 export const formatPercent = (value: number, decimals = 2): string => {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%`;
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(decimals)}%`;
 };

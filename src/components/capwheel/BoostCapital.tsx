@@ -233,8 +233,8 @@ export const BoostCapitalButton = ({ variant = 'primary', className = '' }: Boos
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
-          // Refresh dashboard data
-          window.location.reload();
+          // Close modal and let polling refresh the data
+          setIsModalOpen(false);
         }}
       />
     </>

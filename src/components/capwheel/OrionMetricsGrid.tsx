@@ -22,8 +22,8 @@ interface MetricCardProps {
 
 const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, delay = 0, isLoading = false }: MetricCardProps) => {
   const subColors = {
-    green: `text-[${ORION_COLORS.primary}]`,
-    red: `text-[${ORION_COLORS.danger}]`,
+    green: 'text-[#00FF9D]',
+    red: 'text-[#FF4444]',
     neutral: 'text-slate-400',
   };
 
@@ -32,12 +32,12 @@ const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, d
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: ORION_MOTION.duration.normal / 1000, delay, ease: ORION_MOTION.easing.default }}
-      className={`bg-[${ORION_COLORS.background.panel}] border border-white/5 rounded-lg p-4 hover:border-[${ORION_COLORS.primary}]/20 transition-colors active:scale-[0.98]`}
+      className="bg-[#0F1419] border border-white/5 rounded-lg p-4 hover:border-[#00FF9D]/20 transition-colors active:scale-[0.98]"
     >
       <div className="flex items-start justify-between mb-2">
         <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{title}</span>
         {icon && (
-          <span className={`p-1 rounded bg-[${ORION_COLORS.primary}]/10 text-[${ORION_COLORS.primary}]`}>
+          <span className="p-1 rounded bg-[#00FF9D]/10 text-[#00FF9D]">
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : icon}
           </span>
         )}
