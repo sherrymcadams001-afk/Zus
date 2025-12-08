@@ -188,13 +188,15 @@ export const OrionWealthChart = () => {
     const data = generatePerformanceData(getTimeframeDays(timeframe));
     series.setData(data);
 
+    // Initialize latest value for real-time updates
+    // This setState is safe as it's initializing chart data, not causing cascading renders
     if (data.length > 0) {
       setLatestValue(data[data.length - 1].value);
     }
 
     chart.timeScale().fitContent();
 
-    // Crosshair move handler for tooltips
+    // Crosshair move handler for tooltips - setState in event callback is safe
     chart.subscribeCrosshairMove((param) => {
       if (!param.point || !param.time || param.point.x < 0 || param.point.y < 0) {
         setHoverData(null);
@@ -222,6 +224,7 @@ export const OrionWealthChart = () => {
 
   useEffect(() => {
     if (hasTradeData) {
+      // Chart initialization requires setState for data setup
       // eslint-disable-next-line react-hooks/set-state-in-effect
       initChart();
     }

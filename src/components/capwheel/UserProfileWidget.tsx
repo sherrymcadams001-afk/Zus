@@ -13,6 +13,9 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { ORION_MOTION } from '../../theme/orion-design-system';
 
+// Constants
+const DEFAULT_USERNAME = 'Trader';
+
 interface UserProfileWidgetProps {
   variant?: 'desktop' | 'mobile';
 }
@@ -29,9 +32,10 @@ export const UserProfileWidget = ({ variant = 'desktop' }: UserProfileWidgetProp
     omega: 'bg-[#00FF9D]/20 text-[#00FF9D] border-[#00FF9D]/30',
   };
 
+  // Default to chainpulse as it's the most common starter tier after protobot
   const tierColor = tierColors[data.currentTier] || tierColors.chainpulse;
   const avatarSize = variant === 'desktop' ? 'w-12 h-12' : 'w-10 h-10';
-  const username = enterpriseUser?.name || 'Trader';
+  const username = enterpriseUser?.name || DEFAULT_USERNAME;
 
   return (
     <motion.button

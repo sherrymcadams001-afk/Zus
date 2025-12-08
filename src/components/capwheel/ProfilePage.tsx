@@ -12,13 +12,19 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Save, Award, Lock, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Camera, Save, Award, Lock, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { BOT_TIERS } from '../../core/DataOrchestrator';
 import type { BotTier } from '../../core/DataOrchestrator';
 import { ORION_MOTION } from '../../theme/orion-design-system';
+
+// Constants for fallback values
+const DEFAULT_USERNAME = 'Trader';
+const DEFAULT_EMAIL = 'trader@capwheel.io';
+const MAX_AVATAR_SIZE_MB = 2;
+const MAX_AVATAR_SIZE_BYTES = MAX_AVATAR_SIZE_MB * 1024 * 1024;
 
 interface TierCardProps {
   tier: BotTier;
@@ -146,9 +152,11 @@ export const ProfilePage = () => {
   const { data } = useDashboardData({ pollingInterval: 60000 });
   const { enterpriseUser } = useCapWheel();
 
-  const [username, setUsername] = useState(enterpriseUser?.name || 'Trader');
+  const [username, setUsername] = useState(enterpriseUser?.name || DEFAULT_USERNAME);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const tiers: BotTier[] = ['protobot', 'chainpulse', 'titan', 'omega'];
 
@@ -156,15 +164,17 @@ export const ProfilePage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image size must be less than 2MB');
+    setUploadError(null);
+
+    // Validate file size
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      setUploadError(`Image size must be less than ${MAX_AVATAR_SIZE_MB}MB`);
       return;
     }
 
     // Validate file type
     if (!file.type.match(/^image\/(jpeg|png)$/)) {
-      alert('Only JPG and PNG images are allowed');
+      setUploadError('Only JPG and PNG images are allowed');
       return;
     }
 
@@ -178,6 +188,7 @@ export const ProfilePage = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveSuccess(false);
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -189,32 +200,50 @@ export const ProfilePage = () => {
     // });
     
     setIsSaving(false);
-    alert('Profile updated successfully!');
+    setSaveSuccess(true);
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   return (
     <div className="min-h-screen bg-[#0B1015] text-white">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#0B1015]/95 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/capwheel/dashboard')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm font-medium">Back to Dashboard</span>
-          </button>
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/capwheel/dashboard')}
+              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Back to Dashboard</span>
+            </button>
 
-          <h1 className="text-xl font-bold">Profile Settings</h1>
+            <h1 className="text-xl font-bold">Profile Settings</h1>
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00FF9D] text-black font-semibold rounded-lg hover:bg-[#00FF9D]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-[#00FF9D] text-black font-semibold rounded-lg hover:bg-[#00FF9D]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <Save className="w-4 h-4" />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+
+          {/* Success Message */}
+          {saveSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-3 flex items-center gap-2 px-4 py-2 bg-[#00FF9D]/10 border border-[#00FF9D]/30 rounded-lg text-[#00FF9D] text-sm"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>Profile updated successfully!</span>
+            </motion.div>
+          )}
         </div>
       </header>
 
@@ -233,31 +262,41 @@ export const ProfilePage = () => {
             {/* Avatar Upload */}
             <div>
               <label className="block text-sm text-slate-400 mb-3">Profile Avatar</label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center overflow-hidden">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-3xl font-bold text-black">
-                        {username.charAt(0).toUpperCase()}
-                      </span>
-                    )}
+              <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center overflow-hidden">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-3xl font-bold text-black">
+                          {username.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <label className="absolute bottom-0 right-0 p-2 bg-[#00FF9D] rounded-full cursor-pointer hover:bg-[#00FF9D]/90 transition-colors">
+                      <Camera className="w-4 h-4 text-black" />
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                  <label className="absolute bottom-0 right-0 p-2 bg-[#00FF9D] rounded-full cursor-pointer hover:bg-[#00FF9D]/90 transition-colors">
-                    <Camera className="w-4 h-4 text-black" />
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png"
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="text-xs text-slate-500">
+                    <p>JPG or PNG, max {MAX_AVATAR_SIZE_MB}MB</p>
+                    <p>Recommended: 200x200px</p>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500">
-                  <p>JPG or PNG, max 2MB</p>
-                  <p>Recommended: 200x200px</p>
-                </div>
+                
+                {/* Upload Error */}
+                {uploadError && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -278,7 +317,7 @@ export const ProfilePage = () => {
               <label className="block text-sm text-slate-400 mb-3">Email</label>
               <input
                 type="email"
-                value={enterpriseUser?.email || 'trader@capwheel.io'}
+                value={enterpriseUser?.email || DEFAULT_EMAIL}
                 disabled
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-slate-400 cursor-not-allowed"
               />
