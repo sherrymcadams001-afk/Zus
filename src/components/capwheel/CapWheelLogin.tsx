@@ -17,61 +17,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { Lock, ArrowLeft, ArrowRight, Shield, Check } from 'lucide-react';
+import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { authAPI } from '../../api/auth';
 
 type AuthStep = 'email' | 'password' | 'register-password';
 type AuthMode = 'login' | 'register';
 
-/**
- * CapWheel Logo - Custom SVG mark
- * A wheel/capital "C" fusion representing capital rotation
- */
-const CapWheelLogo = ({ className = '' }: { className?: string }) => (
-  <svg
-    viewBox="0 0 48 48"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    aria-label="CapWheel Logo"
-  >
-    {/* Outer ring - represents continuous capital flow */}
-    <circle
-      cx="24"
-      cy="24"
-      r="20"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeDasharray="4 2"
-      className="text-slate-600"
-    />
-    {/* Inner dynamic wheel - 4 spokes for stability */}
-    <circle
-      cx="24"
-      cy="24"
-      r="14"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      className="text-emerald-500"
-    />
-    {/* Capital "C" integrated into wheel */}
-    <path
-      d="M30 16C27.5 14 25 13.5 22 14C17 15.5 14 20 14 24C14 28 17 32.5 22 34C25 34.5 27.5 34 30 32"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      className="text-white"
-    />
-    {/* Center node - decision point */}
-    <circle
-      cx="24"
-      cy="24"
-      r="3"
-      fill="currentColor"
-      className="text-emerald-500"
-    />
-  </svg>
-);
+// Logo imported from ../../assets/capwheel-logo (ORION-styled neon green glow)
 
 export const CapWheelLogin = () => {
   const navigate = useNavigate();
@@ -245,9 +197,9 @@ export const CapWheelLogin = () => {
       >
         {/* Header Section - P9 Spacing: 32px padding top */}
         <div className="px-10 pt-10 pb-0">
-          {/* Logo */}
+          {/* Logo - ORION-styled with neon glow */}
           <div className="flex justify-center mb-6">
-            <CapWheelLogo className="h-14 w-14" />
+            <CapWheelLogo size={56} animate={true} />
           </div>
 
           {/* Brand Name - P4 Hierarchy: Largest text */}
