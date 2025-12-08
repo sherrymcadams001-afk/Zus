@@ -5,8 +5,9 @@
  * Part of the Orion Design System - "Institutional Cybernetics"
  */
 
-import { Bell, User, ChevronDown, Zap } from 'lucide-react';
+import { Bell, User, ChevronDown } from 'lucide-react';
 import { StatusIndicator, type StatusType } from '../ui/StatusIndicator';
+import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -46,15 +47,13 @@ export function Header({
     >
       {/* Left: Logo */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center h-8 w-8 rounded bg-orion-cyan/10 border border-orion-cyan/20">
-          <Zap className="h-5 w-5 text-orion-cyan" />
-        </div>
+        <CapWheelLogo size={36} animate={false} />
         <div className="flex flex-col">
           <h1 className="text-sm font-bold tracking-widest text-white leading-none">
-            TRADING <span className="text-orion-cyan">AGENT</span>
+            CAP<span className="text-[#00FF9D]">WHEEL</span>
           </h1>
           <span className="text-[9px] uppercase tracking-widest text-orion-slate-dark leading-none mt-1">
-            Autonomous Trading System
+            Institutional Capital Intelligence
           </span>
         </div>
       </div>
