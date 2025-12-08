@@ -1,0 +1,117 @@
+import { create } from 'zustand';
+
+export interface Trade {
+  id: number;
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  price: number;
+  quantity: number;
+  pnl: number;
+  timestamp: number;
+}
+
+export interface LogEntry {
+  id: number;
+  timestamp: number;
+  message: string;
+  type: 'trade' | 'signal' | 'system';
+}
+
+interface PortfolioState {
+  // Core Values
+  walletBalance: number;
+  poolBalance: number;
+  totalEquity: number;
+  sessionPnL: number;
+  startOfDayEquity: number;
+  startOfDayWalletBalance: number;
+  
+  // Flash state for sell events
+  lastSellTimestamp: number | null;
+  
+  // History
+  trades: Trade[];
+  logs: LogEntry[];
+  
+  // Actions
+  addTrade: (trade: Omit<Trade, 'id' | 'timestamp'>) => void;
+  addLog: (message: string, type: LogEntry['type']) => void;
+  updateBalances: (walletDelta: number, poolDelta: number) => void;
+  setEquity: (equity: number) => void;
+  setWalletBalance: (balance: number) => void;
+  resetDailyEquity: (walletBalance: number) => void;
+  clearSellFlash: () => void;
+}
+
+export const usePortfolioStore = create<PortfolioState>((set, get) => ({
+  walletBalance: 10000.00, // Simulated user funds (can be set via API)
+  poolBalance: 142500000.00, // Large liquidity pool
+  totalEquity: 142510000.00,
+  sessionPnL: 0.00,
+  startOfDayEquity: 142510000.00, // Baseline for daily target
+  startOfDayWalletBalance: 10000.00, // User's balance at start of day for profit calculation
+  lastSellTimestamp: null,
+  trades: [],
+  logs: [],
+
+  setWalletBalance: (balance) => set((state) => ({ 
+    walletBalance: balance,
+    totalEquity: balance + state.poolBalance,
+  })),
+
+  resetDailyEquity: (walletBalance) => set((state) => ({
+    startOfDayEquity: walletBalance + state.poolBalance,
+    startOfDayWalletBalance: walletBalance,
+    sessionPnL: 0,
+  })),
+
+  addTrade: (tradeData) => {
+    const state = get();
+    const pnl = Number(tradeData.pnl);
+    const newTrade: Trade = {
+      ...tradeData,
+      id: Date.now(),
+      timestamp: Date.now(),
+      pnl,
+    };
+    
+    // Update PnL based on trade result
+    const newPnL = state.sessionPnL + pnl;
+    
+    // Track sell timestamp for flash effect
+    const isSell = tradeData.side === 'SELL';
+    
+    // Update balances (Zero-sum: User profit = Pool loss, User loss = Pool profit)
+    set((state) => ({
+      trades: [newTrade, ...state.trades].slice(0, 50),
+      sessionPnL: newPnL,
+      walletBalance: state.walletBalance + pnl,
+      poolBalance: state.poolBalance - pnl,
+      totalEquity: state.totalEquity + pnl,
+      lastSellTimestamp: isSell ? Date.now() : state.lastSellTimestamp,
+    }));
+  },
+
+  addLog: (message, type) => {
+    set((state) => ({
+      logs: [{
+        id: Date.now(),
+        timestamp: Date.now(),
+        message,
+        type
+      }, ...state.logs].slice(0, 50)
+    }));
+  },
+
+  updateBalances: (walletDelta, poolDelta) => {
+    set((state) => ({
+      walletBalance: state.walletBalance + walletDelta,
+      poolBalance: state.poolBalance + poolDelta,
+      totalEquity: state.totalEquity + walletDelta + poolDelta
+    }));
+  },
+
+  setEquity: (equity) => set({ totalEquity: equity }),
+  
+  clearSellFlash: () => set({ lastSellTimestamp: null }),
+}));
