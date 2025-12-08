@@ -8,7 +8,7 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Users, Clock, ArrowUpRight, Percent, Loader2 } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { ORION_COLORS, ORION_MOTION } from '../../theme/orion-design-system';
+import { ORION_MOTION } from '../../theme/orion-design-system';
 
 interface MetricCardProps {
   title: string;
