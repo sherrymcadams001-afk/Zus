@@ -10,7 +10,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  TrendingUp,
+  User,
   ChevronDown,
   Wallet,
   PieChart,
@@ -159,9 +159,9 @@ export const OrionSidebar = () => {
             label="Dashboard"
           />
           <NavItem
-            to="/capwheel/markets"
-            icon={<TrendingUp className="w-4 h-4" />}
-            label="Live Markets"
+            to="/capwheel/profile"
+            icon={<User className="w-4 h-4" />}
+            label="Profile"
           />
           <NavItem
             to="/capwheel/trading"

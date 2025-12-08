@@ -11,7 +11,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   X,
   LayoutDashboard,
-  TrendingUp,
+  User,
   Wallet,
   PieChart,
   ArrowRightLeft,
@@ -241,9 +241,9 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
                   onClick={onClose}
                 />
                 <NavItem
-                  to="/capwheel/markets"
-                  icon={<TrendingUp className="w-4 h-4" />}
-                  label="Live Markets"
+                  to="/capwheel/profile"
+                  icon={<User className="w-4 h-4" />}
+                  label="Profile"
                   onClick={onClose}
                 />
                 <NavItem

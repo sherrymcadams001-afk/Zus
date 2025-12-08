@@ -9,6 +9,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { CapWheelProvider, useCapWheel } from '../../contexts/CapWheelContext';
 import { CapWheelLogin } from './CapWheelLogin';
 import { CapWheelDashboard } from './CapWheelDashboard';
+import { ProfilePage } from './ProfilePage';
 import TradingInterface from '../../pages/TradingInterface';
 
 // Protected Route wrapper
@@ -38,6 +39,16 @@ const CapWheelRoutes = () => {
         } 
       />
       
+      {/* Profile Page */}
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        } 
+      />
+      
       {/* Trading Agent - Full Trading Interface */}
       <Route 
         path="/trading" 
@@ -48,14 +59,10 @@ const CapWheelRoutes = () => {
         } 
       />
       
-      {/* Live Markets - Placeholder routes for sidebar navigation */}
+      {/* Live Markets - Removed, redirects to dashboard */}
       <Route 
         path="/markets" 
-        element={
-          <ProtectedRoute>
-            <CapWheelDashboard />
-          </ProtectedRoute>
-        } 
+        element={<Navigate to="/capwheel/dashboard" replace />}
       />
       
       {/* Capital Management Routes */}

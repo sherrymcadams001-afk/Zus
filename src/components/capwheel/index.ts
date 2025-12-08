@@ -10,6 +10,7 @@ export { CapWheelChart } from './CapWheelChart';
 export { ExecutiveSummary } from './ExecutiveSummary';
 export { RWAHedgePanel } from './RWAHedgePanel';
 export { EnterpriseActiveLogs } from './EnterpriseActiveLogs';
+export { ProfilePage } from './ProfilePage';
 
 // ORION Design System Components
 export { OrionSidebar } from './OrionSidebar';
@@ -20,3 +21,5 @@ export { OrionWealthProjection } from './OrionWealthProjection';
 export { OrionStrategyPerformance } from './OrionStrategyPerformance';
 export { OrionTierDisplay } from './OrionTierDisplay';
 export { BoostCapitalButton, BoostCapitalModal } from './BoostCapital';
+export { EmptyStateChart } from './EmptyStateChart';
+export { UserProfileWidget } from './UserProfileWidget';

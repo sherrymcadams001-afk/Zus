@@ -16,11 +16,10 @@ import { motion } from 'framer-motion';
 import { OrionSidebar } from './OrionSidebar';
 import { OrionMetricsGrid } from './OrionMetricsGrid';
 import { OrionWealthChart } from './OrionWealthChart';
-import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
-import { OrionStrategyPerformance } from './OrionStrategyPerformance';
 import { OrionTierDisplay } from './OrionTierDisplay';
 import { BoostCapitalButton } from './BoostCapital';
+import { UserProfileWidget } from './UserProfileWidget';
 import { MobileNavDrawer, MobileBottomNav, InviteCodeGenerator } from '../mobile';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { apiClient } from '../../api/client';
@@ -77,7 +76,8 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         <button className="p-2 lg:p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 flex items-center justify-center hidden sm:flex">
           <Settings className="w-5 h-5 lg:w-4 lg:h-4" />
         </button>
-        <div className="w-8 h-8 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center">
+        {/* User Avatar - Only show on larger screens, use widget on mobile */}
+        <div className="w-8 h-8 lg:w-7 lg:h-7 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center hidden sm:flex">
           <User className="w-4 h-4 lg:w-3.5 lg:h-3.5 text-black" />
         </div>
       </div>
@@ -189,20 +189,17 @@ export const CapWheelDashboard = () => {
               </div>
             </div>
 
-            {/* Row 3: Ledger + Strategy + Invite Code */}
+            {/* Row 3: Invite Code Generator - Expanded to fill space */}
             <div className="flex-1 grid grid-cols-5 gap-3 min-h-0">
-              <div className="col-span-2 min-h-0 overflow-hidden">
-                <OrionTransactionLedger />
-              </div>
-              <div className="col-span-2 min-h-0 overflow-hidden">
-                <OrionStrategyPerformance />
-              </div>
-              <div className="col-span-1 min-h-0 overflow-auto">
+              <div className="col-span-5 min-h-0 overflow-auto">
                 <InviteCodeGenerator variant="full" />
               </div>
             </div>
           </main>
         </div>
+
+        {/* User Profile Widget - Bottom Left */}
+        <UserProfileWidget variant="desktop" />
       </div>
     );
   }
@@ -224,6 +221,11 @@ export const CapWheelDashboard = () => {
 
       {/* Header */}
       <DashboardHeader onMenuClick={() => setIsDrawerOpen(true)} />
+
+      {/* Mobile Profile Widget - Top Right */}
+      <div className="fixed top-16 right-3 z-30 sm:hidden">
+        <UserProfileWidget variant="mobile" />
+      </div>
 
       {/* Scrollable Content */}
       <main className="flex-1 overflow-auto p-3 pb-24 space-y-3">
@@ -263,21 +265,6 @@ export const CapWheelDashboard = () => {
           transition={{ duration: ORION_MOTION.duration.normal / 1000, delay: 0.1 }}
         >
           <OrionTierDisplay />
-        </motion.div>
-
-        {/* Ledger & Strategy - Stack on mobile */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: ORION_MOTION.duration.normal / 1000, delay: 0.15 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-3"
-        >
-          <div className="min-h-[200px]">
-            <OrionTransactionLedger />
-          </div>
-          <div className="min-h-[200px]">
-            <OrionStrategyPerformance />
-          </div>
         </motion.div>
       </main>
 

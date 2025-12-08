@@ -9,6 +9,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, type IChartApi, type ISeriesApi, AreaSeries, type Time } from 'lightweight-charts';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useDashboardData } from '../../hooks/useDashboardData';
+import { EmptyStateChart } from './EmptyStateChart';
 
 // Generate realistic wealth performance data
 const generatePerformanceData = (days: number = 180) => {
@@ -104,6 +106,7 @@ const LiveTerminal = ({ onClose }: LiveTerminalProps) => {
 type TimeframeKey = '24H' | '1M' | '1Y' | 'ALL';
 
 export const OrionWealthChart = () => {
+  const { data: dashboardData } = useDashboardData({ pollingInterval: 60000 });
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -113,6 +116,14 @@ export const OrionWealthChart = () => {
   const [latestValue, setLatestValue] = useState(0);
 
   const timeframes: TimeframeKey[] = ['24H', '1M', '1Y', 'ALL'];
+
+  // Check if user has trading data
+  const hasTradeData = dashboardData.trades && dashboardData.trades.length > 0;
+
+  // If no trades, show empty state
+  if (!hasTradeData) {
+    return <EmptyStateChart />;
+  }
 
   const getTimeframeDays = (tf: TimeframeKey) => {
     switch (tf) {
