@@ -21,16 +21,16 @@ import { useMarketStore, type Candle } from '../../store/useMarketStore';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Activity, Minus } from 'lucide-react';
 
-// CapWheel Chart Colors - Enhanced for visibility
-const CHART_UP_COLOR = '#00FF9D';      // Brighter Neon Green
-const CHART_DOWN_COLOR = '#FF2E55';    // Brighter Neon Red
-const CHART_BG_COLOR = '#0B1221';      // Deep Navy/Black
+// CapWheel Chart Colors - ORION Design System
+const CHART_UP_COLOR = '#00FF9D';      // Neon Green (primary)
+const CHART_DOWN_COLOR = '#FF4444';    // Danger Red  
+const CHART_BG_COLOR = '#0F1419';      // Panel Background (standardized)
 const CHART_TEXT_COLOR = '#94A3B8';    // Slate 400
 const CHART_GRID_COLOR = '#1E293B';    // Slate 800
 const VOL_UP_COLOR = 'rgba(0, 255, 157, 0.15)';
-const VOL_DOWN_COLOR = 'rgba(255, 46, 85, 0.15)';
+const VOL_DOWN_COLOR = 'rgba(255, 68, 68, 0.15)';
 const SMA_COLOR = '#F59E0B';           // Amber
-const EMA_COLOR = '#3B82F6';           // Blue
+const EMA_COLOR = '#00B8D4';           // Secondary Cyan (standardized)
 
 function candleToChartData(candle: Candle): CandlestickData<Time> {
   return {
@@ -312,8 +312,8 @@ export const CapWheelChart = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.2, 0, 0.1, 1] }}
-      className="capwheel-card p-6 h-[600px] flex flex-col bg-[#0B1221] rounded-xl border border-slate-800"
+      transition={{ duration: 0.2, ease: [0.2, 0, 0.1, 1] }}
+      className="capwheel-card p-6 h-[600px] flex flex-col bg-[#0F1419] rounded-xl border border-white/5"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">

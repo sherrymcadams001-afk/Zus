@@ -8,27 +8,38 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, Calculator, Loader2 } from 'lucide-react';
+import { Zap, TrendingUp, Calculator, Loader2, Lock, LockOpen } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
 
 interface ToggleProps {
   label: string;
   enabled: boolean;
   onChange: (enabled: boolean) => void;
+  description?: string;
 }
 
-const Toggle = ({ label, enabled, onChange }: ToggleProps) => (
-  <button
-    onClick={() => onChange(!enabled)}
-    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-      enabled 
-        ? 'bg-[#00FF9D] text-black' 
-        : 'bg-white/5 text-slate-400 hover:bg-white/10'
-    }`}
-  >
-    <Zap className="w-3 h-3" />
-    {label}
-  </button>
+const Toggle = ({ label, enabled, onChange, description }: ToggleProps) => (
+  <div className="space-y-1">
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 active:scale-[0.98] ${
+        enabled 
+          ? 'bg-[#00FF9D] text-black shadow-[0_0_20px_rgba(0,255,157,0.15)]' 
+          : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+      }`}
+    >
+      {enabled ? <Lock className="w-3 h-3" /> : <LockOpen className="w-3 h-3" />}
+      <span>{label}</span>
+      <span className={`text-[9px] uppercase tracking-wider ${enabled ? 'text-black/70' : 'text-slate-500'}`}>
+        {enabled ? 'ON' : 'OFF'}
+      </span>
+    </button>
+    {description && (
+      <p className={`text-[9px] px-1 ${enabled ? 'text-[#00FF9D]' : 'text-slate-500'}`}>
+        {description}
+      </p>
+    )}
+  </div>
 );
 
 export const OrionWealthProjection = () => {
@@ -59,18 +70,21 @@ export const OrionWealthProjection = () => {
       className="bg-[#0F1419] border border-white/5 rounded-lg overflow-hidden h-full flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Calculator className="w-4 h-4 text-[#00FF9D]" />
-          <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-            Dynamic Data Matrix
-          </h3>
-          {isLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+      <div className="px-4 py-3 border-b border-white/5 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-[#00FF9D]" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              Dynamic Data Matrix
+            </h3>
+            {isLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+          </div>
         </div>
         <Toggle
-          label="Auto-Compound"
+          label="Auto-Compound Profits"
           enabled={autoCompound}
           onChange={setAutoCompound}
+          description={autoCompound ? '✓ Profits locked in capital for maximum growth' : '○ Profits available for immediate withdrawal'}
         />
       </div>
 
