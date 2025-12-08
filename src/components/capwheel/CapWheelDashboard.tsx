@@ -2,10 +2,11 @@
  * CapWheel Dashboard Component - ORION Design
  * 
  * NO-SCROLL single viewport cockpit layout
- * - Sidebar navigation (Command Center)
+ * - Sidebar navigation (Command Center) with Tier Display
  * - 4 metric cards (AUM, Yield, Partners, Vesting)
  * - Wealth chart + Dynamic Data Matrix side by side
  * - Transaction Ledger + Strategy Performance side by side
+ * - Boost Capital button prominently placed
  */
 
 import { useEffect, useState } from 'react';
@@ -15,6 +16,8 @@ import { OrionWealthChart } from './OrionWealthChart';
 import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
 import { OrionStrategyPerformance } from './OrionStrategyPerformance';
+import { OrionTierDisplay } from './OrionTierDisplay';
+import { BoostCapitalButton } from './BoostCapital';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -31,9 +34,13 @@ const DashboardHeader = () => {
 
   return (
     <header className="h-12 flex items-center justify-between px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider">Overview /</span>
-        <span className="text-xs font-semibold text-white">Dashboard</span>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider">Overview /</span>
+          <span className="text-xs font-semibold text-white">Dashboard</span>
+        </div>
+        {/* Boost Capital Button in Header */}
+        <BoostCapitalButton variant="compact" />
       </div>
 
       <div className="flex items-center gap-3">
@@ -93,13 +100,16 @@ export const CapWheelDashboard = () => {
             <OrionMetricsGrid />
           </div>
 
-          {/* Row 2: Chart (2/3) + Data Matrix (1/3) */}
-          <div className="flex-1 grid grid-cols-3 gap-3 min-h-0">
+          {/* Row 2: Chart (2/5) + Data Matrix (2/5) + Tier Display (1/5) */}
+          <div className="flex-1 grid grid-cols-5 gap-3 min-h-0">
             <div className="col-span-2 min-h-0">
               <OrionWealthChart />
             </div>
-            <div className="col-span-1 min-h-0">
+            <div className="col-span-2 min-h-0">
               <OrionWealthProjection />
+            </div>
+            <div className="col-span-1 min-h-0 overflow-auto">
+              <OrionTierDisplay />
             </div>
           </div>
 

@@ -23,6 +23,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
+import { useDashboardData } from '../../hooks/useDashboardData';
 
 interface NavItemProps {
   to: string;
@@ -121,6 +122,17 @@ const NavGroup = ({ title, children, defaultOpen = true }: NavGroupProps) => {
 
 export const OrionSidebar = () => {
   const [latency] = useState(() => Math.floor(Math.random() * 15) + 8);
+  const { data } = useDashboardData({ pollingInterval: 60000 });
+
+  // Get tier display info
+  const tierColors: Record<string, string> = {
+    protobot: 'text-slate-400',
+    chainpulse: 'text-[#00B8D4]',
+    titan: 'text-purple-400',
+    omega: 'text-[#00FF9D]',
+  };
+
+  const tierColor = tierColors[data.currentTier] || 'text-[#00B8D4]';
 
   return (
     <aside className="w-64 h-screen bg-[#0B1015] border-r border-white/5 flex flex-col">
@@ -219,7 +231,12 @@ export const OrionSidebar = () => {
           </div>
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-[#00B8D4]" />
-            <span className="text-xs text-slate-300">Tier: <span className="text-[#00B8D4]">Institutional</span></span>
+            <span className="text-xs text-slate-300">
+              Plan: <span className={`font-bold ${tierColor}`}>{data.tierConfig.name}</span>
+            </span>
+          </div>
+          <div className="text-[9px] text-slate-500 pt-1 border-t border-white/5">
+            AUM: ${data.aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
         </div>
       </div>

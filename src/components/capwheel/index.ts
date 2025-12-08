@@ -18,3 +18,5 @@ export { OrionWealthChart } from './OrionWealthChart';
 export { OrionTransactionLedger } from './OrionTransactionLedger';
 export { OrionWealthProjection } from './OrionWealthProjection';
 export { OrionStrategyPerformance } from './OrionStrategyPerformance';
+export { OrionTierDisplay } from './OrionTierDisplay';
+export { BoostCapitalButton, BoostCapitalModal } from './BoostCapital';

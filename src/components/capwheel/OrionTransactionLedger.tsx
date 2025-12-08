@@ -17,7 +17,7 @@ type FilterType = 'all' | 'deposits' | 'withdrawals' | 'roi';
 
 // Map backend transaction types to display names
 const TYPE_LABELS: Record<string, string> = {
-  deposit: 'Capital Injection',
+  deposit: 'Capital Boost',
   withdraw: 'Withdrawal',
   trade_profit: 'Trading Profit',
   trade_loss: 'Trading Loss',
@@ -93,7 +93,7 @@ export const OrionTransactionLedger = () => {
   };
 
   const filterLabels: Record<FilterType, string> = {
-    all: 'All', deposits: 'Deposits', withdrawals: 'Withdrawals', roi: 'ROI Only',
+    all: 'All', deposits: 'Capital Boosts', withdrawals: 'Withdrawals', roi: 'ROI Only',
   };
 
   // Show empty state if no transactions
