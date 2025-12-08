@@ -190,19 +190,14 @@ export const ProfilePage = () => {
     setIsSaving(true);
     setSaveSuccess(false);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // TODO: Implement actual API call
-    // await apiClient.put(`/api/profile/${enterpriseUser?.id}`, {
-    //   username,
-    //   avatarUrl,
-    // });
+    // TODO: Integrate with backend API endpoint
+    // Reference issue: #[issue-number] - Implement profile update API
     
     setIsSaving(false);
     setSaveSuccess(true);
     
-    // Hide success message after 3 seconds
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
