@@ -209,7 +209,11 @@ export const CapWheelChart = () => {
     // 1. Volume Series (Bottom Layer)
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
-      priceScaleId: '', // Overlay
+      priceScaleId: 'volume', // Separate scale for volume
+    });
+    
+    // Configure volume price scale
+    chart.priceScale('volume').applyOptions({
       scaleMargins: {
         top: 0.8, // Push to bottom 20%
         bottom: 0,
