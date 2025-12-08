@@ -251,6 +251,31 @@ export function calculateWinRate(portfolio: PortfolioData): number {
 
 // ========== API Fetch Functions ==========
 
+/**
+ * OPTIMIZED: Single API call fetches ALL dashboard data
+ * Reduces 6 calls to 1 for free-tier efficiency
+ */
+export async function fetchDashboardAggregate(): Promise<{
+  wallet: WalletData | null;
+  portfolio: PortfolioData | null;
+  trades: TradeData[];
+  transactions: TransactionData[];
+  staking: { activeStakes: PoolStakeData[]; totalStaked: number; totalEarned: number };
+  referrals: { partnerVolume: number };
+} | null> {
+  try {
+    const response = await apiClient.get('/api/dashboard');
+    if (response.data.status === 'success') {
+      return response.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch dashboard aggregate:', error);
+    return null;
+  }
+}
+
+// Legacy individual fetchers (kept for backwards compatibility)
 export async function fetchWallet(): Promise<WalletData | null> {
   try {
     const response = await apiClient.get('/api/wallet');
@@ -332,25 +357,23 @@ export async function fetchPartnerVolume(): Promise<number> {
 // ========== Master Orchestration Function ==========
 
 /**
- * Fetch all dashboard data in parallel and compute derived metrics
+ * Fetch all dashboard data in ONE API call
+ * OPTIMIZED: 6 calls → 1 call for free-tier efficiency
  */
 export async function orchestrateDashboardData(): Promise<DashboardData> {
   const startTime = Date.now();
   
-  // Fetch all data in parallel
-  const [wallet, portfolio, trades, transactions, poolStakes, partnerVolume] = await Promise.all([
-    fetchWallet(),
-    fetchPortfolio(),
-    fetchTrades(),
-    fetchTransactions(),
-    fetchPoolStakes(),
-    fetchPartnerVolume(),
-  ]);
+  // Single API call fetches everything
+  const aggregateData = await fetchDashboardAggregate();
   
-  // Calculate total staked across all pools
-  const totalStaked = poolStakes.reduce((sum, stake) => 
-    stake.status === 'active' ? sum + stake.amount : sum, 0
-  );
+  if (!aggregateData) {
+    // Fallback to default if API fails
+    return getDefaultDashboardData();
+  }
+  
+  const { wallet, portfolio, trades, transactions, staking, referrals } = aggregateData;
+  const { activeStakes, totalStaked } = staking;
+  const { partnerVolume } = referrals;
   
   // Calculate AUM = available balance + active stakes
   const aum = (wallet?.available_balance ?? 0) + totalStaked;
@@ -360,11 +383,10 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const tierConfig = BOT_TIERS[currentTier];
   
   // Calculate net yield from actual earnings vs investment
-  const totalEarned = poolStakes.reduce((sum, stake) => sum + stake.total_earned, 0);
+  const totalEarned = staking.totalEarned;
   const netYieldPercent = aum > 0 ? (totalEarned / aum) * 100 : tierConfig.dailyRoiMax * 100;
   
   // Calculate vesting runway from earliest active stake
-  const activeStakes = poolStakes.filter(s => s.status === 'active');
   const earliestStake = activeStakes.length > 0 
     ? Math.min(...activeStakes.map(s => s.staked_at))
     : Math.floor(Date.now() / 1000);

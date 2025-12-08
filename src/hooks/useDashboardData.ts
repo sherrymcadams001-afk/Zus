@@ -13,7 +13,7 @@ import {
 } from '../core/DataOrchestrator';
 
 interface UseDashboardDataOptions {
-  /** Polling interval in milliseconds. Default 30000 (30s) */
+  /** Polling interval in milliseconds. Default 60000 (60s) - optimized for free tier */
   pollingInterval?: number;
   /** Whether to enable polling. Default true */
   enablePolling?: boolean;
@@ -36,7 +36,7 @@ export function useDashboardData(
   options: UseDashboardDataOptions = {}
 ): UseDashboardDataResult {
   const {
-    pollingInterval = 30000,
+    pollingInterval = 60000, // 60s default - optimized for free tier
     enablePolling = true,
     onUpdate,
     onError,

@@ -16,6 +16,7 @@ import { handleWalletRoutes } from './routes/wallet';
 import { handlePortfolioRoutes } from './routes/portfolio';
 import { handlePoolRoutes } from './routes/pools';
 import { handleReferralRoutes } from './routes/referrals';
+import { handleDashboardRoutes } from './routes/dashboard';
 
 /**
  * Handle HTTP requests
@@ -58,6 +59,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Referral routes
   if (url.pathname.startsWith('/api/referrals')) {
     return handleReferralRoutes(request, env, url.pathname);
+  }
+
+  // Dashboard aggregate route (SINGLE call for all data)
+  if (url.pathname === '/api/dashboard') {
+    return handleDashboardRoutes(request, env, url.pathname);
   }
 
   // Health check endpoint
