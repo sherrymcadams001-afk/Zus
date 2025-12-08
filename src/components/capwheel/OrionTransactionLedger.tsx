@@ -1,91 +1,86 @@
 /**
  * ORION Transaction Ledger
  * 
- * Compact audit trail table - fits in half viewport
+ * REAL transaction data from backend API
+ * - Fetches from /api/wallet/transactions
  * - Zebra striping, monospaced fonts
  * - Filters and CSV export
  */
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Filter, ChevronDown } from 'lucide-react';
+import { Download, Filter, ChevronDown, Loader2 } from 'lucide-react';
+import { useDashboardData } from '../../hooks/useDashboardData';
+import type { TransactionData } from '../../core/DataOrchestrator';
 
-type TransactionType = 'yield' | 'injection' | 'withdrawal' | 'fee';
+type FilterType = 'all' | 'deposits' | 'withdrawals' | 'roi';
 
-interface Transaction {
-  id: string;
-  timestamp: Date;
-  hash: string;
-  counterparty: string;
-  classification: string;
-  type: TransactionType;
-  amount: number;
-}
-
-const generateTransactions = (count: number = 20): Transaction[] => {
-  const counterparties = ['LTSP Liquidity Pool A', 'LTSP Liquidity Pool B', 'RWA Hedge Fund Alpha'];
-  const classifications: Array<{ name: string; type: TransactionType }> = [
-    { name: 'Yield Distribution', type: 'yield' },
-    { name: 'Capital Injection', type: 'injection' },
-    { name: 'Yield Distribution/Capital Injection', type: 'yield' },
-  ];
-
-  const transactions: Transaction[] = [];
-  const now = new Date();
-
-  for (let i = 0; i < count; i++) {
-    const timestamp = new Date(now.getTime() - i * 60000 * (Math.random() * 10 + 1));
-    const classInfo = classifications[Math.floor(Math.random() * classifications.length)];
-    const isNegative = classInfo.type === 'injection' && Math.random() > 0.7;
-    
-    transactions.push({
-      id: `txn_${Math.random().toString(36).substring(2, 11)}`,
-      timestamp,
-      hash: `txn_${Math.random().toString(36).substring(2, 5)}...${Math.random().toString(36).substring(2, 4)}`,
-      counterparty: counterparties[Math.floor(Math.random() * counterparties.length)],
-      classification: classInfo.name,
-      type: classInfo.type,
-      amount: isNegative ? -(Math.random() * 100 + 50) : (Math.random() * 2 + 0.20),
-    });
-  }
-
-  return transactions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+// Map backend transaction types to display names
+const TYPE_LABELS: Record<string, string> = {
+  deposit: 'Capital Injection',
+  withdraw: 'Withdrawal',
+  trade_profit: 'Trading Profit',
+  trade_loss: 'Trading Loss',
+  pool_stake: 'Pool Stake',
+  pool_unstake: 'Pool Unstake',
+  roi_payout: 'ROI Payout',
+  referral_commission: 'Referral Commission',
 };
 
-type FilterType = 'all' | 'yield' | 'injections' | 'last24h';
+// Map to counterparty display
+const TYPE_COUNTERPARTY: Record<string, string> = {
+  deposit: 'User Wallet',
+  withdraw: 'User Wallet',
+  trade_profit: 'Trading Engine',
+  trade_loss: 'Trading Engine',
+  pool_stake: 'LTSP Liquidity Pool',
+  pool_unstake: 'LTSP Liquidity Pool',
+  roi_payout: 'Yield Distribution',
+  referral_commission: 'Partner Network',
+};
 
 export const OrionTransactionLedger = () => {
+  const { data, isLoading } = useDashboardData({ pollingInterval: 30000 });
   const [filter, setFilter] = useState<FilterType>('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const transactions = useMemo(() => generateTransactions(15), []);
 
   const filteredTransactions = useMemo(() => {
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    return transactions.filter(txn => {
-      if (filter === 'yield') return txn.type === 'yield';
-      if (filter === 'injections') return txn.type === 'injection';
-      if (filter === 'last24h') return txn.timestamp > oneDayAgo;
+    const txns = data.transactions;
+    
+    return txns.filter((txn: TransactionData) => {
+      if (filter === 'deposits') return txn.type === 'deposit';
+      if (filter === 'withdrawals') return txn.type === 'withdraw';
+      if (filter === 'roi') return txn.type === 'roi_payout' || txn.type === 'trade_profit';
       return true;
     });
-  }, [transactions, filter]);
+  }, [data.transactions, filter]);
 
-  const formatTimestamp = (date: Date) => date.toISOString().replace('T', ' ').substring(0, 19);
+  const formatTimestamp = (unixTime: number) => {
+    const date = new Date(unixTime * 1000);
+    return date.toISOString().replace('T', ' ').substring(0, 19);
+  };
   
-  const formatAmount = (amount: number) => {
+  const formatAmount = (amount: number, type: string) => {
     const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
     }).format(Math.abs(amount));
-    return amount >= 0 ? `+${formatted}` : `-${formatted}`;
+    
+    // Deposits and payouts are positive, withdrawals and losses are negative display
+    const isPositive = ['deposit', 'roi_payout', 'trade_profit', 'referral_commission'].includes(type);
+    return isPositive ? `+${formatted}` : `-${formatted}`;
   };
 
   const handleExportCSV = () => {
-    const headers = ['Timestamp', 'Hash', 'Counterparty', 'Classification', 'Amount'];
-    const rows = filteredTransactions.map(txn => [
-      formatTimestamp(txn.timestamp), txn.hash, txn.counterparty, txn.classification, formatAmount(txn.amount),
+    const headers = ['Timestamp', 'ID', 'Type', 'Description', 'Amount', 'Status'];
+    const rows = filteredTransactions.map((txn: TransactionData) => [
+      formatTimestamp(txn.created_at),
+      `txn_${txn.id}`,
+      TYPE_LABELS[txn.type] ?? txn.type,
+      txn.description ?? '',
+      formatAmount(txn.amount, txn.type),
+      txn.status,
     ]);
     const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -98,8 +93,11 @@ export const OrionTransactionLedger = () => {
   };
 
   const filterLabels: Record<FilterType, string> = {
-    all: 'All', yield: 'Yield Only', injections: 'Withdrawals', last24h: 'Last 24h',
+    all: 'All', deposits: 'Deposits', withdrawals: 'Withdrawals', roi: 'ROI Only',
   };
+
+  // Show empty state if no transactions
+  const hasTransactions = filteredTransactions.length > 0;
 
   return (
     <motion.div
@@ -110,7 +108,10 @@ export const OrionTransactionLedger = () => {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 flex-shrink-0">
-        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Transaction Ledger</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider">Transaction Ledger</h3>
+          {isLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
+        </div>
         <div className="flex items-center gap-2">
           {/* Filter */}
           <div className="relative">
@@ -141,7 +142,8 @@ export const OrionTransactionLedger = () => {
           {/* Export */}
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] text-[#00FF9D] bg-[#00FF9D]/10 hover:bg-[#00FF9D]/20 border border-[#00FF9D]/30 rounded transition-colors"
+            disabled={!hasTransactions}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] text-[#00FF9D] bg-[#00FF9D]/10 hover:bg-[#00FF9D]/20 border border-[#00FF9D]/30 rounded transition-colors disabled:opacity-50"
           >
             <Download className="w-3 h-3" />
             CSV
@@ -151,30 +153,39 @@ export const OrionTransactionLedger = () => {
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-white/5 sticky top-0">
-            <tr>
-              <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp</th>
-              <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Hash</th>
-              <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Counterparty</th>
-              <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Classification</th>
-              <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTransactions.slice(0, 8).map((txn, index) => (
-              <tr key={txn.id} className={`border-b border-white/5 hover:bg-white/5 ${index % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
-                <td className="px-3 py-1.5 font-mono text-slate-400">{formatTimestamp(txn.timestamp)}</td>
-                <td className="px-3 py-1.5 font-mono text-[#00B8D4]">{txn.hash}</td>
-                <td className="px-3 py-1.5 text-slate-300 truncate max-w-[150px]">{txn.counterparty}</td>
-                <td className="px-3 py-1.5 text-slate-400 truncate max-w-[120px]">{txn.classification}</td>
-                <td className={`px-3 py-1.5 font-mono text-right font-medium ${txn.amount >= 0 ? 'text-[#00FF9D]' : 'text-white'}`}>
-                  {formatAmount(txn.amount)}
-                </td>
+        {hasTransactions ? (
+          <table className="w-full text-xs">
+            <thead className="bg-white/5 sticky top-0">
+              <tr>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">ID</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Counterparty</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Type</th>
+                <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Amount</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredTransactions.slice(0, 8).map((txn: TransactionData, index: number) => {
+                const isPositive = ['deposit', 'roi_payout', 'trade_profit', 'referral_commission'].includes(txn.type);
+                return (
+                  <tr key={txn.id} className={`border-b border-white/5 hover:bg-white/5 ${index % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
+                    <td className="px-3 py-1.5 font-mono text-slate-400">{formatTimestamp(txn.created_at)}</td>
+                    <td className="px-3 py-1.5 font-mono text-[#00B8D4]">txn_{txn.id}</td>
+                    <td className="px-3 py-1.5 text-slate-300 truncate max-w-[150px]">{TYPE_COUNTERPARTY[txn.type] ?? 'System'}</td>
+                    <td className="px-3 py-1.5 text-slate-400 truncate max-w-[120px]">{TYPE_LABELS[txn.type] ?? txn.type}</td>
+                    <td className={`px-3 py-1.5 font-mono text-right font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
+                      {formatAmount(txn.amount, txn.type)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="flex items-center justify-center h-full text-slate-500 text-xs">
+            {isLoading ? 'Loading transactions...' : 'No transactions yet'}
+          </div>
+        )}
       </div>
     </motion.div>
   );

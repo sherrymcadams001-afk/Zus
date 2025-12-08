@@ -2,12 +2,12 @@
  * ORION Metrics Cards
  * 
  * Bento Grid: AUM, Net Yield, Partner Volume, Vesting Schedule
- * 4 cards in a row - realistic user amounts
+ * 4 cards in a row - REAL DATA from backend via DataOrchestrator
  */
 
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Users, Clock, ArrowUpRight, Percent } from 'lucide-react';
-import { usePortfolioStore } from '../../store/usePortfolioStore';
+import { TrendingUp, TrendingDown, Users, Clock, ArrowUpRight, Percent, Loader2 } from 'lucide-react';
+import { useDashboardData } from '../../hooks/useDashboardData';
 
 interface MetricCardProps {
   title: string;
@@ -16,9 +16,10 @@ interface MetricCardProps {
   subValueColor?: 'green' | 'red' | 'neutral';
   icon?: React.ReactNode;
   delay?: number;
+  isLoading?: boolean;
 }
 
-const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, delay = 0 }: MetricCardProps) => {
+const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, delay = 0, isLoading = false }: MetricCardProps) => {
   const subColors = {
     green: 'text-[#00FF9D]',
     red: 'text-red-400',
@@ -36,11 +37,13 @@ const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, d
         <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{title}</span>
         {icon && (
           <span className="p-1 rounded bg-[#00FF9D]/10 text-[#00FF9D]">
-            {icon}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : icon}
           </span>
         )}
       </div>
-      <p className="text-xl font-bold text-white tracking-tight">{value}</p>
+      <p className="text-xl font-bold text-white tracking-tight">
+        {isLoading ? '—' : value}
+      </p>
       {subValue && (
         <p className={`text-[10px] font-medium ${subColors[subValueColor]} flex items-center gap-1 mt-1`}>
           {subValueColor === 'green' && <TrendingUp className="w-3 h-3" />}
@@ -53,9 +56,9 @@ const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, d
 };
 
 export const OrionMetricsGrid = () => {
-  const walletBalance = usePortfolioStore((state) => state.walletBalance);
+  const { data, isLoading } = useDashboardData({ pollingInterval: 30000 });
   
-  // Format currency - realistic user amount
+  // Format currency
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -65,60 +68,50 @@ export const OrionMetricsGrid = () => {
     }).format(value);
   };
 
-  // Realistic user metrics - tied to actual wallet balance
-  const aum = walletBalance || 4500.25;
-  const dailyYield = aum * 0.000715; // 0.0715% daily
-  
-  const metrics = {
-    aum: aum,
-    aumDelta: dailyYield,
-    netYield: 7.15,
-    yieldDelta: 1.18,
-    partnerVolume: 15250,
-    activePartners: 8,
-    vestingDays: 809,
-  };
-
   return (
     <div className="grid grid-cols-4 gap-3">
-      {/* Card 1: AUM - User's actual balance */}
+      {/* Card 1: AUM - User's actual balance from DB */}
       <MetricCard
         title="AUM"
-        value={formatCurrency(metrics.aum)}
-        subValue={`+${formatCurrency(metrics.aumDelta)} Today`}
+        value={formatCurrency(data.aum)}
+        subValue={`+${formatCurrency(data.dailyEarnings)} Today`}
         subValueColor="green"
         icon={<ArrowUpRight className="w-3 h-3" />}
         delay={0}
+        isLoading={isLoading}
       />
       
-      {/* Card 2: Net Yield */}
+      {/* Card 2: Net Yield - From bot tier ROI */}
       <MetricCard
         title="Net Yield"
-        value={`${metrics.netYield.toFixed(2)}%`}
-        subValue={`↑${metrics.yieldDelta.toFixed(2)}% LAST MONTH`}
+        value={`${data.netYieldPercent.toFixed(2)}%`}
+        subValue={`${data.currentTier.toUpperCase()} tier rate`}
         subValueColor="green"
         icon={<Percent className="w-3 h-3" />}
         delay={0.05}
+        isLoading={isLoading}
       />
       
-      {/* Card 3: Partner Volume - MUST be visible */}
+      {/* Card 3: Partner Volume - From referral network */}
       <MetricCard
         title="Partner Volume"
-        value={formatCurrency(metrics.partnerVolume)}
-        subValue={`${metrics.activePartners} Active Partners`}
+        value={formatCurrency(data.partnerVolume)}
+        subValue="Downstream investments"
         subValueColor="neutral"
         icon={<Users className="w-3 h-3" />}
         delay={0.1}
+        isLoading={isLoading}
       />
       
-      {/* Card 4: Vesting Schedule */}
+      {/* Card 4: Vesting Schedule - Days until capital withdrawal */}
       <MetricCard
-        title="Vesting Schedule"
-        value={`${metrics.vestingDays} Days`}
-        subValue="Early withdrawal: 20%"
+        title="Vesting Runway"
+        value={`${data.vestingRunway} Days`}
+        subValue={`${data.tierConfig.capitalWithdrawalDays}d lock period`}
         subValueColor="neutral"
         icon={<Clock className="w-3 h-3" />}
         delay={0.15}
+        isLoading={isLoading}
       />
     </div>
   );

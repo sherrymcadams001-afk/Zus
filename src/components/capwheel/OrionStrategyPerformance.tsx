@@ -1,22 +1,26 @@
 /**
  * ORION Strategy Performance Module
  * 
- * Compact single-panel view:
- * - Sharpe Ratio, Max Drawdown, Win Rate metrics
- * - Live Terminal code view
+ * REAL DATA from DataOrchestrator:
+ * - Sharpe Ratio calculated from trade history
+ * - Max Drawdown from peak-to-trough analysis
+ * - Win Rate from portfolio stats
+ * - Live Terminal shows actual trade activity
  */
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Terminal } from 'lucide-react';
+import { Activity, Terminal, Loader2 } from 'lucide-react';
+import { useDashboardData } from '../../hooks/useDashboardData';
 
 interface MetricProps {
   label: string;
   value: string;
   color?: 'green' | 'cyan' | 'amber';
+  isLoading?: boolean;
 }
 
-const Metric = ({ label, value, color = 'green' }: MetricProps) => {
+const Metric = ({ label, value, color = 'green', isLoading = false }: MetricProps) => {
   const colors = {
     green: 'text-[#00FF9D]',
     cyan: 'text-[#00B8D4]',
@@ -26,38 +30,39 @@ const Metric = ({ label, value, color = 'green' }: MetricProps) => {
   return (
     <div className="text-center px-3 py-2 bg-white/5 rounded">
       <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
-      <p className={`text-sm font-bold font-mono ${colors[color]}`}>{value}</p>
+      <p className={`text-sm font-bold font-mono ${colors[color]}`}>
+        {isLoading ? '—' : value}
+      </p>
     </div>
   );
 };
 
 export const OrionStrategyPerformance = () => {
+  const { data, isLoading } = useDashboardData({ pollingInterval: 30000 });
   const [logs, setLogs] = useState<Array<{ text: string; type: 'scan' | 'signal' | 'action' | 'status' | 'profit' }>>([]);
 
+  // Generate terminal logs from actual trade data
   useEffect(() => {
-    const actions: Array<{ text: string; type: 'scan' | 'signal' | 'action' | 'status' | 'profit' }> = [
-      { text: '> SCANNING: BTC/USDT Pair', type: 'scan' },
-      { text: '> SIGNAL DETECTED: RSI Oversold (32.0)', type: 'signal' },
-      { text: '> ACTION: Long Entry @ 44,201', type: 'action' },
-      { text: '> STATUS: Executing...', type: 'status' },
-      { text: '> PROFIT SECURED: +$1.86', type: 'profit' },
-    ];
-
-    let index = 0;
-    const addLog = () => {
-      setLogs(prev => {
-        const newLogs = [...prev, actions[index % actions.length]];
-        index++;
-        return newLogs.slice(-4);
-      });
-    };
-
-    setLogs(actions.slice(0, 4));
-    index = 4;
-
-    const interval = setInterval(addLog, 2500);
-    return () => clearInterval(interval);
-  }, []);
+    if (data.trades.length > 0) {
+      // Show recent trades in terminal
+      const tradeLogs = data.trades.slice(0, 3).map(trade => ({
+        text: `> ${trade.side}: ${trade.symbol} @ $${trade.price.toFixed(2)} | PnL: ${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}`,
+        type: trade.pnl >= 0 ? 'profit' as const : 'action' as const,
+      }));
+      setLogs([
+        { text: `> ENGINE: ${data.tierConfig.name} Active`, type: 'status' },
+        ...tradeLogs,
+      ]);
+    } else {
+      // Default status when no trades
+      setLogs([
+        { text: `> ENGINE: ${data.tierConfig.name} Active`, type: 'status' },
+        { text: '> SCANNING: Market conditions...', type: 'scan' },
+        { text: '> STATUS: Awaiting signals', type: 'status' },
+        { text: `> AUM: $${data.aum.toFixed(2)}`, type: 'signal' },
+      ]);
+    }
+  }, [data.trades, data.tierConfig.name, data.aum]);
 
   const getColor = (type: string) => {
     switch (type) {
@@ -85,18 +90,36 @@ export const OrionStrategyPerformance = () => {
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
               Strategy Performance
             </h3>
+            {isLoading && <Loader2 className="w-3 h-3 animate-spin text-slate-400" />}
           </div>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#00FF9D] animate-pulse" />
-            <span className="text-[10px] text-[#00FF9D]">LIVE</span>
+            <span className={`w-2 h-2 rounded-full ${data.dataFreshness === 'live' ? 'bg-[#00FF9D] animate-pulse' : 'bg-amber-400'}`} />
+            <span className={`text-[10px] ${data.dataFreshness === 'live' ? 'text-[#00FF9D]' : 'text-amber-400'}`}>
+              {data.dataFreshness === 'live' ? 'LIVE' : 'CACHED'}
+            </span>
           </span>
         </div>
         
-        {/* Compact Metrics Row */}
+        {/* Compact Metrics Row - REAL DATA */}
         <div className="grid grid-cols-3 gap-2">
-          <Metric label="Sharpe Ratio" value="3.1" color="green" />
-          <Metric label="Max Drawdown" value="-0.5%" color="cyan" />
-          <Metric label="Win Rate" value="98.2%" color="amber" />
+          <Metric 
+            label="Sharpe Ratio" 
+            value={data.sharpeRatio.toFixed(1)} 
+            color="green" 
+            isLoading={isLoading}
+          />
+          <Metric 
+            label="Max Drawdown" 
+            value={`-${data.maxDrawdown.toFixed(1)}%`} 
+            color="cyan" 
+            isLoading={isLoading}
+          />
+          <Metric 
+            label="Win Rate" 
+            value={`${data.winRate.toFixed(1)}%`} 
+            color="amber" 
+            isLoading={isLoading}
+          />
         </div>
       </div>
 

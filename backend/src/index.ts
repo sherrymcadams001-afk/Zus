@@ -14,6 +14,8 @@ import { Env } from './types';
 import { handleAuthRoutes } from './routes/auth';
 import { handleWalletRoutes } from './routes/wallet';
 import { handlePortfolioRoutes } from './routes/portfolio';
+import { handlePoolRoutes } from './routes/pools';
+import { handleReferralRoutes } from './routes/referrals';
 
 /**
  * Handle HTTP requests
@@ -46,6 +48,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Portfolio routes
   if (url.pathname.startsWith('/api/portfolio')) {
     return handlePortfolioRoutes(request, env, url.pathname);
+  }
+
+  // Pool routes
+  if (url.pathname.startsWith('/api/pools')) {
+    return handlePoolRoutes(request, env, url.pathname);
+  }
+
+  // Referral routes
+  if (url.pathname.startsWith('/api/referrals')) {
+    return handleReferralRoutes(request, env, url.pathname);
   }
 
   // Health check endpoint
