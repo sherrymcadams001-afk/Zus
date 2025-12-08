@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, Calculator, Loader2, Lock, LockOpen } from 'lucide-react';
+import { TrendingUp, Calculator, Loader2, Lock, LockOpen } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
 
 interface ToggleProps {
