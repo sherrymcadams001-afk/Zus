@@ -6,26 +6,95 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createChart, type IChartApi, type ISeriesApi, AreaSeries, type Time } from 'lightweight-charts';
+import { createChart, type IChartApi, type ISeriesApi, AreaSeries, HistogramSeries, type Time } from 'lightweight-charts';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useDashboardData } from '../../hooks/useDashboardData';
+import type { TransactionData } from '../../core/DataOrchestrator';
 
 // Generate realistic wealth performance data
-const generatePerformanceData = (days: number = 180) => {
+const generatePerformanceData = (days: number = 180, transactions: TransactionData[] = []) => {
   const data: Array<{ time: Time; value: number }> = [];
-  let value = 1000;
+  const volumeData: Array<{ time: Time; value: number; color: string }> = [];
   const now = Math.floor(Date.now() / 1000);
   const daySeconds = 24 * 60 * 60;
 
-  for (let i = days; i >= 0; i--) {
-    const time = (now - i * daySeconds) as Time;
-    // Simulate gradual growth with small fluctuations
-    const growth = 1 + (Math.random() * 0.008 - 0.002); // 0.6% avg daily growth
-    value *= growth;
-    data.push({ time, value: Math.round(value * 100) / 100 });
+  // If we have real transactions, use them to build the curve
+  if (transactions.length > 0) {
+    // Sort transactions by date
+    const sortedTxns = [...transactions].sort((a, b) => a.created_at - b.created_at);
+    
+    // Start from the first transaction or 'days' ago
+    const startTime = now - (days * daySeconds);
+    let runningBalance = 0;
+    
+    // Calculate initial balance before the start time
+    sortedTxns.forEach(txn => {
+      if (txn.created_at < startTime) {
+        if (['deposit', 'trade_profit', 'roi_payout', 'referral_commission'].includes(txn.type)) {
+          runningBalance += txn.amount;
+        } else if (['withdraw', 'trade_loss'].includes(txn.type)) {
+          runningBalance -= txn.amount;
+        }
+      }
+    });
+
+    // Generate daily points
+    for (let i = days; i >= 0; i--) {
+      const time = (now - i * daySeconds) as Time;
+      const dayStart = now - i * daySeconds;
+      const dayEnd = dayStart + daySeconds;
+      
+      // Apply transactions for this day
+      const dayTxns = sortedTxns.filter(t => t.created_at >= dayStart && t.created_at < dayEnd);
+      
+      let dailyVolume = 0;
+      let isPositiveDay = true;
+
+      dayTxns.forEach(txn => {
+        dailyVolume += Math.abs(txn.amount);
+        if (['deposit', 'trade_profit', 'roi_payout', 'referral_commission'].includes(txn.type)) {
+          runningBalance += txn.amount;
+        } else if (['withdraw', 'trade_loss'].includes(txn.type)) {
+          runningBalance -= txn.amount;
+          isPositiveDay = false; // If there's a withdrawal/loss, mark volume as red (simplification)
+        }
+      });
+      
+      // Ensure non-negative
+      const value = Math.max(0, runningBalance);
+      data.push({ time, value });
+      
+      // Add volume data
+      if (dailyVolume > 0) {
+        volumeData.push({
+          time,
+          value: dailyVolume,
+          color: isPositiveDay ? 'rgba(0, 255, 157, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+        });
+      }
+    }
+  } else {
+    // Fallback to simulation if no data
+    let value = 1000;
+    for (let i = days; i >= 0; i--) {
+      const time = (now - i * daySeconds) as Time;
+      const growth = 1 + (Math.random() * 0.008 - 0.002); 
+      value *= growth;
+      data.push({ time, value: Math.round(value * 100) / 100 });
+      
+      // Simulated volume
+      if (Math.random() > 0.7) {
+        volumeData.push({
+          time,
+          value: Math.random() * 50,
+          color: Math.random() > 0.5 ? 'rgba(0, 255, 157, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+        });
+      }
+    }
   }
 
-  return data;
+  return { data, volumeData };
 };
 
 interface LiveTerminalProps {
@@ -104,9 +173,11 @@ const LiveTerminal = ({ onClose }: LiveTerminalProps) => {
 type TimeframeKey = '24H' | '1M' | '1Y' | 'ALL';
 
 export const OrionWealthChart = () => {
+  const { data } = useDashboardData({ pollingInterval: 60000 });
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const [showTerminal, setShowTerminal] = useState(false);
   const [timeframe, setTimeframe] = useState<TimeframeKey>('ALL');
   const [hoverData, setHoverData] = useState<{ value: number; time: string } | null>(null);
@@ -141,12 +212,12 @@ export const OrionWealthChart = () => {
         fontFamily: 'Inter, system-ui, sans-serif',
       },
       grid: {
-        vertLines: { visible: false },
-        horzLines: { color: 'rgba(255,255,255,0.03)' },
+        vertLines: { visible: true, color: 'rgba(255,255,255,0.03)' },
+        horzLines: { visible: true, color: 'rgba(255,255,255,0.03)' },
       },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: { top: 0.1, bottom: 0.1 },
+        scaleMargins: { top: 0.1, bottom: 0.2 }, // Make room for volume
       },
       timeScale: {
         borderVisible: false,
@@ -177,13 +248,35 @@ export const OrionWealthChart = () => {
       crosshairMarkerRadius: 6,
       crosshairMarkerBorderColor: '#00FF9D',
       crosshairMarkerBackgroundColor: '#0B1015',
+      priceScaleId: 'right',
     });
 
-    const data = generatePerformanceData(getTimeframeDays(timeframe));
-    series.setData(data);
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      color: '#26a69a',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: '', // Set as overlay
+    });
+    
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: {
+        top: 0.8, // Place at bottom
+        bottom: 0,
+      },
+    });
 
-    if (data.length > 0) {
-      setLatestValue(data[data.length - 1].value);
+    const { data: dataPoints, volumeData } = generatePerformanceData(getTimeframeDays(timeframe), data.transactions);
+    series.setData(dataPoints);
+    volumeSeries.setData(volumeData);
+
+    if (dataPoints.length > 0) {
+      setLatestValue(dataPoints[dataPoints.length - 1].value);
+    }
+    volumeSeries.setData(volumeData);
+
+    if (dataPoints.length > 0) {
+      setLatestValue(dataPoints[dataPoints.length - 1].value);
     }
 
     chart.timeScale().fitContent();
@@ -212,7 +305,8 @@ export const OrionWealthChart = () => {
 
     chartRef.current = chart;
     seriesRef.current = series;
-  }, [timeframe]);
+    volumeSeriesRef.current = volumeSeries;
+  }, [timeframe, data.transactions]);
 
   useEffect(() => {
     initChart();

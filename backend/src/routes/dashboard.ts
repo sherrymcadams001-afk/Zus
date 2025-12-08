@@ -46,8 +46,8 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
       ] = await Promise.all([
         getUserWallet(env, user.userId),
         getUserPortfolio(env, user.userId),
-        getTradeHistory(env, user.userId, 20), // Reduced from 50 to 20
-        getTransactionHistory(env, user.userId, 15), // Reduced from 50 to 15
+        getTradeHistory(env, user.userId, 50), // Increased for chart density
+        getTransactionHistory(env, user.userId, 100), // Increased for wealth chart history
         getUserActiveStakes(env, user.userId),
         getTotalStaked(env, user.userId),
         getTotalEarned(env, user.userId),
