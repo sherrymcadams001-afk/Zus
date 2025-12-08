@@ -7,7 +7,7 @@
 import axios from 'axios';
 
 // API base URL - configure based on environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://trading-agent-engine.sherry-mcadams001.workers.dev';
 
 // Create axios instance
 export const apiClient = axios.create({
