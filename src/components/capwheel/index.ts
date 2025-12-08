@@ -10,3 +10,11 @@ export { CapWheelChart } from './CapWheelChart';
 export { ExecutiveSummary } from './ExecutiveSummary';
 export { RWAHedgePanel } from './RWAHedgePanel';
 export { EnterpriseActiveLogs } from './EnterpriseActiveLogs';
+
+// ORION Design System Components
+export { OrionSidebar } from './OrionSidebar';
+export { OrionMetricsGrid } from './OrionMetricsGrid';
+export { OrionWealthChart } from './OrionWealthChart';
+export { OrionTransactionLedger } from './OrionTransactionLedger';
+export { OrionWealthProjection } from './OrionWealthProjection';
+export { OrionStrategyPerformance } from './OrionStrategyPerformance';
