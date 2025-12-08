@@ -75,6 +75,7 @@ export const BOT_TIERS: Record<BotTier, {
   tradingHoursPerDay: number;
   tradingDaysPerWeek: number;
   capitalWithdrawalDays: number;
+  referralBonus: number;
 }> = {
   protobot: {
     name: 'Protobot',
@@ -86,6 +87,7 @@ export const BOT_TIERS: Record<BotTier, {
     tradingHoursPerDay: 8,
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 40,
+    referralBonus: 5,
   },
   chainpulse: {
     name: 'Chainpulse Bot',
@@ -97,6 +99,7 @@ export const BOT_TIERS: Record<BotTier, {
     tradingHoursPerDay: 8,
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 45,
+    referralBonus: 7,
   },
   titan: {
     name: 'Titan Bot',
@@ -108,6 +111,7 @@ export const BOT_TIERS: Record<BotTier, {
     tradingHoursPerDay: 8,
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 65,
+    referralBonus: 10,
   },
   omega: {
     name: 'Omega Bot',
@@ -119,6 +123,7 @@ export const BOT_TIERS: Record<BotTier, {
     tradingHoursPerDay: 8,
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 85,
+    referralBonus: 15,
   },
 };
 
@@ -130,6 +135,7 @@ export interface DashboardData {
   netYieldPercent: number;        // Calculated from bot tier + actual earnings
   partnerVolume: number;          // Sum of referral downstream investments
   vestingRunway: number;          // Days until capital withdrawal available
+  referralCount: number;          // Number of active referrals
   
   // Dynamic Data Matrix (Cash Flow)
   dailyEarnings: number;          // AUM × dailyRoiMax
@@ -412,6 +418,7 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     netYieldPercent,
     partnerVolume,
     vestingRunway,
+    referralCount: 0, // TODO: Add to backend API response
     
     // Dynamic Data Matrix
     dailyEarnings: earnings.daily,
@@ -452,6 +459,7 @@ export function getDefaultDashboardData(): DashboardData {
     netYieldPercent: config.dailyRoiMax * 100,
     partnerVolume: 0,
     vestingRunway: config.capitalWithdrawalDays,
+    referralCount: 0,
     
     dailyEarnings: 0,
     weeklyEarnings: 0,
