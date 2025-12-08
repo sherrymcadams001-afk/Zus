@@ -120,11 +120,6 @@ export const OrionWealthChart = () => {
   // Check if user has trading data
   const hasTradeData = dashboardData.trades && dashboardData.trades.length > 0;
 
-  // If no trades, show empty state
-  if (!hasTradeData) {
-    return <EmptyStateChart />;
-  }
-
   const getTimeframeDays = (tf: TimeframeKey) => {
     switch (tf) {
       case '24H': return 1;
@@ -135,7 +130,7 @@ export const OrionWealthChart = () => {
   };
 
   const initChart = useCallback(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || !hasTradeData) return;
 
     // Cleanup existing
     if (chartRef.current) {
@@ -223,10 +218,13 @@ export const OrionWealthChart = () => {
 
     chartRef.current = chart;
     seriesRef.current = series;
-  }, [timeframe]);
+  }, [timeframe, hasTradeData]);
 
   useEffect(() => {
-    initChart();
+    if (hasTradeData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      initChart();
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       if (chartRef.current && chartContainerRef.current) {
@@ -247,10 +245,12 @@ export const OrionWealthChart = () => {
         chartRef.current = null;
       }
     };
-  }, [initChart]);
+  }, [initChart, hasTradeData]);
 
   // Real-time updates
   useEffect(() => {
+    if (!hasTradeData) return;
+
     const interval = setInterval(() => {
       if (seriesRef.current) {
         const now = Math.floor(Date.now() / 1000) as Time;
@@ -261,7 +261,12 @@ export const OrionWealthChart = () => {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [latestValue]);
+  }, [latestValue, hasTradeData]);
+
+  // If no trades, show empty state
+  if (!hasTradeData) {
+    return <EmptyStateChart />;
+  }
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
