@@ -31,18 +31,26 @@ export const InviteCodeGenerator = ({ variant = 'full', className = '' }: Invite
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
+      // Fallback for older browsers using deprecated execCommand
+      // Note: This is deprecated but kept as fallback for maximum compatibility
       const textArea = document.createElement('textarea');
       textArea.value = referralCode;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
       try {
-        document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        const success = document.execCommand('copy');
+        if (success) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          // Provide manual copy feedback
+          console.warn('Automatic copy failed. Please copy manually:', referralCode);
+        }
       } catch {
-        console.error('Failed to copy code');
+        console.warn('Copy not supported. Referral code:', referralCode);
       }
       document.body.removeChild(textArea);
     }

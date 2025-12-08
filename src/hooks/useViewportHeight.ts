@@ -54,7 +54,7 @@ export function useViewportHeight() {
     
     // Detect keyboard by checking if viewport height is significantly smaller
     // Usually keyboard takes 40-50% of screen height
-    const initialHeight = window.screen?.availHeight || window.outerHeight;
+    const initialHeight = window.screen?.availHeight || window.outerHeight || height;
     const isKeyboardOpen = height < initialHeight * 0.7;
 
     setDimensions({ height, width, vh, vw, isKeyboardOpen });
@@ -155,29 +155,33 @@ export function useSafeAreaInsets() {
     if (supportsEnv) {
       // Create a temporary element to measure safe area insets
       const el = document.createElement('div');
-      el.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        padding-top: env(safe-area-inset-top);
-        padding-right: env(safe-area-inset-right);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-        visibility: hidden;
-        pointer-events: none;
-      `;
-      document.body.appendChild(el);
-      
-      const computed = getComputedStyle(el);
-      const result = {
-        top: parseFloat(computed.paddingTop) || 0,
-        right: parseFloat(computed.paddingRight) || 0,
-        bottom: parseFloat(computed.paddingBottom) || 0,
-        left: parseFloat(computed.paddingLeft) || 0,
-      };
-      
-      document.body.removeChild(el);
-      return result;
+      try {
+        el.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          padding-top: env(safe-area-inset-top);
+          padding-right: env(safe-area-inset-right);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          visibility: hidden;
+          pointer-events: none;
+        `;
+        document.body.appendChild(el);
+        
+        const computed = getComputedStyle(el);
+        return {
+          top: parseFloat(computed.paddingTop) || 0,
+          right: parseFloat(computed.paddingRight) || 0,
+          bottom: parseFloat(computed.paddingBottom) || 0,
+          left: parseFloat(computed.paddingLeft) || 0,
+        };
+      } finally {
+        // Ensure cleanup even if an error occurs
+        if (el.parentNode) {
+          document.body.removeChild(el);
+        }
+      }
     }
     
     return { top: 0, right: 0, bottom: 0, left: 0 };

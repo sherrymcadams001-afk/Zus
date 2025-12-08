@@ -179,13 +179,6 @@ const config: Config = {
         'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'swift': 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
-      // Touch manipulation utilities
-      touchAction: {
-        'pan-x': 'pan-x',
-        'pan-y': 'pan-y',
-        'pinch-zoom': 'pinch-zoom',
-        'manipulation': 'manipulation',
-      },
     },
   },
   plugins: [],
