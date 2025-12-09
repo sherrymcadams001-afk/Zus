@@ -37,6 +37,7 @@ export const CapWheelLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   
   // UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +105,7 @@ export const CapWheelLogin = () => {
           return;
         }
 
-        const response = await authAPI.register(email, password);
+        const response = await authAPI.register(email, password, inviteCode);
         
         if (response.status === 'success') {
           setSuccess('Account created successfully');
@@ -209,7 +210,7 @@ export const CapWheelLogin = () => {
           
           {/* Enterprise Subtitle - P10 Copy Clarity: Brief, impactful */}
           <p className="text-center text-slate-400 text-sm font-medium mb-8">
-            Institutional-Grade Capital Intelligence
+            Kinetic Capital Infrastructure
           </p>
         </div>
 
@@ -273,7 +274,7 @@ export const CapWheelLogin = () => {
                     htmlFor="email" 
                     className="block text-sm text-slate-300 mb-2 font-medium"
                   >
-                    Work Email
+                    Email
                   </label>
                   <input
                     ref={emailInputRef}
@@ -395,6 +396,37 @@ export const CapWheelLogin = () => {
                         placeholder="••••••••"
                       />
                       <p className="mt-2 text-xs text-slate-500">Minimum 8 characters</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Invite Code (Register only) */}
+                <AnimatePresence>
+                  {mode === 'register' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-6"
+                    >
+                      <label 
+                        htmlFor="inviteCode" 
+                        className="block text-sm text-slate-300 mb-2 font-medium"
+                      >
+                        Invite Code (Optional)
+                      </label>
+                      <input
+                        id="inviteCode"
+                        type="text"
+                        value={inviteCode}
+                        onChange={(e) => setInviteCode(e.target.value)}
+                        autoComplete="off"
+                        className="w-full h-12 px-4 bg-[#0a0f1a] border border-slate-700/80 rounded-lg text-white text-[15px] placeholder-slate-500 
+                                 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 
+                                 transition-all duration-200"
+                        placeholder="CW-XXXX-XXXX"
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>

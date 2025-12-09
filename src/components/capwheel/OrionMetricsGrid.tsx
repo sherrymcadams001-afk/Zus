@@ -8,6 +8,8 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Users, Clock, ArrowUpRight, Percent, Loader2 } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { CollapsibleCard } from '../mobile/CollapsibleCard';
 
 interface MetricCardProps {
   title: string;
@@ -17,22 +19,18 @@ interface MetricCardProps {
   icon?: React.ReactNode;
   delay?: number;
   isLoading?: boolean;
+  isMobile?: boolean;
 }
 
-const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, delay = 0, isLoading = false }: MetricCardProps) => {
+const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, delay = 0, isLoading = false, isMobile = false }: MetricCardProps) => {
   const subColors = {
     green: 'text-[#00FF9D]',
     red: 'text-red-400',
     neutral: 'text-slate-400',
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
-      className="bg-[#0F1419] border border-white/5 rounded-lg p-4 hover:border-[#00FF9D]/20 transition-colors"
-    >
+  const content = (
+    <>
       <div className="flex items-start justify-between mb-2">
         <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{title}</span>
         {icon && (
@@ -51,12 +49,32 @@ const MetricCard = ({ title, value, subValue, subValueColor = 'neutral', icon, d
           {subValue}
         </p>
       )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <div className="bg-[#0F1419] border border-white/5 rounded-lg p-4">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay }}
+      className="bg-[#0F1419] border border-white/5 rounded-lg p-4 hover:border-[#00FF9D]/20 transition-colors"
+    >
+      {content}
     </motion.div>
   );
 };
 
 export const OrionMetricsGrid = () => {
   const { data, isLoading } = useDashboardData({ pollingInterval: 30000 });
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   // Format currency
   const formatCurrency = (value: number) => {
@@ -68,51 +86,64 @@ export const OrionMetricsGrid = () => {
     }).format(value);
   };
 
+  const metrics = [
+    {
+      title: "AUM",
+      value: formatCurrency(data.aum),
+      subValue: `+${formatCurrency(data.dailyEarnings)} Today`,
+      subValueColor: "green" as const,
+      icon: <ArrowUpRight className="w-3 h-3" />,
+    },
+    {
+      title: "Net Yield",
+      value: `${data.netYieldPercent.toFixed(2)}%`,
+      subValue: `${data.currentTier.toUpperCase()} tier rate`,
+      subValueColor: "green" as const,
+      icon: <Percent className="w-3 h-3" />,
+    },
+    {
+      title: "Partner Volume",
+      value: formatCurrency(data.partnerVolume),
+      subValue: "Downstream investments",
+      subValueColor: "neutral" as const,
+      icon: <Users className="w-3 h-3" />,
+    },
+    {
+      title: "Vesting",
+      value: "14 Days",
+      subValue: "Next unlock: Dec 22",
+      subValueColor: "neutral" as const,
+      icon: <Clock className="w-3 h-3" />,
+    }
+  ];
+
+  if (isMobile) {
+    return (
+      <CollapsibleCard title="Key Metrics" defaultOpen={true} className="mb-3">
+        <div className="grid grid-cols-2 gap-3">
+          {metrics.map((metric, idx) => (
+            <MetricCard
+              key={idx}
+              {...metric}
+              isLoading={isLoading}
+              isMobile={true}
+            />
+          ))}
+        </div>
+      </CollapsibleCard>
+    );
+  }
+
   return (
     <div className="grid grid-cols-4 gap-3">
-      {/* Card 1: AUM - User's actual balance from DB */}
-      <MetricCard
-        title="AUM"
-        value={formatCurrency(data.aum)}
-        subValue={`+${formatCurrency(data.dailyEarnings)} Today`}
-        subValueColor="green"
-        icon={<ArrowUpRight className="w-3 h-3" />}
-        delay={0}
-        isLoading={isLoading}
-      />
-      
-      {/* Card 2: Net Yield - From bot tier ROI */}
-      <MetricCard
-        title="Net Yield"
-        value={`${data.netYieldPercent.toFixed(2)}%`}
-        subValue={`${data.currentTier.toUpperCase()} tier rate`}
-        subValueColor="green"
-        icon={<Percent className="w-3 h-3" />}
-        delay={0.05}
-        isLoading={isLoading}
-      />
-      
-      {/* Card 3: Partner Volume - From referral network */}
-      <MetricCard
-        title="Partner Volume"
-        value={formatCurrency(data.partnerVolume)}
-        subValue="Downstream investments"
-        subValueColor="neutral"
-        icon={<Users className="w-3 h-3" />}
-        delay={0.1}
-        isLoading={isLoading}
-      />
-      
-      {/* Card 4: Vesting Schedule - Days until capital withdrawal */}
-      <MetricCard
-        title="Vesting Runway"
-        value={`${data.vestingRunway} Days`}
-        subValue={`${data.tierConfig.capitalWithdrawalDays}d lock period`}
-        subValueColor="neutral"
-        icon={<Clock className="w-3 h-3" />}
-        delay={0.15}
-        isLoading={isLoading}
-      />
+      {metrics.map((metric, idx) => (
+        <MetricCard
+          key={idx}
+          {...metric}
+          delay={idx * 0.05}
+          isLoading={isLoading}
+        />
+      ))}
     </div>
   );
 };
