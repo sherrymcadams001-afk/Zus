@@ -20,24 +20,24 @@ export function BotActivityLog() {
   const logs = usePortfolioStore((state) => state.logs);
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur-xl overflow-hidden shadow-lg">
+    <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden hover:border-[#00FF9D]/10 transition-colors">
       {/* Terminal Header */}
-      <div className="h-9 flex-shrink-0 flex items-center justify-between border-b border-white/10 px-3 bg-slate-800/40">
+      <div className="h-9 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3">
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Cpu className="h-4 w-4 text-cyan-400" />
-            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+            <Cpu className="h-4 w-4 text-[#00FF9D]" />
+            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#00FF9D] rounded-full animate-pulse" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200">Neural Execution Logs</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white">Neural Execution Logs</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Zap className="h-3 w-3 text-emerald-400 animate-pulse" />
-          <span className="text-[9px] font-mono text-emerald-400">ACTIVE</span>
+          <Zap className="h-3 w-3 text-[#00FF9D] animate-pulse" />
+          <span className="text-[9px] font-mono text-[#00FF9D]">ACTIVE</span>
         </div>
       </div>
       
-      {/* Terminal Output - Fast Scrolling Look */}
-      <div className="flex-1 overflow-y-auto p-2 font-mono bg-[#0C1220]">
+      {/* Terminal Output */}
+      <div className="flex-1 overflow-y-auto p-2 font-mono bg-[#0B1015]">
         {logs.map((log, idx) => (
           <motion.div 
             key={log.id} 
@@ -46,7 +46,7 @@ export function BotActivityLog() {
             transition={{ duration: 0.2 }}
             className={`px-2 py-1 text-[10px] leading-relaxed rounded ${
               idx === 0 
-                ? 'bg-cyan-500/10 border-l-2 border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]' 
+                ? 'bg-[#00FF9D]/5 border-l-2 border-[#00FF9D] shadow-[0_0_10px_rgba(0,255,157,0.1)]' 
                 : 'border-l-2 border-transparent hover:bg-white/5'
             }`}
           >

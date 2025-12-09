@@ -6,13 +6,13 @@ export function LiveTrades() {
   const trades = usePortfolioStore((state) => state.trades);
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-white/10 bg-slate-900/50 backdrop-blur-xl overflow-hidden shadow-lg">
-      <div className="h-8 flex-shrink-0 flex items-center gap-2 border-b border-white/10 px-3 bg-slate-800/30">
-        <Database className="h-3.5 w-3.5 text-emerald-400" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Settlement Layer</span>
+    <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden hover:border-[#00FF9D]/10 transition-colors">
+      <div className="h-8 flex-shrink-0 flex items-center gap-2 border-b border-white/5 px-3">
+        <Database className="h-3.5 w-3.5 text-[#00FF9D]" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Settlement Layer</span>
       </div>
       
-      <div className="grid grid-cols-4 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-slate-800/20 border-b border-white/5">
+      <div className="grid grid-cols-4 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
         <span>Asset</span>
         <span className="text-right">Exec</span>
         <span className="text-right">Qty</span>
@@ -85,7 +85,7 @@ export function LiveTrades() {
                 <div className="text-right tabular-nums text-slate-500 font-mono">
                   {trade.quantity.toFixed(trade.symbol === 'BTC' ? 4 : 2)}
                 </div>
-                <div className={`flex items-center justify-end gap-0.5 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                <div className={`flex items-center justify-end gap-0.5 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>
                   {isSell && (
                     <TrendingDown className="h-2.5 w-2.5" />
                   )}

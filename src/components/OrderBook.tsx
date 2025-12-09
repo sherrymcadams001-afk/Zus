@@ -79,16 +79,16 @@ export function OrderBook() {
   const maxAskTotal = orderBook.asks[orderBook.asks.length - 1]?.total || 1;
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-white/10 bg-slate-900/50 backdrop-blur-xl overflow-hidden shadow-lg">
-      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/10 px-3 bg-slate-800/30">
+    <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden hover:border-[#00FF9D]/10 transition-colors">
+      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3">
         <div className="flex items-center gap-2">
-          <Layers className="h-3.5 w-3.5 text-emerald-400" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Depth of Market</span>
+          <Layers className="h-3.5 w-3.5 text-[#00FF9D]" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white">Depth of Market</span>
         </div>
         <ChevronDown className="h-3 w-3 text-slate-500" />
       </div>
 
-      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-slate-800/20 border-b border-white/5">
+      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
         <span>Price</span>
         <span className="text-right">Size</span>
         <span className="text-right">Total</span>
@@ -102,11 +102,11 @@ export function OrderBook() {
           ))}
         </div>
 
-        {/* Spread - Orion Style */}
-        <div className="h-7 flex-shrink-0 flex items-center justify-between border-y border-white/10 bg-slate-800/40 px-2 text-[10px]">
+        {/* Spread - Enterprise Style */}
+        <div className="h-7 flex-shrink-0 flex items-center justify-between border-y border-white/5 bg-white/[0.02] px-2 text-[10px]">
           <span className={`font-bold text-base font-mono ${
             ticker && parseFloat(ticker.closePrice) >= parseFloat(ticker.openPrice) 
-              ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]' 
+              ? 'text-[#00FF9D] drop-shadow-[0_0_6px_rgba(0,255,157,0.3)]' 
               : 'text-slate-400'
           }`}>
             {currentPrice > 0 ? currentPrice.toFixed(2) : '---'}

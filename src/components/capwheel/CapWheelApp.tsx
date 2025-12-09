@@ -105,7 +105,7 @@ const CapWheelRoutes = () => {
         } 
       />
 
-      {/* Trading Agent - Full Trading Interface */}
+      {/* Trading Agent - Integrated with shared layout */}
       <Route 
         path="/trading" 
         element={

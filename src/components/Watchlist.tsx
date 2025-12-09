@@ -60,11 +60,11 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
       ref={rowRef}
       onClick={handleClick}
       className={`grid grid-cols-[1fr_70px_50px] gap-1 px-2 py-1.5 text-[9px] cursor-pointer transition-all hover:bg-white/5 border-l-2 items-center ${
-        isActive ? 'border-l-emerald-400 bg-emerald-500/5' : 'border-l-transparent border-b border-white/5'
+        isActive ? 'border-l-[#00FF9D] bg-[#00FF9D]/5' : 'border-l-transparent border-b border-white/5'
       }`}
     >
       <div className="flex flex-col">
-        <span className={`font-bold leading-none ${isActive ? 'text-emerald-400' : 'text-slate-300'}`}>
+        <span className={`font-bold leading-none ${isActive ? 'text-[#00FF9D]' : 'text-slate-300'}`}>
           {symbol.replace('USDT', '')}
         </span>
         <span className="text-[7px] text-slate-500 leading-none mt-0.5">
@@ -77,7 +77,7 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
       </div>
       
       <div className={`text-right font-medium font-mono ${
-        change === null ? 'text-slate-500' : change >= 0 ? 'text-emerald-400' : 'text-slate-400'
+        change === null ? 'text-slate-500' : change >= 0 ? 'text-[#00FF9D]' : 'text-slate-400'
       }`}>
         {change === null ? '---' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`}
       </div>
@@ -96,16 +96,16 @@ export function Watchlist() {
   }, [setActiveSymbol]);
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-white/10 bg-slate-900/50 backdrop-blur-xl overflow-hidden shadow-lg">
-      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/10 px-3 bg-slate-800/30">
+    <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden hover:border-[#00FF9D]/10 transition-colors">
+      <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3">
         <div className="flex items-center gap-2">
-          <Droplets className="h-3.5 w-3.5 text-emerald-400" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Liquidity Sources</span>
+          <Droplets className="h-3.5 w-3.5 text-[#00FF9D]" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white">Liquidity Sources</span>
         </div>
         <Search className="h-3 w-3 text-slate-500" />
       </div>
       
-      <div className="grid grid-cols-[1fr_70px_50px] gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-slate-800/20 border-b border-white/5">
+      <div className="grid grid-cols-[1fr_70px_50px] gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
         <span>Source</span>
         <span className="text-right">Last</span>
         <span className="text-right">Δ24h</span>

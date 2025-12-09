@@ -277,20 +277,20 @@ export function MainChart() {
   }, [activeCandle, activeSymbol]);
 
   return (
-    <div className="h-full flex flex-col rounded-xl border border-white/10 bg-slate-900/50 backdrop-blur-xl overflow-hidden relative group shadow-lg">
+    <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden relative group hover:border-[#00FF9D]/10 transition-colors">
       {/* Toolbar */}
-      <div className="h-10 flex-shrink-0 flex items-center justify-between border-b border-white/10 px-4 bg-slate-800/30">
+      <div className="h-10 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-4">
         <div className="flex items-center gap-6">
           {/* Symbol Info */}
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-emerald-400" />
+            <BarChart3 className="h-4 w-4 text-[#00FF9D]" />
             <span className="text-sm font-bold text-white tracking-wide">{formatSymbolDisplay(activeSymbol)}</span>
             {activeCandle && (
               <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono ml-2 opacity-80">
                 <span className="text-slate-400">O: <span className="text-white">{formatPrice(activeCandle.open)}</span></span>
                 <span className="text-slate-400">H: <span className="text-white">{formatPrice(activeCandle.high)}</span></span>
                 <span className="text-slate-400">L: <span className="text-white">{formatPrice(activeCandle.low)}</span></span>
-                <span className="text-slate-400">C: <span className={activeCandle.close >= activeCandle.open ? 'text-emerald-400' : 'text-red-400'}>{formatPrice(activeCandle.close)}</span></span>
+                <span className="text-slate-400">C: <span className={activeCandle.close >= activeCandle.open ? 'text-[#00FF9D]' : 'text-red-400'}>{formatPrice(activeCandle.close)}</span></span>
               </div>
             )}
           </div>
@@ -305,7 +305,7 @@ export function MainChart() {
                 onClick={() => streamEngine.setChartInterval(tf.value)}
                 className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${
                   activeInterval === tf.value 
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                    ? 'bg-[#00FF9D] text-black shadow-lg shadow-[#00FF9D]/20' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -324,13 +324,13 @@ export function MainChart() {
               <ChevronDown className="h-3 w-3" />
             </button>
             
-            <div className="absolute top-full left-0 mt-2 w-40 bg-slate-800 border border-white/10 rounded-lg shadow-xl p-2 hidden group-hover/indicators:block z-20">
+            <div className="absolute top-full left-0 mt-2 w-40 bg-[#0F1419] border border-white/10 rounded-lg shadow-xl p-2 hidden group-hover/indicators:block z-20">
               <label className="flex items-center gap-2 p-2 hover:bg-white/5 rounded cursor-pointer">
                 <input 
                   type="checkbox" 
                   checked={indicators.sma}
                   onChange={(e) => setIndicators(prev => ({ ...prev, sma: e.target.checked }))}
-                  className="rounded border-slate-600 text-emerald-500 focus:ring-emerald-500/20 bg-slate-700"
+                  className="rounded border-slate-600 text-[#00FF9D] focus:ring-[#00FF9D]/20 bg-slate-700"
                 />
                 <span className="text-xs text-slate-300">SMA (20)</span>
               </label>
@@ -339,7 +339,7 @@ export function MainChart() {
                   type="checkbox" 
                   checked={indicators.ema}
                   onChange={(e) => setIndicators(prev => ({ ...prev, ema: e.target.checked }))}
-                  className="rounded border-slate-600 text-emerald-500 focus:ring-emerald-500/20 bg-slate-700"
+                  className="rounded border-slate-600 text-[#00FF9D] focus:ring-[#00FF9D]/20 bg-slate-700"
                 />
                 <span className="text-xs text-slate-300">EMA (50)</span>
               </label>
@@ -348,7 +348,7 @@ export function MainChart() {
                   type="checkbox" 
                   checked={indicators.bb}
                   onChange={(e) => setIndicators(prev => ({ ...prev, bb: e.target.checked }))}
-                  className="rounded border-slate-600 text-emerald-500 focus:ring-emerald-500/20 bg-slate-700"
+                  className="rounded border-slate-600 text-[#00FF9D] focus:ring-[#00FF9D]/20 bg-slate-700"
                 />
                 <span className="text-xs text-slate-300">Bollinger Bands</span>
               </label>
@@ -358,7 +358,7 @@ export function MainChart() {
 
         {/* Status */}
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${klineConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+          <div className={`h-2 w-2 rounded-full ${klineConnected ? 'bg-[#00FF9D] animate-pulse' : 'bg-red-500'}`} />
           <span className="text-[10px] font-medium text-slate-400 hidden sm:inline">
             {klineConnected ? 'REALTIME' : 'DISCONNECTED'}
           </span>
@@ -370,9 +370,9 @@ export function MainChart() {
         <div ref={containerRef} className="absolute inset-0" />
         
         {historicalCandles.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0B1015]/80 backdrop-blur-sm z-10">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <div className="h-5 w-5 border-2 border-[#00FF9D] border-t-transparent rounded-full animate-spin" />
               <span className="text-xs font-medium text-slate-400">Loading Market Data...</span>
             </div>
           </div>

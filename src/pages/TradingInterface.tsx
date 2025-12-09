@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { Globe, Shield } from 'lucide-react';
+import { Globe, Shield, Menu, Bell, Settings } from 'lucide-react';
 import { streamEngine } from '../core/StreamEngine';
 import { portfolioManager } from '../core/PortfolioManager';
 import { MacroTicker } from '../components/MacroTicker';
@@ -14,6 +14,9 @@ import { MainChart } from '../components/MainChart';
 import { OrderBook } from '../components/OrderBook';
 import { BotActivityLog } from '../components/BotActivityLog';
 import { LiveTrades } from '../components/LiveTrades';
+import { OrionSidebar } from '../components/capwheel/OrionSidebar';
+import { MobileNavDrawer } from '../components/mobile/MobileNavDrawer';
+import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
 
 // Orion Enterprise Session Timer Hook
 function useSessionTimer() {
@@ -38,7 +41,15 @@ type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER';
 export default function TradingInterface() {
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
   const [mobileTab, setMobileTab] = useState<MobileTab>('LOGS');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [time, setTime] = useState(new Date());
   const sessionTime = useSessionTimer();
+
+  // Real-time clock
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // Start the stream engine (with auto geo-failover)
@@ -68,125 +79,144 @@ export default function TradingInterface() {
   }, []);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#0B1015] flex flex-col font-sans select-none">
-      {/* MacroTicker - Fixed height top bar */}
-      <div className="h-7 flex-shrink-0 z-50 relative border-b border-white/5">
-        <MacroTicker />
+    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden font-sans select-none">
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer 
+        isOpen={isMobileNavOpen} 
+        onClose={() => setIsMobileNavOpen(false)} 
+      />
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block flex-shrink-0">
+        <OrionSidebar />
       </div>
 
-      {/* --- DESKTOP LAYOUT (Hidden on Mobile) --- */}
-      <div className="hidden md:flex flex-col flex-1 min-h-0">
-        {/* Header Bar - Orion Command Center */}
-        <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-white/5 bg-[#0B1015] px-4 flex-shrink-0">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+        {/* Header Bar - Unified with Dashboard */}
+        <header className="h-12 flex items-center justify-between px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Trading /</span>
+            <button 
+              onClick={() => setIsMobileNavOpen(true)}
+              className="lg:hidden p-1.5 -ml-1.5 text-slate-400 hover:text-white"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider hidden sm:inline">Trading /</span>
             <span className="text-xs font-semibold text-white">Terminal</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono text-[#00FF9D]">
-              {sessionTime} UTC
+            <span className="text-xs font-mono text-[#00FF9D] hidden sm:inline">
+              {time.toLocaleTimeString('en-US', { hour12: false })} UTC
             </span>
             <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#00FF9D]/10 border border-[#00FF9D]/20">
               <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
               <span className="text-[10px] font-bold text-[#00FF9D] tracking-wider">LIVE</span>
             </div>
-          </div>
-        </header>
-
-
-        {/* Main Content Area - Orion Glass Cockpit */}
-        <div className="flex-1 flex gap-2 p-2 min-h-0 bg-[#0B1015]">
-          {/* Left Panel - Liquidity Sources (Narrower) */}
-          <div className="w-[260px] flex-shrink-0 flex flex-col">
-            <Watchlist />
-          </div>
-
-          {/* Center Area - Chart + Execution Logs (Dominant) */}
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
-            {/* Chart Area */}
-            <div className="flex-1 min-h-0">
-              <MainChart />
-            </div>
-
-            {/* Bottom Panels - Execution Logic DOMINANT */}
-            <div className="h-[220px] flex-shrink-0 grid grid-cols-[2fr_1fr] gap-2">
-              <BotActivityLog />
-              <LiveTrades />
-            </div>
-          </div>
-
-          {/* Right Panel - DOM (Narrower/Collapsible) */}
-          <div className="w-[200px] flex-shrink-0 flex flex-col">
-            <OrderBook />
-          </div>
-        </div>
-      </div>
-
-      {/* --- MOBILE LAYOUT (Visible on Mobile) --- */}
-      <div className="flex md:hidden flex-col flex-1 min-h-0 bg-[#0B1015]">
-        {/* Mobile Header - Orion Style */}
-        <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-white/5 bg-[#0B1015] px-4 z-40">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-white">Terminal</span>
-          </div>
-          <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#00FF9D]/10 border border-[#00FF9D]/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
-            <span className="text-[10px] font-bold text-[#00FF9D] tracking-wider">LIVE</span>
-          </div>
-        </header>
-
-        {/* Mobile Chart Area (Fixed Top 35%) */}
-        <div className="h-[35%] flex-shrink-0 border-b border-white/10 bg-[#0B1015] p-1">
-          <MainChart />
-        </div>
-
-        {/* Mobile Tabs - Orion Institutional Labels */}
-        <div className="h-10 flex-shrink-0 flex items-center bg-[#0B1015] border-b border-white/10 overflow-x-auto no-scrollbar">
-          {([
-            { key: 'WATCH', label: 'SOURCES' },
-            { key: 'BOOK', label: 'DOM' },
-            { key: 'LOGS', label: 'NEURAL' },
-            { key: 'LEDGER', label: 'SETTLE' }
-          ] as const).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setMobileTab(key)}
-              className={`flex-1 min-w-[70px] h-full text-[10px] font-bold tracking-wider uppercase transition-colors ${
-                mobileTab === key 
-                  ? 'text-[#00FF9D] bg-[#00FF9D]/10 border-b-2 border-[#00FF9D]' 
-                  : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {label}
+            <button className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded transition-colors">
+              <Bell className="w-4 h-4" />
             </button>
-          ))}
+            <button className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded transition-colors hidden sm:block">
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* MacroTicker - Enterprise ticker bar */}
+        <div className="h-7 flex-shrink-0 z-40 relative border-b border-white/5 hidden lg:block">
+          <MacroTicker />
         </div>
 
-        {/* Mobile Content Area (Dynamic) */}
-        <div className="flex-1 min-h-0 relative p-1">
-          {mobileTab === 'WATCH' && <Watchlist />}
-          {mobileTab === 'BOOK' && <OrderBook />}
-          {mobileTab === 'LOGS' && <BotActivityLog />}
-          {mobileTab === 'LEDGER' && <LiveTrades />}
-        </div>
-      </div>
+        {/* --- DESKTOP LAYOUT (Hidden on Mobile) --- */}
+        <div className="hidden lg:flex flex-col flex-1 min-h-0">
+          {/* Main Content Area - Orion Glass Cockpit */}
+          <div className="flex-1 flex gap-3 p-3 min-h-0 bg-[#0B1015]">
+            {/* Left Panel - Liquidity Sources */}
+            <div className="w-[240px] flex-shrink-0 flex flex-col">
+              <Watchlist />
+            </div>
 
-      {/* Status Bar (Shared) */}
-      <div className="h-6 flex-shrink-0 bg-orion-bg-secondary border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between px-3 text-[9px] text-orion-slate-dark">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Globe className="h-2.5 w-2.5" />
-            <span className="hidden sm:inline">Region:</span>
-            <span className="text-orion-slate font-medium">{region}</span>
+            {/* Center Area - Chart + Execution Logs */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0">
+              {/* Chart Area */}
+              <div className="flex-1 min-h-0">
+                <MainChart />
+              </div>
+
+              {/* Bottom Panels - Execution Logic */}
+              <div className="h-[200px] flex-shrink-0 grid grid-cols-[2fr_1fr] gap-3">
+                <BotActivityLog />
+                <LiveTrades />
+              </div>
+            </div>
+
+            {/* Right Panel - DOM */}
+            <div className="w-[200px] flex-shrink-0 flex flex-col">
+              <OrderBook />
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Shield className="h-2.5 w-2.5 text-orion-cyan" />
-            <span className="text-orion-cyan font-medium">ONLINE</span>
+
+        {/* --- MOBILE LAYOUT (Visible on Mobile) --- */}
+        <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#0B1015] overflow-y-auto pb-20">
+          {/* Mobile Chart Area */}
+          <div className="h-[280px] flex-shrink-0 border-b border-white/5 bg-[#0B1015] p-2">
+            <MainChart />
+          </div>
+
+          {/* Mobile Tabs - Enterprise Labels */}
+          <div className="h-10 flex-shrink-0 flex items-center bg-[#0B1015] border-b border-white/5 overflow-x-auto no-scrollbar">
+            {([
+              { key: 'WATCH', label: 'Sources' },
+              { key: 'BOOK', label: 'Order Book' },
+              { key: 'LOGS', label: 'Neural Logs' },
+              { key: 'LEDGER', label: 'Settlement' }
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setMobileTab(key)}
+                className={`flex-1 min-w-[80px] h-full text-[10px] font-semibold tracking-wide transition-colors ${
+                  mobileTab === key 
+                    ? 'text-[#00FF9D] bg-[#00FF9D]/10 border-b-2 border-[#00FF9D]' 
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile Content Area */}
+          <div className="flex-1 min-h-[300px] relative p-2">
+            {mobileTab === 'WATCH' && <Watchlist />}
+            {mobileTab === 'BOOK' && <OrderBook />}
+            {mobileTab === 'LOGS' && <BotActivityLog />}
+            {mobileTab === 'LEDGER' && <LiveTrades />}
           </div>
         </div>
+
+        {/* Status Bar */}
+        <div className="hidden lg:flex h-6 flex-shrink-0 bg-[#0B1015] border-t border-white/5 items-center justify-between px-4 text-[9px] text-slate-500">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Globe className="h-2.5 w-2.5" />
+              <span>Region:</span>
+              <span className="text-slate-400 font-medium">{region}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>Session:</span>
+              <span className="text-slate-400 font-mono">{sessionTime}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Shield className="h-2.5 w-2.5 text-[#00FF9D]" />
+            <span className="text-[#00FF9D] font-medium">ONLINE</span>
+          </div>
+        </div>
+
+        {/* Mobile Bottom Nav */}
+        <MobileBottomNav />
       </div>
     </div>
   );
