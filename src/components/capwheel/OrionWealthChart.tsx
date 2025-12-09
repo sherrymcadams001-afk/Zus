@@ -9,7 +9,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, type IChartApi, type ISeriesApi, AreaSeries, HistogramSeries, type Time } from 'lightweight-charts';
 import { motion } from 'framer-motion';
-import { X, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 // System-wide AUM base value (~$2.4B)
 const SYSTEM_AUM_BASE = 2_400_000_000;
@@ -55,79 +56,6 @@ const generateSystemAUMData = (days: number = 180) => {
   return { data, volumeData };
 };
 
-interface LiveTerminalProps {
-  onClose: () => void;
-}
-
-const LiveTerminal = ({ onClose }: LiveTerminalProps) => {
-  const [logs, setLogs] = useState<string[]>([]);
-
-  useEffect(() => {
-    const actions = [
-      '> SCANNING: BTC/USDT Pair',
-      '> SIGNAL DETECTED: RSI Oversold (32.0)',
-      '> ACTION: Long Entry @ 44,201',
-      '> STATUS: Executing...',
-      '> PROFIT SECURED: +$1.86',
-      '> SCANNING: ETH/USDT Pair',
-      '> SIGNAL DETECTED: MACD Crossover',
-      '> ACTION: Long Entry @ 2,340',
-      '> STATUS: Executing...',
-      '> PROFIT SECURED: +$0.94',
-    ];
-
-    let index = 0;
-    const interval = setInterval(() => {
-      setLogs(prev => {
-        const newLogs = [...prev, actions[index % actions.length]];
-        return newLogs.slice(-6); // Keep last 6 lines
-      });
-      index++;
-    }, 2000);
-
-    // Initial logs
-    setLogs(actions.slice(0, 4));
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-      className="absolute right-4 bottom-16 w-80 bg-[#0B1015]/95 backdrop-blur-xl border border-[#00FF9D]/30 rounded-lg shadow-2xl shadow-[#00FF9D]/10 overflow-hidden z-20"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#00FF9D]/5">
-        <span className="text-xs font-bold uppercase tracking-wider text-[#00FF9D]">Live Terminal</span>
-        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded transition-colors">
-          <X className="w-3 h-3 text-slate-400" />
-        </button>
-      </div>
-
-      {/* Terminal Content */}
-      <div className="p-4 font-mono text-xs space-y-1 h-32 overflow-hidden">
-        {logs.map((log, i) => (
-          <motion.div
-            key={`${log}-${i}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`${
-              log.includes('PROFIT') ? 'text-[#00FF9D]' :
-              log.includes('SCANNING') ? 'text-[#00B8D4]' :
-              log.includes('ACTION') ? 'text-amber-400' :
-              'text-slate-400'
-            }`}
-          >
-            {log}
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-};
-
 type TimeframeKey = '24H' | '1M' | '1Y' | 'ALL';
 
 export const OrionWealthChart = () => {
@@ -135,10 +63,10 @@ export const OrionWealthChart = () => {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
-  const [showTerminal, setShowTerminal] = useState(false);
   const [timeframe, setTimeframe] = useState<TimeframeKey>('ALL');
   const [hoverData, setHoverData] = useState<{ value: number; time: string } | null>(null);
   const [latestValue, setLatestValue] = useState(SYSTEM_AUM_BASE);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const timeframes: TimeframeKey[] = ['24H', '1M', '1Y', 'ALL'];
 
@@ -160,25 +88,29 @@ export const OrionWealthChart = () => {
       chartRef.current = null;
     }
 
+    const chartHeight = isMobile ? 220 : 280;
+
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 280,
+      height: chartHeight,
       layout: {
         background: { color: 'transparent' },
         textColor: '#64748b',
         fontFamily: 'Inter, system-ui, sans-serif',
       },
       grid: {
-        vertLines: { visible: true, color: 'rgba(255,255,255,0.03)' },
+        vertLines: { visible: !isMobile, color: 'rgba(255,255,255,0.03)' },
         horzLines: { visible: true, color: 'rgba(255,255,255,0.03)' },
       },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: { top: 0.1, bottom: 0.2 }, // Make room for volume
+        visible: !isMobile, // Hide price labels on mobile
+        scaleMargins: { top: 0.1, bottom: 0.2 },
       },
       timeScale: {
         borderVisible: false,
-        timeVisible: true,
+        timeVisible: !isMobile,
+        visible: !isMobile, // Hide time axis on mobile for cleaner look
       },
       crosshair: {
         vertLine: {
@@ -258,7 +190,7 @@ export const OrionWealthChart = () => {
     chartRef.current = chart;
     seriesRef.current = series;
     volumeSeriesRef.current = volumeSeries;
-  }, [timeframe]);
+  }, [timeframe, isMobile]);
 
   useEffect(() => {
     initChart();
@@ -321,37 +253,47 @@ export const OrionWealthChart = () => {
       transition={{ duration: 0.4, delay: 0.2 }}
       className="bg-[#0F1419] border border-white/5 rounded-xl overflow-hidden relative h-full"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#00FF9D]/10 rounded-lg">
-            <TrendingUp className="w-4 h-4 text-[#00FF9D]" />
+      {/* Header - Simplified on mobile */}
+      <div className={`flex items-center justify-between border-b border-white/5 ${isMobile ? 'px-3 py-2' : 'px-5 py-4'}`}>
+        <div className="flex items-center gap-2">
+          <div className={`bg-[#00FF9D]/10 rounded-lg ${isMobile ? 'p-1.5' : 'p-2'}`}>
+            <TrendingUp className={`text-[#00FF9D] ${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              CapWheel AUM
-            </h3>
-            <p className="text-xs text-slate-500">Platform-wide Assets Under Management</p>
-          </div>
+          {!isMobile && (
+            <div>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                CapWheel AUM
+              </h3>
+              <p className="text-xs text-slate-500">Platform-wide Assets Under Management</p>
+            </div>
+          )}
+          {isMobile && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+              <span className="text-xs font-semibold text-white">Live Performance</span>
+            </div>
+          )}
         </div>
         
-        {/* Live indicator + Value */}
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-lg font-bold text-[#00FF9D] font-mono">{formatCurrency(latestValue)}</p>
-            <div className="flex items-center gap-1 justify-end">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
-              <span className="text-[10px] text-[#00FF9D] uppercase tracking-wider">Live</span>
+        {/* Live indicator + Value (Desktop) or Timeframe only (Mobile) */}
+        <div className="flex items-center gap-3">
+          {!isMobile && (
+            <div className="text-right">
+              <p className="text-lg font-bold text-[#00FF9D] font-mono">{formatCurrency(latestValue)}</p>
+              <div className="flex items-center gap-1 justify-end">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+                <span className="text-[10px] text-[#00FF9D] uppercase tracking-wider">Live</span>
+              </div>
             </div>
-          </div>
+          )}
           
           {/* Timeframe Selector */}
-          <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
+          <div className={`flex items-center gap-0.5 bg-white/5 rounded-lg ${isMobile ? 'p-0.5' : 'p-1'}`}>
             {timeframes.map((tf) => (
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 text-xs font-medium rounded transition-all ${
+                className={`${isMobile ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} font-medium rounded transition-all ${
                   timeframe === tf
                     ? 'bg-[#00FF9D] text-black'
                     : 'text-slate-400 hover:text-white'
@@ -364,8 +306,8 @@ export const OrionWealthChart = () => {
         </div>
       </div>
 
-      {/* Hover Value Display */}
-      {hoverData && (
+      {/* Hover Value Display - Hidden on mobile */}
+      {hoverData && !isMobile && (
         <div className="absolute top-16 left-5 bg-[#0B1015]/90 border border-white/10 rounded-lg px-3 py-2 z-10">
           <p className="text-lg font-bold text-white font-mono">{formatCurrency(hoverData.value)}</p>
           <p className="text-xs text-slate-400">{hoverData.time} UTC</p>
@@ -373,24 +315,9 @@ export const OrionWealthChart = () => {
       )}
 
       {/* Chart */}
-      <div className="relative w-full h-[280px]">
+      <div className={`relative w-full ${isMobile ? 'h-[220px]' : 'h-[280px]'}`}>
         <div ref={chartContainerRef} className="w-full h-full" />
       </div>
-
-      {/* Live Terminal Toggle */}
-      <button
-        onClick={() => setShowTerminal(!showTerminal)}
-        className={`absolute bottom-4 right-4 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-          showTerminal
-            ? 'bg-[#00FF9D] text-black'
-            : 'bg-[#00FF9D]/10 text-[#00FF9D] border border-[#00FF9D]/30 hover:bg-[#00FF9D]/20'
-        }`}
-      >
-        {showTerminal ? 'HIDE TERMINAL' : 'SHOW TERMINAL'}
-      </button>
-
-      {/* Live Terminal */}
-      {showTerminal && <LiveTerminal onClose={() => setShowTerminal(false)} />}
     </motion.div>
   );
 };

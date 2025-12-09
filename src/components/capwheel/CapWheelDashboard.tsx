@@ -8,7 +8,9 @@
  * - Transaction Ledger + Strategy Performance side by side
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { OrionSidebar } from './OrionSidebar';
 import { OrionMetricsGrid } from './OrionMetricsGrid';
 import { OrionWealthChart } from './OrionWealthChart';
@@ -16,21 +18,41 @@ import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Bell, Settings, User, Menu, Wallet } from 'lucide-react';
+import { Bell, Settings, User, Menu, Wallet, LogOut, ChevronDown, UserCircle } from 'lucide-react';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { CollapsibleCard } from '../mobile/CollapsibleCard';
 import { DepositModal } from './DepositModal';
 
-// Compact Header Bar
+// Compact Header Bar with Profile Dropdown
 const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => void; onDepositClick: () => void }) => {
   const [time, setTime] = useState(new Date());
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { user, clearAuth } = useAuthStore();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate('/capwheel/login');
+  };
 
   return (
     <header className="h-12 flex items-center justify-between px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
@@ -63,8 +85,54 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
         <button className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded transition-colors hidden sm:block">
           <Settings className="w-4 h-4" />
         </button>
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center sm:hidden">
-          <User className="w-3.5 h-3.5 text-black" />
+        
+        {/* Profile Dropdown */}
+        <div ref={profileRef} className="relative">
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="flex items-center gap-1.5 p-1 rounded-lg hover:bg-white/5 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center">
+              <User className="w-3.5 h-3.5 text-black" />
+            </div>
+            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform hidden sm:block ${showProfileMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          <AnimatePresence>
+            {showProfileMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-2 w-48 bg-[#0F1419] border border-white/10 rounded-xl shadow-2xl shadow-black/50 overflow-hidden z-50"
+              >
+                {/* User Info */}
+                <div className="px-4 py-3 border-b border-white/5">
+                  <p className="text-sm font-semibold text-white truncate">{user?.email || 'User'}</p>
+                  <p className="text-xs text-slate-500 capitalize">{user?.role || 'Member'}</p>
+                </div>
+
+                {/* Menu Items */}
+                <div className="py-1">
+                  <button
+                    onClick={() => { navigate('/capwheel/profile'); setShowProfileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                  >
+                    <UserCircle className="w-4 h-4" />
+                    Profile Settings
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>
