@@ -2,11 +2,15 @@
  * Wallet Routes
  * 
  * Handles wallet operations including balance retrieval, deposits, and withdrawals.
+ * Integrated with NowPayments for crypto deposits.
  */
 
 import { Env } from '../types';
 import { requireAuth } from '../middleware/auth';
 import { getUserWallet, processDeposit, processWithdrawal, getTransactionHistory } from '../services/walletService';
+import { createPayment, SUPPORTED_CURRENCIES, type SupportedCurrency } from '../services/nowpaymentsService';
+
+const IPN_CALLBACK_URL = 'https://trading-agent-engine.sherry-mcadams001.workers.dev/api/webhook/nowpayments';
 
 /**
  * Handle wallet routes
@@ -46,7 +50,7 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
     });
   }
   
-  // GET /api/wallet/deposit-address - Get system deposit address
+  // GET /api/wallet/deposit-address - Get system deposit address (legacy)
   if (path === '/api/wallet/deposit-address' && request.method === 'GET') {
     try {
       const setting = await env.DB.prepare(
@@ -69,6 +73,147 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // POST /api/wallet/create-payment - Create NowPayments payment request
+  if (path === '/api/wallet/create-payment' && request.method === 'POST') {
+    try {
+      const body = await request.json() as { amount?: number; currency?: SupportedCurrency };
+      
+      // Validate amount
+      if (typeof body.amount !== 'number' || body.amount < 1) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'Minimum deposit is $1',
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      // Validate currency
+      const validCurrency = SUPPORTED_CURRENCIES.includes(body.currency as SupportedCurrency);
+      if (!body.currency || !validCurrency) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'Invalid currency. Supported: btc, eth, ltc, usdttrc20',
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      // Create pending transaction first to get ID for order_id
+      const txResult = await env.DB.prepare(`
+        INSERT INTO transactions (user_id, type, amount, status, description, metadata)
+        VALUES (?, 'deposit', ?, 'pending', ?, ?)
+      `).bind(
+        user.userId,
+        body.amount,
+        `${body.currency.toUpperCase()} Deposit`,
+        JSON.stringify({ currency: body.currency, payment_method: 'nowpayments' })
+      ).run();
+
+      const transactionId = txResult.meta.last_row_id;
+      const orderId = `user_${user.userId}_tx_${transactionId}`;
+
+      // Create payment with NowPayments
+      const payment = await createPayment(
+        { 
+          NOWPAYMENTS_API_KEY: env.NOWPAYMENTS_API_KEY,
+          NOWPAYMENTS_IPN_SECRET: env.NOWPAYMENTS_IPN_SECRET 
+        },
+        { amount: body.amount, currency: body.currency, orderId },
+        IPN_CALLBACK_URL
+      );
+
+      // Update transaction with payment details
+      await env.DB.prepare(`
+        UPDATE transactions 
+        SET metadata = json_set(metadata, 
+          '$.payment_id', ?,
+          '$.pay_address', ?,
+          '$.pay_amount', ?,
+          '$.pay_currency', ?
+        )
+        WHERE id = ?
+      `).bind(
+        payment.payment_id,
+        payment.pay_address,
+        payment.pay_amount,
+        payment.pay_currency,
+        transactionId
+      ).run();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: {
+          transactionId,
+          paymentId: payment.payment_id,
+          payAddress: payment.pay_address,
+          payAmount: payment.pay_amount,
+          payCurrency: payment.pay_currency.toUpperCase(),
+          priceAmount: payment.price_amount,
+          priceCurrency: payment.price_currency.toUpperCase(),
+        }
+      }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    } catch (error) {
+      console.error('Create payment error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to create payment. Please try again.',
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+  }
+
+  // GET /api/wallet/payment-status/:paymentId - Check payment status
+  if (path.startsWith('/api/wallet/payment-status/') && request.method === 'GET') {
+    try {
+      const paymentId = path.replace('/api/wallet/payment-status/', '');
+      
+      // Get transaction from DB
+      const tx = await env.DB.prepare(`
+        SELECT * FROM transactions 
+        WHERE user_id = ? AND json_extract(metadata, '$.payment_id') = ?
+      `).bind(user.userId, paymentId).first();
+
+      if (!tx) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'Payment not found',
+        }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: {
+          transactionId: tx.id,
+          status: tx.status,
+          amount: tx.amount,
+          metadata: JSON.parse(tx.metadata as string || '{}'),
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    } catch (error) {
+      console.error('Get payment status error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to get payment status',
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
   }

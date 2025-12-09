@@ -19,6 +19,7 @@ import { handleReferralRoutes } from './routes/referrals';
 import { handleDashboardRoutes } from './routes/dashboard';
 import { handleProfileRoutes } from './routes/profile';
 import { handleAdminRoutes } from './routes/admin';
+import { handleNowPaymentsWebhook } from './routes/nowpayments';
 
 /**
  * Handle HTTP requests
@@ -76,6 +77,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Profile routes
   if (url.pathname.startsWith('/api/profile')) {
     return handleProfileRoutes(request, env, url.pathname);
+  }
+
+  // NowPayments IPN webhook (no auth required)
+  if (url.pathname === '/api/webhook/nowpayments') {
+    return handleNowPaymentsWebhook(request, env);
   }
 
   // Health check endpoint
