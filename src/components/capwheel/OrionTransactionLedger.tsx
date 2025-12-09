@@ -11,6 +11,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Filter, ChevronDown, Loader2 } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { TransactionData } from '../../core/DataOrchestrator';
 
 type FilterType = 'all' | 'deposits' | 'withdrawals' | 'roi';
@@ -41,6 +42,7 @@ const TYPE_COUNTERPARTY: Record<string, string> = {
 
 export const OrionTransactionLedger = () => {
   const { data, isLoading } = useDashboardData({ pollingInterval: 30000 });
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [filter, setFilter] = useState<FilterType>('all');
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
@@ -154,33 +156,58 @@ export const OrionTransactionLedger = () => {
       {/* Table */}
       <div className="flex-1 overflow-auto">
         {hasTransactions ? (
-          <table className="w-full text-xs">
-            <thead className="bg-white/5 sticky top-0">
-              <tr>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp (UTC)</th>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Hash / ID</th>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Counterparty</th>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Classification</th>
-                <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Net Change</th>
-              </tr>
-            </thead>
-            <tbody>
+          isMobile ? (
+            <div className="flex flex-col">
               {filteredTransactions.slice(0, 8).map((txn: TransactionData, index: number) => {
                 const isPositive = ['deposit', 'roi_payout', 'trade_profit', 'referral_commission'].includes(txn.type);
                 return (
-                  <tr key={txn.id} className={`border-b border-white/5 hover:bg-white/5 ${index % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
-                    <td className="px-3 py-1.5 font-mono text-slate-400">{formatTimestamp(txn.created_at)}</td>
-                    <td className="px-3 py-1.5 font-mono text-[#00B8D4]">txn_{txn.id}</td>
-                    <td className="px-3 py-1.5 text-slate-300 truncate max-w-[150px]">{TYPE_COUNTERPARTY[txn.type] ?? 'System'}</td>
-                    <td className="px-3 py-1.5 text-slate-400 truncate max-w-[120px]">{TYPE_LABELS[txn.type] ?? txn.type}</td>
-                    <td className={`px-3 py-1.5 font-mono text-right font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
-                      {formatAmount(txn.amount, txn.type)}
-                    </td>
-                  </tr>
+                  <div 
+                    key={txn.id} 
+                    className={`p-3 border-b border-white/5 ${index % 2 === 1 ? 'bg-white/[0.02]' : ''}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-slate-200">{TYPE_LABELS[txn.type] ?? txn.type}</span>
+                      <span className={`text-xs font-mono font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
+                        {formatAmount(txn.amount, txn.type)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500">
+                      <span>{TYPE_COUNTERPARTY[txn.type] ?? 'System'}</span>
+                      <span className="font-mono">{formatTimestamp(txn.created_at)}</span>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="bg-white/5 sticky top-0">
+                <tr>
+                  <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp (UTC)</th>
+                  <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Hash / ID</th>
+                  <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Counterparty</th>
+                  <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Classification</th>
+                  <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Net Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTransactions.slice(0, 8).map((txn: TransactionData, index: number) => {
+                  const isPositive = ['deposit', 'roi_payout', 'trade_profit', 'referral_commission'].includes(txn.type);
+                  return (
+                    <tr key={txn.id} className={`border-b border-white/5 hover:bg-white/5 ${index % 2 === 1 ? 'bg-white/[0.02]' : ''}`}>
+                      <td className="px-3 py-1.5 font-mono text-slate-400">{formatTimestamp(txn.created_at)}</td>
+                      <td className="px-3 py-1.5 font-mono text-[#00B8D4]">txn_{txn.id}</td>
+                      <td className="px-3 py-1.5 text-slate-300 truncate max-w-[150px]">{TYPE_COUNTERPARTY[txn.type] ?? 'System'}</td>
+                      <td className="px-3 py-1.5 text-slate-400 truncate max-w-[120px]">{TYPE_LABELS[txn.type] ?? txn.type}</td>
+                      <td className={`px-3 py-1.5 font-mono text-right font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
+                        {formatAmount(txn.amount, txn.type)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )
         ) : (
           <div className="flex items-center justify-center h-full text-slate-500 text-xs">
             {isLoading ? 'Loading transactions...' : 'No transactions yet'}
