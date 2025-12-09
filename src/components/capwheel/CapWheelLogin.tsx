@@ -138,7 +138,8 @@ export const CapWheelLogin = () => {
           
           // Redirect based on role
           if (response.data.user.role === 'admin') {
-            navigate('/capwheel/admin');
+            // Force hard navigation for admin to ensure clean state
+            window.location.href = '/capwheel/admin';
           } else {
             navigate('/capwheel/dashboard');
           }

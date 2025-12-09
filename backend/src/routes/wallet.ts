@@ -46,10 +46,42 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
     });
   }
   
+  // GET /api/wallet/deposit-address - Get system deposit address
+  if (path === '/api/wallet/deposit-address' && request.method === 'GET') {
+    try {
+      const setting = await env.DB.prepare(
+        "SELECT value FROM system_settings WHERE key = 'deposit_address_trc20'"
+      ).first<{ value: string }>();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: {
+          address: setting?.value || '',
+          network: 'TRC20'
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to fetch deposit address'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
   // POST /api/wallet/deposit - Deposit funds
   if (path === '/api/wallet/deposit' && request.method === 'POST') {
     try {
-      const body = await request.json() as { amount?: number; description?: string };
+      const body = await request.json() as { 
+        amount?: number; 
+        description?: string;
+        txHash?: string;
+        network?: string;
+      };
       
       if (typeof body.amount !== 'number' || body.amount <= 0) {
         return new Response(JSON.stringify({
@@ -60,8 +92,15 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
       }
+
+      // If txHash is provided, it's a user crypto deposit request (Pending)
+      // If not, it's a direct system deposit (Completed) - usually restricted, but keeping logic flexible
+      const isCryptoDeposit = !!body.txHash;
+      const status = isCryptoDeposit ? 'pending' : 'completed';
+      const description = body.description || (isCryptoDeposit ? `USDT Deposit (${body.network})` : 'Deposit');
+      const metadata = isCryptoDeposit ? { txHash: body.txHash, network: body.network } : undefined;
       
-      const result = await processDeposit(env, user.userId, body.amount, body.description);
+      const result = await processDeposit(env, user.userId, body.amount, description, metadata, status);
       
       return new Response(JSON.stringify(result), {
         status: result.status === 'success' ? 201 : 400,

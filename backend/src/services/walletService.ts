@@ -121,8 +121,10 @@ export async function processDeposit(
   env: Env,
   userId: number,
   amount: number,
-  description?: string
-): Promise<ApiResponse<{ wallet: Wallet; transaction: Transaction }>> {
+  description?: string,
+  metadata?: any,
+  status: 'completed' | 'pending' = 'completed'
+): Promise<ApiResponse<{ wallet: Wallet | null; transaction: Transaction }>> {
   try {
     if (amount <= 0) {
       return { status: 'error', error: 'Deposit amount must be positive' };
@@ -133,23 +135,30 @@ export async function processDeposit(
     }
     
     const timestamp = Math.floor(Date.now() / 1000);
+    const metadataStr = metadata ? JSON.stringify(metadata) : null;
+    const completedAt = status === 'completed' ? timestamp : null;
     
     // Create transaction record
     const transaction = await env.DB.prepare(
-      `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
-       VALUES (?, 'deposit', ?, 'completed', ?, ?, ?)
+      `INSERT INTO transactions (user_id, type, amount, status, description, metadata, created_at, completed_at)
+       VALUES (?, 'deposit', ?, ?, ?, ?, ?, ?)
        RETURNING *`
-    ).bind(userId, amount, description || 'Deposit', timestamp, timestamp).first<Transaction>();
+    ).bind(userId, amount, status, description || 'Deposit', metadataStr, timestamp, completedAt).first<Transaction>();
     
     if (!transaction) {
       return { status: 'error', error: 'Failed to create transaction' };
     }
     
-    // Update wallet
-    const wallet = await updateWalletBalance(env, userId, amount);
-    
-    if (!wallet) {
-      return { status: 'error', error: 'Wallet not found' };
+    // Only update wallet if completed immediately (e.g. Admin deposit)
+    let wallet: Wallet | null = null;
+    if (status === 'completed') {
+      wallet = await updateWalletBalance(env, userId, amount);
+      if (!wallet) {
+        return { status: 'error', error: 'Wallet not found' };
+      }
+    } else {
+      // For pending deposits, we just return the current wallet state without changes
+      wallet = await getUserWallet(env, userId);
     }
     
     return {
@@ -161,6 +170,63 @@ export async function processDeposit(
     return { status: 'error', error: 'Deposit failed' };
   }
 }
+
+/**
+ * Approve pending deposit (Admin)
+ */
+export async function approveDeposit(
+  env: Env,
+  transactionId: number
+): Promise<ApiResponse<{ wallet: Wallet; transaction: Transaction }>> {
+  try {
+    // Get transaction
+    const transaction = await env.DB.prepare(
+      'SELECT * FROM transactions WHERE id = ?'
+    ).bind(transactionId).first<Transaction>();
+
+    if (!transaction) {
+      return { status: 'error', error: 'Transaction not found' };
+    }
+
+    if (transaction.status !== 'pending') {
+      return { status: 'error', error: `Transaction is already ${transaction.status}` };
+    }
+
+    if (transaction.type !== 'deposit') {
+      return { status: 'error', error: 'Not a deposit transaction' };
+    }
+
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    // Update transaction status
+    const updatedTx = await env.DB.prepare(
+      `UPDATE transactions 
+       SET status = 'completed', completed_at = ? 
+       WHERE id = ? 
+       RETURNING *`
+    ).bind(timestamp, transactionId).first<Transaction>();
+
+    if (!updatedTx) {
+      return { status: 'error', error: 'Failed to update transaction' };
+    }
+
+    // Credit user wallet
+    const wallet = await updateWalletBalance(env, transaction.user_id, transaction.amount);
+
+    if (!wallet) {
+      return { status: 'error', error: 'Wallet not found' };
+    }
+
+    return {
+      status: 'success',
+      data: { wallet, transaction: updatedTx }
+    };
+  } catch (error) {
+    console.error('Approve deposit error:', error);
+    return { status: 'error', error: 'Failed to approve deposit' };
+  }
+}
+
 
 /**
  * Process withdrawal

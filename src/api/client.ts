@@ -36,10 +36,16 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      window.location.href = '/capwheel/login';
+      // Only clear auth and redirect if not already on login page
+      // and if the request was to a protected endpoint (not auth/me validation)
+      const isAuthValidation = error.config?.url?.includes('/api/auth/me');
+      const isLoginPage = window.location.pathname.includes('/login');
+      
+      if (!isAuthValidation && !isLoginPage) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/capwheel/login';
+      }
     }
     return Promise.reject(error);
   }

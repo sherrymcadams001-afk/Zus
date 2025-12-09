@@ -1,11 +1,13 @@
 /**
  * Auth Store
  * 
- * Global state for authentication.
+ * Global state for authentication with proper session persistence.
  */
 
 import { create } from 'zustand';
 import type { User } from '../api/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://trading-agent-engine.sherry-mcadams001.workers.dev';
 
 interface AuthState {
   user: User | null;
@@ -17,10 +19,10 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   clearAuth: () => void;
   setLoading: (loading: boolean) => void;
-  initAuth: () => void;
+  initAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
   isAuthenticated: false,
@@ -40,19 +42,51 @@ export const useAuthStore = create<AuthState>((set) => ({
   
   setLoading: (loading) => set({ isLoading: loading }),
   
-  initAuth: () => {
+  initAuth: async () => {
     const token = localStorage.getItem('authToken');
     const storedUserStr = localStorage.getItem('user');
     
-    if (token && storedUserStr) {
+    if (!token || !storedUserStr) {
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
+    
+    // Validate token with backend
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success' && data.data) {
+          const user: User = {
+            id: data.data.id,
+            email: data.data.email,
+            role: data.data.role,
+            kyc_status: data.data.kyc_status,
+          };
+          localStorage.setItem('user', JSON.stringify(user));
+          set({ user, token, isAuthenticated: true, isLoading: false });
+          return;
+        }
+      }
+      
+      // Token invalid - clear auth
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+    } catch (error) {
+      // Network error - use cached user data (offline support)
       try {
         const user = JSON.parse(storedUserStr);
         set({ user, token, isAuthenticated: true, isLoading: false });
       } catch {
         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
       }
-    } else {
-      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
     }
   },
 }));

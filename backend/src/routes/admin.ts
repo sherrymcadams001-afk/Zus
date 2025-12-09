@@ -6,7 +6,7 @@
 
 import { Env } from '../types';
 import { requireAdmin } from '../middleware/admin';
-import { processDeposit, getTransactionHistory } from '../services/walletService';
+import { processDeposit, approveDeposit } from '../services/walletService';
 
 /**
  * Handle admin routes
@@ -21,6 +21,48 @@ export async function handleAdminRoutes(request: Request, env: Env, path: string
   // All admin routes require admin authentication
   const authResult = await requireAdmin(request);
   if (authResult instanceof Response) return authResult;
+
+  // GET /api/admin/deposits/pending - List pending deposits
+  if (path === '/api/admin/deposits/pending' && request.method === 'GET') {
+    try {
+      const deposits = await env.DB.prepare(`
+        SELECT 
+          t.*,
+          u.email as user_email
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE t.type = 'deposit' AND t.status = 'pending'
+        ORDER BY t.created_at DESC
+      `).all();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: deposits.results
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to fetch pending deposits'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // POST /api/admin/deposits/:id/approve - Approve deposit
+  const approveMatch = path.match(/^\/api\/admin\/deposits\/(\d+)\/approve$/);
+  if (approveMatch && request.method === 'POST') {
+    const txId = parseInt(approveMatch[1]);
+    const result = await approveDeposit(env, txId);
+    
+    return new Response(JSON.stringify(result), {
+      status: result.status === 'success' ? 200 : 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
 
   // GET /api/admin/users - List all users
   if (path === '/api/admin/users' && request.method === 'GET') {
@@ -50,6 +92,70 @@ export async function handleAdminRoutes(request: Request, env: Env, path: string
       return new Response(JSON.stringify({
         status: 'error',
         error: 'Failed to fetch users'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // GET /api/admin/settings - Get system settings
+  if (path === '/api/admin/settings' && request.method === 'GET') {
+    try {
+      const settings = await env.DB.prepare('SELECT * FROM system_settings').all();
+      const settingsMap = settings.results.reduce((acc: any, curr: any) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      }, {});
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: settingsMap
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to fetch settings'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // POST /api/admin/settings - Update system settings
+  if (path === '/api/admin/settings' && request.method === 'POST') {
+    try {
+      const body = await request.json() as { key: string; value: string };
+      
+      if (!body.key || body.value === undefined) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'Key and value are required'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      await env.DB.prepare(
+        `INSERT INTO system_settings (key, value, updated_at) 
+         VALUES (?, ?, strftime('%s', 'now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+      ).bind(body.key, body.value).run();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: { key: body.key, value: body.value }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to update settings'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }

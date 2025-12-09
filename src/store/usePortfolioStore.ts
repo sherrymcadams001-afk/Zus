@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '../api/client';
 
 export interface Trade {
   id: number;
@@ -26,6 +27,10 @@ interface PortfolioState {
   startOfDayEquity: number;
   startOfDayWalletBalance: number;
   
+  // Loading state
+  isLoading: boolean;
+  isInitialized: boolean;
+  
   // Flash state for sell events
   lastSellTimestamp: number | null;
   
@@ -34,6 +39,7 @@ interface PortfolioState {
   logs: LogEntry[];
   
   // Actions
+  initFromBackend: () => Promise<void>;
   addTrade: (trade: Omit<Trade, 'id' | 'timestamp'>) => void;
   addLog: (message: string, type: LogEntry['type']) => void;
   updateBalances: (walletDelta: number, poolDelta: number) => void;
@@ -44,15 +50,64 @@ interface PortfolioState {
 }
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
-  walletBalance: 10000.00, // Simulated user funds (can be set via API)
-  poolBalance: 142500000.00, // Large liquidity pool
-  totalEquity: 142510000.00,
-  sessionPnL: 0.00,
-  startOfDayEquity: 142510000.00, // Baseline for daily target
-  startOfDayWalletBalance: 10000.00, // User's balance at start of day for profit calculation
+  // Initialize with zeros - real data comes from backend
+  walletBalance: 0,
+  poolBalance: 0,
+  totalEquity: 0,
+  sessionPnL: 0,
+  startOfDayEquity: 0,
+  startOfDayWalletBalance: 0,
+  
+  isLoading: false,
+  isInitialized: false,
   lastSellTimestamp: null,
   trades: [],
   logs: [],
+
+  // Fetch real data from backend
+  initFromBackend: async () => {
+    const state = get();
+    if (state.isInitialized || state.isLoading) return;
+    
+    set({ isLoading: true });
+    try {
+      const response = await apiClient.get('/api/dashboard');
+      const { wallet, staking, transactions } = response.data;
+      
+      const walletBalance = wallet?.available_balance ?? 0;
+      const stakedBalance = staking?.totalStaked ?? 0;
+      const totalEquity = walletBalance + stakedBalance;
+      
+      // Convert recent transactions to trades format
+      const recentTrades: Trade[] = (transactions || []).slice(0, 20).map((tx: {
+        id: number;
+        type: string;
+        amount: number;
+        created_at: string;
+      }) => ({
+        id: tx.id,
+        symbol: 'USDT',
+        side: tx.type === 'deposit' ? 'BUY' : 'SELL',
+        price: 1,
+        quantity: tx.amount,
+        pnl: tx.type === 'profit' ? tx.amount : 0,
+        timestamp: new Date(tx.created_at).getTime(),
+      }));
+      
+      set({
+        walletBalance,
+        totalEquity,
+        startOfDayWalletBalance: walletBalance,
+        startOfDayEquity: totalEquity,
+        trades: recentTrades,
+        isLoading: false,
+        isInitialized: true,
+      });
+    } catch (error) {
+      console.error('Failed to init portfolio from backend:', error);
+      set({ isLoading: false, isInitialized: true });
+    }
+  },
 
   setWalletBalance: (balance) => set((state) => ({ 
     walletBalance: balance,

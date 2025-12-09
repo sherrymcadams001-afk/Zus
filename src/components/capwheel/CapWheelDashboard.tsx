@@ -14,17 +14,17 @@ import { OrionMetricsGrid } from './OrionMetricsGrid';
 import { OrionWealthChart } from './OrionWealthChart';
 import { OrionWealthProjection } from './OrionWealthProjection';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
-import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Bell, Settings, User, Menu } from 'lucide-react';
+import { Bell, Settings, User, Menu, Wallet } from 'lucide-react';
 import { MobileNavDrawer } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
 import { InviteCodeGenerator } from '../mobile/InviteCodeGenerator';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { CollapsibleCard } from '../mobile/CollapsibleCard';
+import { DepositModal } from './DepositModal';
 
 // Compact Header Bar
-const DashboardHeader = ({ onMenuClick }: { onMenuClick: () => void }) => {
+const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => void; onDepositClick: () => void }) => {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -46,6 +46,14 @@ const DashboardHeader = ({ onMenuClick }: { onMenuClick: () => void }) => {
       </div>
 
       <div className="flex items-center gap-3">
+        <button 
+          onClick={onDepositClick}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#00FF9D] text-black text-xs font-bold rounded hover:bg-[#00E88A] transition-colors"
+        >
+          <Wallet className="w-3.5 h-3.5" />
+          Deposit
+        </button>
+
         <span className="text-xs font-mono text-[#00FF9D] hidden sm:inline">
           {time.toLocaleTimeString('en-US', { hour12: false })} UTC
         </span>
@@ -64,27 +72,18 @@ const DashboardHeader = ({ onMenuClick }: { onMenuClick: () => void }) => {
 };
 
 export const CapWheelDashboard = () => {
-  const setWalletBalance = usePortfolioStore((state) => state.setWalletBalance);
+  const initFromBackend = usePortfolioStore((state) => state.initFromBackend);
   const user = useAuthStore((state) => state.user);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 1023px)');
 
+  // Initialize portfolio data from backend when user is authenticated
   useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const response = await apiClient.get('/api/wallet');
-        if (response.data.status === 'success') {
-          setWalletBalance(response.data.data.available_balance);
-        }
-      } catch (error) {
-        console.error('Failed to fetch wallet balance:', error);
-      }
-    };
-
     if (user) {
-      fetchBalance();
+      initFromBackend();
     }
-  }, [setWalletBalance, user]);
+  }, [initFromBackend, user]);
 
   return (
     <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
@@ -101,7 +100,10 @@ export const CapWheelDashboard = () => {
 
       {/* Main Content - NO SCROLL on Desktop, Scroll on Mobile */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-        <DashboardHeader onMenuClick={() => setIsMobileNavOpen(true)} />
+                <DashboardHeader 
+          onMenuClick={() => setIsMobileNavOpen(true)} 
+          onDepositClick={() => setIsDepositModalOpen(true)}
+        />
 
         {/* Dashboard Grid */}
         <main className={`flex-1 p-4 flex flex-col gap-3 ${isMobile ? 'overflow-y-auto pb-24' : 'overflow-hidden'}`}>
@@ -152,6 +154,11 @@ export const CapWheelDashboard = () => {
         {/* Mobile Bottom Nav */}
         <MobileBottomNav />
       </div>
+
+      <DepositModal 
+        isOpen={isDepositModalOpen} 
+        onClose={() => setIsDepositModalOpen(false)} 
+      />
     </div>
   );
 };

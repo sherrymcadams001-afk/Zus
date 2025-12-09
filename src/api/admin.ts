@@ -42,5 +42,25 @@ export const adminApi = {
   addBalance: async (userId: number, amount: number, description?: string) => {
     const response = await apiClient.post(`/api/admin/users/${userId}/balance`, { amount, description });
     return response.data;
+  },
+
+  getPendingDeposits: async () => {
+    const response = await apiClient.get<{ status: string; data: any[] }>('/api/admin/deposits/pending');
+    return response.data;
+  },
+
+  approveDeposit: async (txId: number) => {
+    const response = await apiClient.post(`/api/admin/deposits/${txId}/approve`);
+    return response.data;
+  },
+
+  getSettings: async () => {
+    const response = await apiClient.get<{ status: string; data: Record<string, string> }>('/api/admin/settings');
+    return response.data;
+  },
+
+  updateSetting: async (key: string, value: string) => {
+    const response = await apiClient.post('/api/admin/settings', { key, value });
+    return response.data;
   }
 };

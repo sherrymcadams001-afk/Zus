@@ -108,7 +108,7 @@ export async function generateJWT(userId: number, email: string, role: string): 
     email,
     role,
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+    exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days
   };
   
   const encoder = new TextEncoder();
