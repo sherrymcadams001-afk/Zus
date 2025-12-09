@@ -103,7 +103,7 @@ export default function TradingInterface() {
               <Menu size={20} />
             </button>
             <span className="text-[10px] text-slate-500 uppercase tracking-wider hidden sm:inline">Trading /</span>
-            <span className="text-xs font-semibold text-white">Terminal</span>
+            <span className="text-xs font-semibold text-white">Agent</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -159,24 +159,24 @@ export default function TradingInterface() {
         </div>
 
         {/* --- MOBILE LAYOUT (Visible on Mobile) --- */}
-        <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#0B1015] overflow-y-auto pb-20">
+        <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#0B1015] overflow-y-auto overflow-x-hidden pb-20">
           {/* Mobile Chart Area */}
           <div className="h-[280px] flex-shrink-0 border-b border-white/5 bg-[#0B1015] p-2">
             <MainChart />
           </div>
 
-          {/* Mobile Tabs - Enterprise Labels */}
-          <div className="h-10 flex-shrink-0 flex items-center bg-[#0B1015] border-b border-white/5 overflow-x-auto no-scrollbar">
+          {/* Mobile Tabs - Clear Enterprise Labels */}
+          <div className="h-10 flex-shrink-0 flex items-center bg-[#0B1015] border-b border-white/5">
             {([
-              { key: 'WATCH', label: 'Sources' },
-              { key: 'BOOK', label: 'Order Book' },
-              { key: 'LOGS', label: 'Neural Logs' },
-              { key: 'LEDGER', label: 'Settlement' }
+              { key: 'WATCH', label: 'Markets' },
+              { key: 'BOOK', label: 'Book' },
+              { key: 'LOGS', label: 'Agent Logs' },
+              { key: 'LEDGER', label: 'Trades' }
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setMobileTab(key)}
-                className={`flex-1 min-w-[80px] h-full text-[10px] font-semibold tracking-wide transition-colors ${
+                className={`flex-1 min-w-0 h-full text-[10px] font-semibold tracking-wide transition-colors truncate px-1 ${
                   mobileTab === key 
                     ? 'text-[#00FF9D] bg-[#00FF9D]/10 border-b-2 border-[#00FF9D]' 
                     : 'text-slate-500 hover:text-slate-300'

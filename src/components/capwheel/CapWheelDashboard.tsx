@@ -151,8 +151,8 @@ export const CapWheelDashboard = () => {
                   <OrionTransactionLedger />
                 </div>
               </div>
-              <div className="col-span-1 min-h-0 flex flex-col gap-3">
-                <div className="flex-1 min-h-0">
+              <div className="col-span-1 min-h-[340px] flex flex-col gap-3">
+                <div className="flex-1 min-h-[280px]">
                   <OrionWealthProjection />
                 </div>
                 <div className="flex-shrink-0">

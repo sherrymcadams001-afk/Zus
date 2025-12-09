@@ -28,7 +28,7 @@ export function BotActivityLog() {
             <Cpu className="h-4 w-4 text-[#00FF9D]" />
             <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-[#00FF9D] rounded-full animate-pulse" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-white">Neural Execution Logs</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-white">Agent Logs</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Zap className="h-3 w-3 text-[#00FF9D] animate-pulse" />

@@ -383,8 +383,11 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const tierConfig = BOT_TIERS[currentTier];
   
   // Calculate net yield from actual earnings vs investment
+  // If no earnings yet, show the tier's potential daily rate
   const totalEarned = staking.totalEarned;
-  const netYieldPercent = aum > 0 ? (totalEarned / aum) * 100 : tierConfig.dailyRoiMax * 100;
+  const netYieldPercent = totalEarned > 0 
+    ? (totalEarned / aum) * 100 
+    : tierConfig.dailyRoiMax * 100;
   
   // Calculate vesting runway from earliest active stake
   const earliestStake = activeStakes.length > 0 

@@ -213,13 +213,19 @@ export function MainChart() {
     bbLowerSeriesRef.current = bbLowerSeries;
 
     const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ 
-          width: containerRef.current.clientWidth, 
-          height: containerRef.current.clientHeight 
-        });
+      if (containerRef.current && chartRef.current) {
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+        if (width > 0 && height > 0) {
+          chartRef.current.applyOptions({ width, height });
+        }
       }
     };
+
+    // Initial resize with delay for mobile
+    handleResize();
+    setTimeout(handleResize, 100);
+    setTimeout(handleResize, 500);
 
     const resizeObserver = new ResizeObserver(() => handleResize());
     resizeObserver.observe(containerRef.current);

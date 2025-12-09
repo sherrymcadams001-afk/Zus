@@ -59,12 +59,12 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
     <div
       ref={rowRef}
       onClick={handleClick}
-      className={`grid grid-cols-[1fr_70px_50px] gap-1 px-2 py-1.5 text-[9px] cursor-pointer transition-all hover:bg-white/5 border-l-2 items-center ${
+      className={`grid grid-cols-[1fr_auto_auto] gap-1 px-2 py-1.5 text-[9px] cursor-pointer transition-all hover:bg-white/5 border-l-2 items-center ${
         isActive ? 'border-l-[#00FF9D] bg-[#00FF9D]/5' : 'border-l-transparent border-b border-white/5'
       }`}
     >
-      <div className="flex flex-col">
-        <span className={`font-bold leading-none ${isActive ? 'text-[#00FF9D]' : 'text-slate-300'}`}>
+      <div className="flex flex-col min-w-0">
+        <span className={`font-bold leading-none truncate ${isActive ? 'text-[#00FF9D]' : 'text-slate-300'}`}>
           {symbol.replace('USDT', '')}
         </span>
         <span className="text-[7px] text-slate-500 leading-none mt-0.5">
@@ -72,11 +72,11 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
         </span>
       </div>
       
-      <div className="text-right font-mono text-slate-400">
+      <div className="text-right font-mono text-slate-400 w-14 truncate">
         {price ? price.toFixed(price < 1 ? 4 : 2) : '---'}
       </div>
       
-      <div className={`text-right font-medium font-mono ${
+      <div className={`text-right font-medium font-mono w-12 truncate ${
         change === null ? 'text-slate-500' : change >= 0 ? 'text-[#00FF9D]' : 'text-slate-400'
       }`}>
         {change === null ? '---' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`}
@@ -100,15 +100,15 @@ export function Watchlist() {
       <div className="h-8 flex-shrink-0 flex items-center justify-between border-b border-white/5 px-3">
         <div className="flex items-center gap-2">
           <Droplets className="h-3.5 w-3.5 text-[#00FF9D]" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white">Liquidity Sources</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white">Markets</span>
         </div>
         <Search className="h-3 w-3 text-slate-500" />
       </div>
       
-      <div className="grid grid-cols-[1fr_70px_50px] gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
-        <span>Source</span>
-        <span className="text-right">Last</span>
-        <span className="text-right">Δ24h</span>
+      <div className="grid grid-cols-[1fr_auto_auto] gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
+        <span>Symbol</span>
+        <span className="text-right w-14">Last</span>
+        <span className="text-right w-12">Δ24h</span>
       </div>
       
       <div className="flex-1 overflow-y-auto custom-scrollbar">

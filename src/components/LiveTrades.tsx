@@ -9,12 +9,12 @@ export function LiveTrades() {
     <div className="h-full flex flex-col rounded-lg border border-white/5 bg-[#0F1419] overflow-hidden hover:border-[#00FF9D]/10 transition-colors">
       <div className="h-8 flex-shrink-0 flex items-center gap-2 border-b border-white/5 px-3">
         <Database className="h-3.5 w-3.5 text-[#00FF9D]" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Settlement Layer</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Trade History</span>
       </div>
       
-      <div className="grid grid-cols-4 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 px-2 py-1.5 text-[8px] font-semibold uppercase text-slate-500 bg-white/[0.02] border-b border-white/5">
         <span>Asset</span>
-        <span className="text-right">Exec</span>
+        <span className="text-right hidden sm:block">Exec</span>
         <span className="text-right">Qty</span>
         <span className="text-right">P&L</span>
       </div>
@@ -71,15 +71,15 @@ export function LiveTrades() {
                   backgroundColor: { duration: hasFlashEffect ? 1.2 : 0 },
                   boxShadow: { duration: hasFlashEffect ? 1.2 : 0 }
                 }}
-                className="grid grid-cols-4 gap-1 px-2 py-1 text-[9px] border-b border-white/5 items-center hover:bg-white/5 transition-colors"
+                className="grid grid-cols-3 sm:grid-cols-4 gap-1 px-2 py-1 text-[9px] border-b border-white/5 items-center hover:bg-white/5 transition-colors"
               >
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-slate-300">{trade.symbol}</span>
-                  <span className={`text-[7px] px-1 rounded font-bold ${trade.side === 'BUY' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-500/15 text-slate-400'}`}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="font-bold text-slate-300 truncate">{trade.symbol}</span>
+                  <span className={`text-[7px] px-1 rounded font-bold flex-shrink-0 ${trade.side === 'BUY' ? 'bg-[#00FF9D]/15 text-[#00FF9D]' : 'bg-slate-500/15 text-slate-400'}`}>
                     {trade.side}
                   </span>
                 </div>
-                <div className="text-right tabular-nums text-slate-500 font-mono">
+                <div className="text-right tabular-nums text-slate-500 font-mono hidden sm:block">
                   {trade.price < 10 ? trade.price.toFixed(4) : trade.price < 1000 ? trade.price.toFixed(2) : trade.price.toFixed(0)}
                 </div>
                 <div className="text-right tabular-nums text-slate-500 font-mono">
