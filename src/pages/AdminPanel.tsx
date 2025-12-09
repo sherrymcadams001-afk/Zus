@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { adminApi, type AdminUser } from '../api/admin';
+import { adminApi, type AdminUser, type AdminUserDetail } from '../api/admin';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 
 const AdminPanel = () => {
   const { user } = useAuthStore();
@@ -13,8 +14,10 @@ const AdminPanel = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [viewUser, setViewUser] = useState<AdminUserDetail | null>(null);
   const [balanceAmount, setBalanceAmount] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -34,6 +37,16 @@ const AdminPanel = () => {
       console.error('Failed to fetch users', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewUser = async (userId: number) => {
+    try {
+      const response = await adminApi.getUserDetails(userId);
+      setViewUser(response.data);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch user details', error);
     }
   };
 
@@ -107,7 +120,15 @@ const AdminPanel = () => {
                   <td className="px-6 py-4 text-right text-gray-500">
                     {new Date(u.created_at * 1000).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                      onClick={() => handleViewUser(u.id)}
+                    >
+                      View
+                    </Button>
                     <Button 
                       size="sm" 
                       variant="ghost" 
@@ -123,6 +144,96 @@ const AdminPanel = () => {
           </table>
         </div>
       </Card>
+
+      {/* User Details Modal */}
+      <AnimatePresence>
+        {isViewModalOpen && viewUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            >
+              <Card className="border-gray-700 bg-[#12181F] p-6 space-y-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">User Details</h3>
+                    <p className="text-sm text-gray-400">ID: {viewUser.user.id} • {viewUser.user.email}</p>
+                  </div>
+                  <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-white">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-black/20 p-4 rounded-lg border border-white/5">
+                    <div className="text-xs text-gray-500 uppercase">Available Balance</div>
+                    <div className="text-2xl font-mono text-[#00FF9D]">${viewUser.wallet.available_balance.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-lg border border-white/5">
+                    <div className="text-xs text-gray-500 uppercase">Locked Balance</div>
+                    <div className="text-2xl font-mono text-yellow-400">${viewUser.wallet.locked_balance.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-black/20 p-4 rounded-lg border border-white/5">
+                    <div className="text-xs text-gray-500 uppercase">Total Equity</div>
+                    <div className="text-2xl font-mono text-white">${(viewUser.wallet.available_balance + viewUser.wallet.locked_balance).toLocaleString()}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Transaction History</h4>
+                  <div className="overflow-x-auto border border-white/5 rounded-lg">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-black/20 text-gray-400 uppercase text-xs">
+                        <tr>
+                          <th className="px-4 py-3">Date</th>
+                          <th className="px-4 py-3">Type</th>
+                          <th className="px-4 py-3">Description</th>
+                          <th className="px-4 py-3 text-right">Amount</th>
+                          <th className="px-4 py-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {viewUser.transactions.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No transactions found</td>
+                          </tr>
+                        ) : (
+                          viewUser.transactions.map((tx) => (
+                            <tr key={tx.id} className="hover:bg-white/5">
+                              <td className="px-4 py-3 text-gray-400">
+                                {new Date(tx.created_at * 1000).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`uppercase text-xs font-bold ${
+                                  tx.type === 'deposit' ? 'text-[#00FF9D]' : 
+                                  tx.type === 'withdrawal' ? 'text-red-400' : 'text-blue-400'
+                                }`}>
+                                  {tx.type}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-white">{tx.description}</td>
+                              <td className="px-4 py-3 text-right font-mono">
+                                {tx.type === 'withdrawal' ? '-' : '+'}${tx.amount.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="px-2 py-0.5 rounded-full bg-white/10 text-xs text-white">
+                                  {tx.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Balance Modal */}
       <AnimatePresence>
