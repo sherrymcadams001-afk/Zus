@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { OrionSidebar } from './OrionSidebar';
 import { OrionMetricsGrid } from './OrionMetricsGrid';
 import { OrionWealthChart } from './OrionWealthChart';
+import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -128,6 +129,12 @@ export const CapWheelDashboard = () => {
                 </div>
               </CollapsibleCard>
               
+              <CollapsibleCard title="Transaction Ledger">
+                <div className="h-[300px]">
+                  <OrionTransactionLedger />
+                </div>
+              </CollapsibleCard>
+
               <CollapsibleCard title="Projections">
                 <div className="h-[300px]">
                   <OrionWealthProjection />
@@ -136,8 +143,13 @@ export const CapWheelDashboard = () => {
             </div>
           ) : (
             <div className="flex-1 grid grid-cols-3 gap-3 min-h-0">
-              <div className="col-span-2 min-h-0">
-                <OrionWealthChart />
+              <div className="col-span-2 min-h-0 flex flex-col gap-3">
+                <div className="h-[55%] min-h-0">
+                  <OrionWealthChart />
+                </div>
+                <div className="flex-1 min-h-0">
+                  <OrionTransactionLedger />
+                </div>
               </div>
               <div className="col-span-1 min-h-0 flex flex-col gap-3">
                 <div className="flex-1 min-h-0">

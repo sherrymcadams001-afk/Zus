@@ -363,7 +363,7 @@ export const OrionWealthChart = () => {
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-            Wealth Performance <span className="text-[#00FF9D]">(Real-Time)</span>
+            CapWheel Wealth Performance <span className="text-[#00FF9D]">(Real-Time)</span>
           </h3>
         </div>
         

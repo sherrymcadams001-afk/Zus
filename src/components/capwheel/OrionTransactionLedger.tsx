@@ -157,11 +157,11 @@ export const OrionTransactionLedger = () => {
           <table className="w-full text-xs">
             <thead className="bg-white/5 sticky top-0">
               <tr>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp</th>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">ID</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Timestamp (UTC)</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Hash / ID</th>
                 <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Counterparty</th>
-                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Type</th>
-                <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Amount</th>
+                <th className="text-left px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Classification</th>
+                <th className="text-right px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-500">Net Change</th>
               </tr>
             </thead>
             <tbody>
