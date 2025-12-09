@@ -194,6 +194,13 @@ export const CapWheelLogin = () => {
             radial-gradient(ellipse 80% 50% at 50% 0%, rgba(16,185,129,0.03) 0%, transparent 50%),
             radial-gradient(ellipse at center, rgba(15,23,42,0) 0%, rgba(2,6,14,1) 80%)
           `,
+          backgroundImage: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(16,185,129,0.03) 0%, transparent 50%),
+            radial-gradient(ellipse at center, rgba(15,23,42,0) 0%, rgba(2,6,14,1) 80%),
+            linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+          `,
+          backgroundSize: '100% 100%, 100% 100%, 40px 40px, 40px 40px'
         }}
       />
 
@@ -284,19 +291,24 @@ export const CapWheelLogin = () => {
                   >
                     Email
                   </label>
-                  <input
-                    ref={emailInputRef}
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="w-full h-12 px-4 bg-[#0a0f1a] border border-slate-700/80 rounded-lg text-white text-[15px] placeholder-slate-500 
-                             focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 
-                             transition-all duration-200"
-                    placeholder="name@company.com"
-                  />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-slate-500" />
+                    </div>
+                    <input
+                      ref={emailInputRef}
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      className="w-full h-12 pl-10 pr-4 bg-[#0a0f1a] border border-slate-700/80 rounded-lg text-white text-[15px] placeholder-slate-500 
+                               focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 
+                               transition-all duration-200"
+                      placeholder="name@company.com"
+                    />
+                  </div>
                 </div>
 
                 {/* Primary Action - P3 One Primary Action, P8 Color Economy */}
@@ -306,7 +318,7 @@ export const CapWheelLogin = () => {
                            transition-all duration-200 flex items-center justify-center gap-2
                            focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-[#0f1629]"
                 >
-                  <span>Next</span>
+                  <span>Continue</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
