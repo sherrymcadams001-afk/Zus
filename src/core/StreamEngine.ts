@@ -98,7 +98,7 @@ class StreamEngine {
 
   private config: Required<StreamEngineConfig>;
   private activeSymbol: string | null = null;
-  private activeInterval: string = '1m';
+  private activeInterval: string = '5m';
 
   private readonly BASE_URL_GLOBAL = 'wss://stream.binance.com:9443/ws';
   private readonly BASE_URL_US = 'wss://stream.binance.us:9443/ws';

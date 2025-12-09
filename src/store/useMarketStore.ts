@@ -61,7 +61,7 @@ export const useMarketStore = create<MarketState>((set) => ({
   tickerConnected: false,
   klineConnected: false,
   activeSymbol: 'BTCUSDT',
-  activeInterval: '1m',
+  activeInterval: '5m',
 
   updateTickers: (tickers) => set({ tickers }),
   setActiveCandle: (candle) => set({ activeCandle: candle }),

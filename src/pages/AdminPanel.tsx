@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { user, clearAuth } = useAuthStore();
+  const { user, clearAuth, isLoading: authLoading } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'users' | 'deposits' | 'settings'>('users');
   
@@ -34,12 +34,15 @@ const AdminPanel = () => {
   const [depositAddress, setDepositAddress] = useState('');
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      navigate('/dashboard');
+    // Wait for auth to finish loading before checking role
+    if (authLoading) return;
+    
+    if (!user || user.role !== 'admin') {
+      navigate('/capwheel/dashboard');
       return;
     }
     fetchData();
-  }, [user, navigate, activeTab]);
+  }, [user, authLoading, navigate, activeTab]);
 
   const fetchData = async () => {
     setLoading(true);

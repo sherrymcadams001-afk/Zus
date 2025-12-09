@@ -110,8 +110,10 @@ export const OrionMetricsGrid = () => {
     },
     {
       title: "Vesting",
-      value: "14 Days",
-      subValue: "Next unlock: Dec 22",
+      value: data.vestingRunway > 0 ? `${data.vestingRunway} Days` : "Available",
+      subValue: data.vestingRunway > 0 
+        ? `Unlock: ${new Date(Date.now() + data.vestingRunway * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        : "No lock period",
       subValueColor: "neutral" as const,
       icon: <Clock className="w-3 h-3" />,
     }

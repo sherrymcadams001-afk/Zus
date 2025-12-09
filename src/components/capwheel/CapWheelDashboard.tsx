@@ -152,7 +152,7 @@ export const CapWheelDashboard = () => {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <MobileBottomNav />
+        <MobileBottomNav onDepositClick={() => setIsDepositModalOpen(true)} />
       </div>
 
       <DepositModal 

@@ -162,7 +162,7 @@ const LiveTerminal = ({ onClose }: LiveTerminalProps) => {
 type TimeframeKey = '24H' | '1M' | '1Y' | 'ALL';
 
 export const OrionWealthChart = () => {
-  const { data } = useDashboardData({ pollingInterval: 60000 });
+  const { data, isLoading } = useDashboardData({ pollingInterval: 60000 });
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -395,7 +395,25 @@ export const OrionWealthChart = () => {
 
       {/* Chart */}
       <div className="relative w-full h-[280px]">
-        {!hasData && (
+        {isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0B1015] z-10">
+            <div className="w-full h-full p-5 space-y-4">
+              {/* Skeleton loader */}
+              <div className="h-4 w-24 bg-white/5 rounded animate-pulse" />
+              <div className="flex-1 relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#00FF9D]/5 to-transparent rounded animate-pulse" />
+                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#00FF9D]/10 to-transparent" />
+              </div>
+              <div className="flex justify-between">
+                <div className="h-3 w-16 bg-white/5 rounded animate-pulse" />
+                <div className="h-3 w-16 bg-white/5 rounded animate-pulse" />
+                <div className="h-3 w-16 bg-white/5 rounded animate-pulse" />
+              </div>
+            </div>
+            <p className="absolute text-slate-500 text-sm">Loading chart data...</p>
+          </div>
+        )}
+        {!isLoading && !hasData && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0B1015]/50 backdrop-blur-sm z-10">
             <div className="p-4 rounded-full bg-white/5 mb-4">
               <motion.div

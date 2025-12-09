@@ -136,10 +136,9 @@ export const CapWheelLogin = () => {
             permissions: ['trade', 'view_positions', 'manage_risk'],
           });
           
-          // Redirect based on role
+          // Redirect based on role - use React Router for consistent state
           if (response.data.user.role === 'admin') {
-            // Force hard navigation for admin to ensure clean state
-            window.location.href = '/capwheel/admin';
+            navigate('/capwheel/admin');
           } else {
             navigate('/capwheel/dashboard');
           }
