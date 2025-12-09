@@ -16,6 +16,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCapWheel } from '../../contexts/CapWheelContext';
+import { useAuthStore } from '../../store/useAuthStore';
 import { Lock, ArrowLeft, ArrowRight, Shield, Check } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { authAPI } from '../../api/auth';
@@ -28,6 +29,7 @@ type AuthMode = 'login' | 'register';
 export const CapWheelLogin = () => {
   const navigate = useNavigate();
   const { setEnterpriseUser } = useCapWheel();
+  const setAuth = useAuthStore((state) => state.setAuth);
   
   // Multi-step state
   const [step, setStep] = useState<AuthStep>('email');
@@ -124,9 +126,10 @@ export const CapWheelLogin = () => {
         const response = await authAPI.login(email, password);
         
         if (response.status === 'success' && response.data) {
-          localStorage.setItem('authToken', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          // Update global auth store (handles localStorage and state)
+          setAuth(response.data.user, response.data.token);
           
+          // Update CapWheel context for legacy compatibility
           setEnterpriseUser({
             id: String(response.data.user.id),
             name: response.data.user.email.split('@')[0],
@@ -151,7 +154,7 @@ export const CapWheelLogin = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [mode, email, password, confirmPassword, navigate, setEnterpriseUser]);
+  }, [mode, email, password, confirmPassword, navigate, setEnterpriseUser, setAuth]);
 
   // Go back to email step
   const handleBack = () => {

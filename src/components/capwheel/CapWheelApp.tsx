@@ -45,6 +45,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Admin Route wrapper - ensures user has admin role
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/capwheel/login" replace />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <Navigate to="/capwheel/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 const CapWheelRoutes = () => {
   return (
     <Routes>
@@ -80,9 +99,9 @@ const CapWheelRoutes = () => {
       <Route 
         path="/admin" 
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminPanel />
-          </ProtectedRoute>
+          </AdminRoute>
         } 
       />
 
