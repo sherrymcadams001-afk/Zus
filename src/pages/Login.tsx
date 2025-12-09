@@ -5,9 +5,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { isAxiosError } from 'axios';
-import { Zap, Mail, Lock, ArrowRight, Shield, TrendingUp, Activity } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Shield, TrendingUp, Activity } from 'lucide-react';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/useAuthStore';
+import { CapWheelLogo } from '../assets/capwheel-logo';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -56,9 +57,7 @@ export default function Login() {
           {/* Logo & Brand */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orion-cyan/20 border border-orion-cyan/30 backdrop-blur-sm">
-                <Zap className="h-7 w-7 text-orion-cyan" />
-              </div>
+              <CapWheelLogo size={48} />
               <div>
                 <h1 className="text-2xl font-bold tracking-wider">ORION</h1>
                 <p className="text-xs text-orion-cyan tracking-widest uppercase">Trading Agent Platform</p>
@@ -121,9 +120,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-orion-cyan/20 border border-orion-cyan/30">
-              <Zap className="h-7 w-7 text-orion-cyan" />
-            </div>
+            <CapWheelLogo size={48} />
             <div>
               <h1 className="text-2xl font-bold tracking-wider text-white">ORION</h1>
               <p className="text-xs text-orion-cyan tracking-widest uppercase">Trading Agent Platform</p>

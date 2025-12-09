@@ -8,6 +8,7 @@ import { isAxiosError } from 'axios';
 import { Zap, Mail, Lock, ArrowRight, Shield, UserPlus, Key } from 'lucide-react';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/useAuthStore';
+import { CapWheelLogo } from '../assets/capwheel-logo';
 
 // Password validation constant (should match backend MIN_PASSWORD_LENGTH)
 const MIN_PASSWORD_LENGTH = 8;
@@ -72,9 +73,7 @@ export default function Register() {
           {/* Logo & Brand */}
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/30 backdrop-blur-sm">
-                <Zap className="h-7 w-7 text-[#00A3FF]" />
-              </div>
+              <CapWheelLogo size={48} />
               <div>
                 <h1 className="text-2xl font-bold tracking-wider">ORION</h1>
                 <p className="text-xs text-[#00A3FF] tracking-widest uppercase">Trading Agent Platform</p>
@@ -117,9 +116,7 @@ export default function Register() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/30">
-              <Zap className="h-7 w-7 text-[#00A3FF]" />
-            </div>
+            <CapWheelLogo size={48} />
             <div>
               <h1 className="text-2xl font-bold tracking-wider text-white">ORION</h1>
               <p className="text-xs text-[#00A3FF] tracking-widest uppercase">Trading Agent Platform</p>

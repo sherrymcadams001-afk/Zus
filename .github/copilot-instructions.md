@@ -1,4 +1,7 @@
-Prime Directive:
+cd backend
+npx wrangler d1 create trading-platform
+# Copy the ID and paste it into backend/wrangler.toml
+npx wrangler d1 migrations apply trading-platformPrime Directive:
 Ship fully executable, drop-in, deployment ready code. Core utility only. Zero tolerance for patches or broken code.
 
 MANDATORY Protocol (Non-negotiable):
