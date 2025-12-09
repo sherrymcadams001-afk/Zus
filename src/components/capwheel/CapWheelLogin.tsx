@@ -136,7 +136,12 @@ export const CapWheelLogin = () => {
             permissions: ['trade', 'view_positions', 'manage_risk'],
           });
           
-          navigate('/capwheel/dashboard');
+          // Redirect based on role
+          if (response.data.user.role === 'admin') {
+            navigate('/capwheel/admin');
+          } else {
+            navigate('/capwheel/dashboard');
+          }
         } else {
           setError(response.error ?? 'Invalid credentials');
         }
