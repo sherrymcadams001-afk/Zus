@@ -126,8 +126,8 @@ export const DepositModal = ({ isOpen, onClose }: DepositModalProps) => {
 
     try {
       const numAmount = parseFloat(amount);
-      if (isNaN(numAmount) || numAmount < 1) {
-        throw new Error('Minimum deposit is $1');
+      if (isNaN(numAmount) || numAmount < 20) {
+        throw new Error('Minimum deposit is $20');
       }
 
       const res = await apiClient.post('/api/wallet/create-payment', {
@@ -196,13 +196,13 @@ export const DepositModal = ({ isOpen, onClose }: DepositModalProps) => {
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter amount in USD"
-                      min="1"
+                      placeholder="Enter amount in USD (min $20)"
+                      min="20"
                       step="0.01"
                       required
                       className="text-lg"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Minimum deposit: $1</p>
+                    <p className="text-xs text-gray-500 mt-1">Minimum deposit: $20</p>
                   </div>
 
                   {/* Crypto Selector */}

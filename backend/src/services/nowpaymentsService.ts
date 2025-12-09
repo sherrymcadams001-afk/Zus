@@ -88,12 +88,14 @@ export async function createPayment(
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('NowPayments API error:', error);
-    throw new Error('NowPayments API error: ' + response.status);
+    const errorText = await response.text();
+    console.error('NowPayments createPayment error:', response.status, errorText);
+    throw new Error(`NowPayments API error (${response.status}): ${errorText}`);
   }
 
-  return response.json();
+  const data = await response.json() as NowPaymentsPaymentResponse;
+  console.log('NowPayments payment created:', JSON.stringify(data));
+  return data;
 }
 
 /**

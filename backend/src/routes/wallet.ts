@@ -82,11 +82,11 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
     try {
       const body = await request.json() as { amount?: number; currency?: SupportedCurrency };
       
-      // Validate amount
-      if (typeof body.amount !== 'number' || body.amount < 1) {
+      // Validate amount (NowPayments minimum is ~$19.20 USD)
+      if (typeof body.amount !== 'number' || body.amount < 20) {
         return new Response(JSON.stringify({
           status: 'error',
-          error: 'Minimum deposit is $1',
+          error: 'Minimum deposit is $20',
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -163,10 +163,13 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     } catch (error) {
-      console.error('Create payment error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Create payment error:', errorMessage);
       return new Response(JSON.stringify({
         status: 'error',
-        error: 'Failed to create payment. Please try again.',
+        error: errorMessage.includes('NowPayments') 
+          ? errorMessage 
+          : 'Failed to create payment. Please try again.',
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
