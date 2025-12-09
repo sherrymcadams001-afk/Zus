@@ -17,9 +17,8 @@ import { OrionWealthProjection } from './OrionWealthProjection';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Bell, Settings, User, Menu, Wallet } from 'lucide-react';
-import { MobileNavDrawer } from '../mobile/MobileNavDrawer';
+import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
-import { InviteCodeGenerator } from '../mobile/InviteCodeGenerator';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { CollapsibleCard } from '../mobile/CollapsibleCard';
 import { DepositModal } from './DepositModal';
@@ -88,6 +87,9 @@ export const CapWheelDashboard = () => {
 
   return (
     <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+      {/* Swipe Edge Detector for mobile */}
+      <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
+      
       {/* Mobile Navigation Drawer */}
       <MobileNavDrawer 
         isOpen={isMobileNavOpen} 
@@ -112,13 +114,6 @@ export const CapWheelDashboard = () => {
           <div className="flex-shrink-0">
             <OrionMetricsGrid />
           </div>
-
-          {/* Mobile: Invite Code */}
-          {isMobile && (
-            <div className="flex-shrink-0 mb-3">
-              <InviteCodeGenerator />
-            </div>
-          )}
 
           {/* Row 2: Chart + Projection */}
           {isMobile ? (
@@ -151,12 +146,9 @@ export const CapWheelDashboard = () => {
                   <OrionTransactionLedger />
                 </div>
               </div>
-              <div className="col-span-1 min-h-[340px] flex flex-col gap-3">
-                <div className="flex-1 min-h-[280px]">
+              <div className="col-span-1 min-h-[340px] flex flex-col">
+                <div className="flex-1">
                   <OrionWealthProjection />
-                </div>
-                <div className="flex-shrink-0">
-                  <InviteCodeGenerator />
                 </div>
               </div>
             </div>

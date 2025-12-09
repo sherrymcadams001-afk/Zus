@@ -16,7 +16,6 @@ import {
   Wallet,
   PieChart,
   ArrowRightLeft,
-  FileText,
   Users,
   Shield,
   Activity,
@@ -189,11 +188,6 @@ export const OrionSidebar = () => {
               badge="ADMIN"
             />
           )}
-          <NavItem
-            to="/capwheel/ledger"
-            icon={<FileText className="w-4 h-4" />}
-            label="General Ledger"
-          />
           <NavItem
             to="/capwheel/partners"
             icon={<Users className="w-4 h-4" />}

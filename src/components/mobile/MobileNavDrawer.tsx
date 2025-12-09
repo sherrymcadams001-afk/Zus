@@ -1,13 +1,57 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
-import { X, LayoutDashboard, User, Wallet, PieChart, ArrowRightLeft, Activity, Zap } from 'lucide-react';
+import { X, LayoutDashboard, User, Wallet, PieChart, ArrowRightLeft, Zap, Users, Shield } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useRef, useCallback } from 'react';
 
 interface MobileNavDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Swipe edge detector for opening the drawer
+interface SwipeEdgeDetectorProps {
+  onSwipeOpen: () => void;
+}
+
+export const SwipeEdgeDetector = ({ onSwipeOpen }: SwipeEdgeDetectorProps) => {
+  const startX = useRef<number | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    // Only track if starting from left edge (within 25px)
+    if (touch.clientX < 25) {
+      startX.current = touch.clientX;
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (startX.current === null) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - startX.current;
+    
+    // Trigger open if swiped 60px to the right
+    if (deltaX > 60) {
+      onSwipeOpen();
+      startX.current = null;
+    }
+  }, [onSwipeOpen]);
+
+  const handleTouchEnd = useCallback(() => {
+    startX.current = null;
+  }, []);
+
+  return (
+    <div
+      className="fixed left-0 top-0 bottom-0 w-6 z-40 lg:hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    />
+  );
+};
 
 export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
   const user = useAuthStore((state) => state.user);
@@ -18,21 +62,23 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
       items: [
         { to: '/capwheel/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
         { to: '/capwheel/profile', icon: <User size={20} />, label: 'Profile' },
+        { to: '/capwheel/trading', icon: <Zap size={20} />, label: 'Trading Agent', badge: 'LIVE' },
       ]
     },
     {
       title: 'Capital Management',
       items: [
-        { to: '/capwheel/strategy-pools', icon: <PieChart size={20} />, label: 'Strategy Pools' },
-        { to: '/capwheel/allocation', icon: <Activity size={20} />, label: 'Allocation' },
-        { to: '/capwheel/liquidity', icon: <Wallet size={20} />, label: 'Liquidity' },
+        { to: '/capwheel/strategy-pools', icon: <Wallet size={20} />, label: 'Strategy Pools' },
+        { to: '/capwheel/allocation', icon: <PieChart size={20} />, label: 'Asset Allocation' },
+        { to: '/capwheel/liquidity', icon: <ArrowRightLeft size={20} />, label: 'Liquidity Events' },
       ]
     },
     {
-      title: 'Trading',
+      title: 'Governance & Audit',
       items: [
-        { to: '/capwheel/trading', icon: <Zap size={20} />, label: 'Trading Agent' },
-        { to: '/capwheel/markets', icon: <ArrowRightLeft size={20} />, label: 'Live Markets' },
+        ...(user?.role === 'admin' ? [{ to: '/capwheel/admin', icon: <Shield size={20} />, label: 'Admin Panel', badge: 'ADMIN' }] : []),
+        { to: '/capwheel/partners', icon: <Users size={20} />, label: 'Partner Network' },
+        { to: '/capwheel/security', icon: <Shield size={20} />, label: 'Security Center' },
       ]
     }
   ];
@@ -93,7 +139,16 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
                         `}
                       >
                         {item.icon}
-                        {item.label}
+                        <span className="flex-1">{item.label}</span>
+                        {'badge' in item && item.badge && (
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                            item.badge === 'LIVE' 
+                              ? 'bg-[#00FF9D]/20 text-[#00FF9D]' 
+                              : 'bg-amber-500/20 text-amber-400'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
                       </NavLink>
                     ))}
                   </div>

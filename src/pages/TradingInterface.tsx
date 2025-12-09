@@ -15,7 +15,7 @@ import { OrderBook } from '../components/OrderBook';
 import { BotActivityLog } from '../components/BotActivityLog';
 import { LiveTrades } from '../components/LiveTrades';
 import { OrionSidebar } from '../components/capwheel/OrionSidebar';
-import { MobileNavDrawer } from '../components/mobile/MobileNavDrawer';
+import { MobileNavDrawer, SwipeEdgeDetector } from '../components/mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
 
 // Orion Enterprise Session Timer Hook
@@ -80,6 +80,9 @@ export default function TradingInterface() {
 
   return (
     <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden font-sans select-none">
+      {/* Swipe Edge Detector for mobile */}
+      <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
+      
       {/* Mobile Navigation Drawer */}
       <MobileNavDrawer 
         isOpen={isMobileNavOpen} 
