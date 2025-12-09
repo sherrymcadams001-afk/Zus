@@ -8,7 +8,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { CapWheelProvider, useCapWheel } from '../../contexts/CapWheelContext';
 import { CapWheelLogin } from './CapWheelLogin';
+import { OrionSidebar } from './OrionSidebar';
 import { CapWheelDashboard } from './CapWheelDashboard';
+import { CapWheelProfile } from './CapWheelProfile';
 import TradingInterface from '../../pages/TradingInterface';
 
 // Protected Route wrapper
@@ -38,6 +40,22 @@ const CapWheelRoutes = () => {
         } 
       />
       
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+              <div className="hidden lg:block flex-shrink-0">
+                <OrionSidebar />
+              </div>
+              <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+                <CapWheelProfile />
+              </div>
+            </div>
+          </ProtectedRoute>
+        } 
+      />
+
       {/* Trading Agent - Full Trading Interface */}
       <Route 
         path="/trading" 

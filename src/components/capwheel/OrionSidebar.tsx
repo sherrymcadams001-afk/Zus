@@ -8,9 +8,10 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   LayoutDashboard,
-  TrendingUp,
+  User,
   ChevronDown,
   Wallet,
   PieChart,
@@ -19,7 +20,6 @@ import {
   Users,
   Shield,
   Activity,
-  CheckCircle2,
   Zap,
 } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -121,6 +121,7 @@ const NavGroup = ({ title, children, defaultOpen = true }: NavGroupProps) => {
 
 export const OrionSidebar = () => {
   const [latency] = useState(() => Math.floor(Math.random() * 15) + 8);
+  const user = useAuthStore((state) => state.user);
 
   return (
     <aside className="w-64 h-screen bg-[#0B1015] border-r border-white/5 flex flex-col">
@@ -147,9 +148,9 @@ export const OrionSidebar = () => {
             label="Dashboard"
           />
           <NavItem
-            to="/capwheel/markets"
-            icon={<TrendingUp className="w-4 h-4" />}
-            label="Live Markets"
+            to="/capwheel/profile"
+            icon={<User className="w-4 h-4" />}
+            label="Profile"
           />
           <NavItem
             to="/capwheel/trading"
@@ -213,13 +214,18 @@ export const OrionSidebar = () => {
 
         {/* User Status */}
         <div className="bg-white/5 rounded-lg p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#00FF9D]" />
-            <span className="text-xs text-slate-300">KYC: <span className="text-[#00FF9D]">Verified</span></span>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center text-black font-bold">
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold text-white truncate">{user?.email || 'User'}</span>
+              <span className="text-[10px] text-slate-400">ID: {user?.id || '---'}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[#00B8D4]" />
-            <span className="text-xs text-slate-300">Tier: <span className="text-[#00B8D4]">Institutional</span></span>
+          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+            <Activity className="w-3 h-3 text-[#00B8D4]" />
+            <span className="text-[10px] text-slate-300">Tier: <span className="text-[#00B8D4] font-bold">PROTOBOT</span></span>
           </div>
         </div>
       </div>

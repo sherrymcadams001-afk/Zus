@@ -194,8 +194,10 @@ export const OrionWealthChart = () => {
     }
   };
 
+  const hasData = data.transactions.length > 0;
+
   const initChart = useCallback(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || !hasData) return;
 
     // Cleanup existing
     if (chartRef.current) {
@@ -306,10 +308,12 @@ export const OrionWealthChart = () => {
     chartRef.current = chart;
     seriesRef.current = series;
     volumeSeriesRef.current = volumeSeries;
-  }, [timeframe, data.transactions]);
+  }, [timeframe, data.transactions, hasData]);
 
   useEffect(() => {
-    initChart();
+    if (hasData) {
+      initChart();
+    }
 
     const resizeObserver = new ResizeObserver(() => {
       if (chartRef.current && chartContainerRef.current) {
@@ -330,21 +334,26 @@ export const OrionWealthChart = () => {
         chartRef.current = null;
       }
     };
-  }, [initChart]);
+  }, [initChart, hasData]);
 
   // Real-time updates
   useEffect(() => {
+    if (!hasData) return;
+    
     const interval = setInterval(() => {
       if (seriesRef.current) {
         const now = Math.floor(Date.now() / 1000) as Time;
-        const newValue = latestValue * (1 + (Math.random() * 0.002 - 0.0005));
-        setLatestValue(newValue);
-        seriesRef.current.update({ time: now, value: newValue });
+        // Only update if we have a valid latest value
+        if (latestValue > 0) {
+          const newValue = latestValue * (1 + (Math.random() * 0.002 - 0.0005));
+          setLatestValue(newValue);
+          seriesRef.current.update({ time: now, value: newValue });
+        }
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [latestValue]);
+  }, [latestValue, hasData]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -396,7 +405,25 @@ export const OrionWealthChart = () => {
       )}
 
       {/* Chart */}
-      <div ref={chartContainerRef} className="w-full" />
+      <div className="relative w-full h-[280px]">
+        {!hasData && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0B1015]/50 backdrop-blur-sm z-10">
+            <div className="p-4 rounded-full bg-white/5 mb-4">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <X className="w-8 h-8 text-slate-600" />
+              </motion.div>
+            </div>
+            <h3 className="text-white font-bold mb-2">No Trading Activity Yet</h3>
+            <p className="text-slate-400 text-sm text-center max-w-xs">
+              Connect your wallet and start trading to see your wealth performance visualization.
+            </p>
+          </div>
+        )}
+        <div ref={chartContainerRef} className="w-full h-full" />
+      </div>
 
       {/* Live Terminal Toggle */}
       <button

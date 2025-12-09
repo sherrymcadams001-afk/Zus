@@ -12,9 +12,7 @@ import { useEffect, useState } from 'react';
 import { OrionSidebar } from './OrionSidebar';
 import { OrionMetricsGrid } from './OrionMetricsGrid';
 import { OrionWealthChart } from './OrionWealthChart';
-import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
-import { OrionStrategyPerformance } from './OrionStrategyPerformance';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -100,16 +98,6 @@ export const CapWheelDashboard = () => {
             </div>
             <div className="col-span-1 min-h-0">
               <OrionWealthProjection />
-            </div>
-          </div>
-
-          {/* Row 3: Ledger (1/2) + Strategy (1/2) */}
-          <div className="flex-1 grid grid-cols-2 gap-3 min-h-0">
-            <div className="min-h-0 overflow-hidden">
-              <OrionTransactionLedger />
-            </div>
-            <div className="min-h-0 overflow-hidden">
-              <OrionStrategyPerformance />
             </div>
           </div>
         </main>
