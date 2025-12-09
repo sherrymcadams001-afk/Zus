@@ -75,22 +75,11 @@ const generatePerformanceData = (days: number = 180, transactions: TransactionDa
       }
     }
   } else {
-    // Fallback to simulation if no data
-    let value = 1000;
+    // No transactions = Zero Balance / Flat Line
+    // Do NOT simulate data for empty accounts
     for (let i = days; i >= 0; i--) {
       const time = (now - i * daySeconds) as Time;
-      const growth = 1 + (Math.random() * 0.008 - 0.002); 
-      value *= growth;
-      data.push({ time, value: Math.round(value * 100) / 100 });
-      
-      // Simulated volume
-      if (Math.random() > 0.7) {
-        volumeData.push({
-          time,
-          value: Math.random() * 50,
-          color: Math.random() > 0.5 ? 'rgba(0, 255, 157, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-        });
-      }
+      data.push({ time, value: 0 });
     }
   }
 

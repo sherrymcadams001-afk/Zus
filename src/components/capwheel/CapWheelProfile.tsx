@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Shield, Activity, Edit2, Save, Loader2 } from 'lucide-react';
+import { Shield, Activity, Edit2, Save, Loader2, Lock } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { apiClient } from '../../api/client';
 import { BOT_TIERS } from '../../core/DataOrchestrator';
 
 export const CapWheelProfile = () => {
   const { user } = useAuthStore();
+  const { walletBalance } = usePortfolioStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -135,30 +137,50 @@ export const CapWheelProfile = () => {
             Bot Tiers & Eligibility
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(BOT_TIERS).map(([key, tier]) => (
-              <div key={key} className="bg-[#0F1419] border border-white/5 rounded-xl p-4 hover:border-[#00FF9D]/30 transition-colors relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Shield className="w-16 h-16" />
+            {Object.entries(BOT_TIERS).map(([key, tier]) => {
+              const isLocked = walletBalance < tier.minimumStake;
+              
+              return (
+                <div 
+                  key={key} 
+                  className={`
+                    bg-[#0F1419] border rounded-xl p-4 transition-all relative overflow-hidden group
+                    ${isLocked ? 'border-white/5 opacity-60' : 'border-white/5 hover:border-[#00FF9D]/30'}
+                  `}
+                >
+                  {isLocked && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center z-10">
+                      <div className="w-10 h-10 rounded-full bg-black/50 border border-white/10 flex items-center justify-center mb-2">
+                        <Lock className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Locked</span>
+                      <span className="text-[10px] text-slate-500 mt-1">Req: ${tier.minimumStake.toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Shield className="w-16 h-16" />
+                  </div>
+                  <h3 className={`text-lg font-bold mb-1 ${isLocked ? 'text-slate-400' : 'text-white'}`}>{tier.name}</h3>
+                  <p className="text-xs text-slate-400 mb-4 uppercase tracking-wider">{key}</p>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Min Stake</span>
+                      <span className={`${isLocked ? 'text-slate-400' : 'text-[#00FF9D]'} font-mono`}>${tier.minimumStake.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Daily ROI</span>
+                      <span className={`${isLocked ? 'text-slate-400' : 'text-white'} font-mono`}>{(tier.dailyRoiMin * 100).toFixed(2)}% - {(tier.dailyRoiMax * 100).toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Lock Period</span>
+                      <span className={`${isLocked ? 'text-slate-400' : 'text-white'}`}>{tier.capitalWithdrawalDays} Days</span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">{tier.name}</h3>
-                <p className="text-xs text-slate-400 mb-4 uppercase tracking-wider">{key}</p>
-                
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Min Stake</span>
-                    <span className="text-[#00FF9D] font-mono">${tier.minimumStake.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Daily ROI</span>
-                    <span className="text-white font-mono">{(tier.dailyRoiMin * 100).toFixed(2)}% - {(tier.dailyRoiMax * 100).toFixed(2)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Lock Period</span>
-                    <span className="text-white">{tier.capitalWithdrawalDays} Days</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

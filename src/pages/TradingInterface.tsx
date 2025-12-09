@@ -5,12 +5,9 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { Activity, Zap, Radio, TrendingUp, TrendingDown, Globe, Shield, Clock } from 'lucide-react';
+import { Globe, Shield } from 'lucide-react';
 import { streamEngine } from '../core/StreamEngine';
 import { portfolioManager } from '../core/PortfolioManager';
-import { useMarketStore } from '../store/useMarketStore';
-import { usePortfolioStore } from '../store/usePortfolioStore';
-import { useSellFlashEffect } from '../hooks/useSellFlashEffect';
 import { MacroTicker } from '../components/MacroTicker';
 import { Watchlist } from '../components/Watchlist';
 import { MainChart } from '../components/MainChart';
@@ -39,11 +36,8 @@ function useSessionTimer() {
 type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER';
 
 export default function TradingInterface() {
-  const { tickerConnected, tickers } = useMarketStore();
-  const { sessionPnL } = usePortfolioStore();
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
   const [mobileTab, setMobileTab] = useState<MobileTab>('LOGS');
-  const sellFlashActive = useSellFlashEffect();
   const sessionTime = useSessionTimer();
 
   useEffect(() => {
@@ -74,7 +68,7 @@ export default function TradingInterface() {
   }, []);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#0F172A] flex flex-col font-sans select-none">
+    <div className="h-screen w-screen overflow-hidden bg-[#0B1015] flex flex-col font-sans select-none">
       {/* MacroTicker - Fixed height top bar */}
       <div className="h-7 flex-shrink-0 z-50 relative border-b border-white/5">
         <MacroTicker />
@@ -83,63 +77,26 @@ export default function TradingInterface() {
       {/* --- DESKTOP LAYOUT (Hidden on Mobile) --- */}
       <div className="hidden md:flex flex-col flex-1 min-h-0">
         {/* Header Bar - Orion Command Center */}
-        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-white/10 bg-slate-900/50 backdrop-blur-xl px-4 shadow-lg z-40">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-              <Zap className="h-5 w-5 text-emerald-400" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-sm font-bold tracking-widest text-white leading-none">ORION <span className="text-emerald-400">NEURAL</span></h1>
-              <span className="text-[9px] uppercase tracking-widest text-slate-500 leading-none mt-1">Autonomous Execution Engine</span>
-            </div>
+        <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-white/5 bg-[#0B1015] px-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Trading /</span>
+            <span className="text-xs font-semibold text-white">Terminal</span>
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Session Alpha - Orion Style */}
-            <div className="flex items-center gap-6 border-r border-white/10 pr-6">
-              <div className="text-right">
-                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Session Alpha Generated</div>
-                <div className={`flex items-center justify-end gap-1.5 text-xl font-bold tabular-nums tracking-tight transition-colors duration-150 ${
-                  sellFlashActive ? 'text-slate-400' : (sessionPnL >= 0 ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'text-slate-400')
-                }`}>
-                  {sessionPnL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  {sessionPnL >= 0 ? '+' : '-'}${Math.abs(sessionPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[9px] uppercase text-slate-500 font-medium tracking-wider">Uptime</div>
-                <div className="flex items-center justify-end gap-1.5 text-sm font-mono text-slate-300">
-                  <Clock className="h-3 w-3 text-slate-500" />
-                  {sessionTime}
-                </div>
-              </div>
-            </div>
-
-            {/* Status Indicators - Orion Style */}
-            <div className="flex items-center gap-4 text-[10px]">
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="text-slate-500 uppercase tracking-wider text-[8px]">Link Status</span>
-                <div className="flex items-center gap-1.5">
-                  <Radio className={`h-3 w-3 ${tickerConnected ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
-                  <span className={`font-bold ${tickerConnected ? 'text-emerald-400' : 'text-slate-500'}`}>
-                    {tickerConnected ? 'LOW LATENCY' : 'OFFLINE'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-0.5">
-                <span className="text-slate-500 uppercase tracking-wider text-[8px]">Sources</span>
-                <div className="flex items-center gap-1.5">
-                  <Activity className="h-3 w-3 text-slate-500" />
-                  <span className="tabular-nums text-white font-bold">{tickers.size > 0 ? tickers.size : '—'}</span>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono text-[#00FF9D]">
+              {sessionTime} UTC
+            </span>
+            <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#00FF9D]/10 border border-[#00FF9D]/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+              <span className="text-[10px] font-bold text-[#00FF9D] tracking-wider">LIVE</span>
             </div>
           </div>
         </header>
 
+
         {/* Main Content Area - Orion Glass Cockpit */}
-        <div className="flex-1 flex gap-2 p-2 min-h-0 bg-[#0F172A]">
+        <div className="flex-1 flex gap-2 p-2 min-h-0 bg-[#0B1015]">
           {/* Left Panel - Liquidity Sources (Narrower) */}
           <div className="w-[260px] flex-shrink-0 flex flex-col">
             <Watchlist />
@@ -167,36 +124,25 @@ export default function TradingInterface() {
       </div>
 
       {/* --- MOBILE LAYOUT (Visible on Mobile) --- */}
-      <div className="flex md:hidden flex-col flex-1 min-h-0 bg-[#0F172A]">
+      <div className="flex md:hidden flex-col flex-1 min-h-0 bg-[#0B1015]">
         {/* Mobile Header - Orion Style */}
-        <header className="h-14 flex-shrink-0 flex items-center justify-between border-b border-white/10 bg-slate-900/50 backdrop-blur-xl px-4 z-40">
+        <header className="h-12 flex-shrink-0 flex items-center justify-between border-b border-white/5 bg-[#0B1015] px-4 z-40">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-              <Zap className="h-4 w-4 text-emerald-400" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-xs font-bold tracking-widest text-white leading-none">ORION <span className="text-emerald-400">NEURAL</span></h1>
-              <span className="text-[8px] uppercase tracking-widest text-slate-500 leading-none mt-0.5">Engine</span>
-            </div>
+            <span className="text-xs font-semibold text-white">Terminal</span>
           </div>
-          
-          <div className="flex flex-col items-end">
-            <div className="text-[8px] uppercase text-slate-500 font-medium tracking-wider">Session Alpha</div>
-            <div className={`text-sm font-bold tabular-nums tracking-tight leading-none transition-colors duration-150 ${
-              sellFlashActive ? 'text-slate-400' : (sessionPnL >= 0 ? 'text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]' : 'text-slate-400')
-            }`}>
-              {sessionPnL >= 0 ? '+' : '-'}${Math.abs(sessionPnL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
+          <div className="flex items-center gap-2 px-2 py-1 rounded bg-[#00FF9D]/10 border border-[#00FF9D]/20">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+            <span className="text-[10px] font-bold text-[#00FF9D] tracking-wider">LIVE</span>
           </div>
         </header>
 
         {/* Mobile Chart Area (Fixed Top 35%) */}
-        <div className="h-[35%] flex-shrink-0 border-b border-white/10 bg-[#0F172A] p-1">
+        <div className="h-[35%] flex-shrink-0 border-b border-white/10 bg-[#0B1015] p-1">
           <MainChart />
         </div>
 
         {/* Mobile Tabs - Orion Institutional Labels */}
-        <div className="h-10 flex-shrink-0 flex items-center bg-slate-900/50 border-b border-white/10 overflow-x-auto no-scrollbar">
+        <div className="h-10 flex-shrink-0 flex items-center bg-[#0B1015] border-b border-white/10 overflow-x-auto no-scrollbar">
           {([
             { key: 'WATCH', label: 'SOURCES' },
             { key: 'BOOK', label: 'DOM' },
@@ -208,7 +154,7 @@ export default function TradingInterface() {
               onClick={() => setMobileTab(key)}
               className={`flex-1 min-w-[70px] h-full text-[10px] font-bold tracking-wider uppercase transition-colors ${
                 mobileTab === key 
-                  ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-400' 
+                  ? 'text-[#00FF9D] bg-[#00FF9D]/10 border-b-2 border-[#00FF9D]' 
                   : 'text-slate-500 hover:text-slate-300'
               }`}
             >
