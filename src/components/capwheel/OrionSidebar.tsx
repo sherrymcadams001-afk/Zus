@@ -181,6 +181,14 @@ export const OrionSidebar = () => {
 
         {/* Governance & Audit Module */}
         <NavGroup title="Governance & Audit" defaultOpen={false}>
+          {user?.role === 'admin' && (
+            <NavItem
+              to="/capwheel/admin"
+              icon={<Shield className="w-4 h-4" />}
+              label="Admin Panel"
+              badge="ADMIN"
+            />
+          )}
           <NavItem
             to="/capwheel/ledger"
             icon={<FileText className="w-4 h-4" />}

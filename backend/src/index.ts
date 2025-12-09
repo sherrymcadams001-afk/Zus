@@ -18,6 +18,7 @@ import { handlePoolRoutes } from './routes/pools';
 import { handleReferralRoutes } from './routes/referrals';
 import { handleDashboardRoutes } from './routes/dashboard';
 import { handleProfileRoutes } from './routes/profile';
+import { handleAdminRoutes } from './routes/admin';
 
 /**
  * Handle HTTP requests
@@ -40,6 +41,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Auth routes
   if (url.pathname.startsWith('/api/auth/')) {
     return handleAuthRoutes(request, env, url.pathname);
+  }
+
+  // Admin routes
+  if (url.pathname.startsWith('/api/admin')) {
+    return handleAdminRoutes(request, env, url.pathname);
   }
 
   // Wallet routes
