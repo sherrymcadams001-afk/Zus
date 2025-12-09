@@ -22,7 +22,7 @@ interface AuthState {
   initAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
@@ -68,6 +68,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             email: data.data.email,
             role: data.data.role,
             kyc_status: data.data.kyc_status,
+            referral_code: data.data.referral_code || '',
+            created_at: data.data.created_at || 0,
+            updated_at: data.data.updated_at || 0,
           };
           localStorage.setItem('user', JSON.stringify(user));
           set({ user, token, isAuthenticated: true, isLoading: false });

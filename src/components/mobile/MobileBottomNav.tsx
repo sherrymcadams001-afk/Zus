@@ -17,7 +17,7 @@ export const MobileBottomNav = ({ onDepositClick }: MobileBottomNavProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-[#0B1015]/90 backdrop-blur-xl border-t border-white/10 pb-safe z-40 lg:hidden">
       <div className="flex items-center justify-around h-16">
-        {items.map((item, index) => {
+        {items.map((item) => {
           // Deposit button (center action)
           if ('action' in item && item.action === 'deposit') {
             return (

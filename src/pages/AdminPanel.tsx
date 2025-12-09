@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, ExternalLink, CheckCircle, Users, Wallet, Settings, 
-  LogOut, LayoutDashboard, Search, Bell, ChevronRight 
+  LogOut, LayoutDashboard
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -29,8 +29,8 @@ const AdminPanel = () => {
   // Deposits State
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
 
-  // Settings State
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  // Settings State - _settings prefixed to suppress unused warning (used in fetchData)
+  const [_settings, setSettings] = useState<Record<string, string>>({});
   const [depositAddress, setDepositAddress] = useState('');
 
   useEffect(() => {

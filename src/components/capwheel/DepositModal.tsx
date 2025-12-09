@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, Copy, Check, AlertTriangle } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -14,7 +14,6 @@ interface DepositModalProps {
 export const DepositModal = ({ isOpen, onClose }: DepositModalProps) => {
   const [amount, setAmount] = useState('');
   const [txHash, setTxHash] = useState('');
-  const [step, setStep] = useState<'details' | 'confirm'>('details');
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -60,7 +59,6 @@ export const DepositModal = ({ isOpen, onClose }: DepositModalProps) => {
       setTimeout(() => {
         onClose();
         setSuccess(false);
-        setStep('details');
         setAmount('');
         setTxHash('');
       }, 2000);
