@@ -1,7 +1,7 @@
-import { Env } from '../types';
+import { Env, BotTier } from '../types';
 import { requireAuth } from '../middleware/auth';
-import { getUserProfile, updateUserProfile } from '../services/profileService';
-import { BOT_TIERS } from '../engine/BotTiers';
+import { getUserProfile, updateUserProfile, getUserStrategy, updateUserStrategy } from '../services/profileService';
+import { BOT_TIERS, isValidBotTier, VALID_BOT_TIERS } from '../engine/BotTiers';
 
 export async function handleProfileRoutes(request: Request, env: Env, path: string): Promise<Response> {
   const corsHeaders = {
@@ -13,6 +13,41 @@ export async function handleProfileRoutes(request: Request, env: Env, path: stri
   const authResult = await requireAuth(request);
   if (authResult instanceof Response) return authResult;
   const { user } = authResult;
+
+  // POST /api/profile/strategy - Update user's selected strategy
+  if (path === '/api/profile/strategy' && request.method === 'POST') {
+    try {
+      const body = await request.json() as { tier?: string };
+      
+      if (!body.tier || !isValidBotTier(body.tier)) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: `Invalid tier. Valid tiers: ${VALID_BOT_TIERS.join(', ')}`
+        }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const result = await updateUserStrategy(env, user.userId, body.tier as BotTier);
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: result
+      }), { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Failed to update strategy'
+      }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+  }
+
+  // GET /api/profile/strategy - Get user's current strategy
+  if (path === '/api/profile/strategy' && request.method === 'GET') {
+    const tier = await getUserStrategy(env, user.userId);
+    return new Response(JSON.stringify({
+      status: 'success',
+      data: { tier: tier || 'delta' } // Default to delta if no strategy set
+    }), { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+  }
 
   if (request.method === 'GET') {
     const profile = await getUserProfile(env, user.userId);

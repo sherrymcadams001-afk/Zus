@@ -18,3 +18,6 @@ export { OrionWealthChart } from './OrionWealthChart';
 export { OrionTransactionLedger } from './OrionTransactionLedger';
 export { OrionWealthProjection } from './OrionWealthProjection';
 export { OrionStrategyPerformance } from './OrionStrategyPerformance';
+
+// Strategy Pools & Kinetic Tiers
+export { StrategyPools, StrategyInsignia, KINETIC_STRATEGIES, getStrategyById } from './StrategyPools';

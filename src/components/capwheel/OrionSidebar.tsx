@@ -9,6 +9,8 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePortfolioStore } from '../../store/usePortfolioStore';
+import { StrategyInsignia, getStrategyById } from './StrategyPools';
 import {
   LayoutDashboard,
   User,
@@ -18,7 +20,6 @@ import {
   ArrowRightLeft,
   Users,
   Shield,
-  Activity,
   Zap,
 } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -121,6 +122,8 @@ const NavGroup = ({ title, children, defaultOpen = true }: NavGroupProps) => {
 export const OrionSidebar = () => {
   const [latency] = useState(() => Math.floor(Math.random() * 15) + 8);
   const user = useAuthStore((state) => state.user);
+  const { currentTier } = usePortfolioStore();
+  const strategy = getStrategyById(currentTier || 'delta');
 
   return (
     <aside className="w-64 h-screen bg-[#0B1015] border-r border-white/5 flex flex-col">
@@ -220,14 +223,13 @@ export const OrionSidebar = () => {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center text-black font-bold">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-xs font-bold text-white truncate">{user?.email || 'User'}</span>
+            <div className="flex flex-col overflow-hidden flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white truncate">{user?.email || 'User'}</span>
+                {strategy && <StrategyInsignia strategyId={strategy.id} size="sm" />}
+              </div>
               <span className="text-[10px] text-slate-400">ID: {user?.id || '---'}</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-            <Activity className="w-3 h-3 text-[#00B8D4]" />
-            <span className="text-[10px] text-slate-300">Tier: <span className="text-[#00B8D4] font-bold">PROTOBOT</span></span>
           </div>
         </div>
       </div>

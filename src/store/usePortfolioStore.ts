@@ -27,6 +27,9 @@ interface PortfolioState {
   startOfDayEquity: number;
   startOfDayWalletBalance: number;
   
+  // Strategy Tier
+  currentTier: string | null;
+  
   // Loading state
   isLoading: boolean;
   isInitialized: boolean;
@@ -45,6 +48,7 @@ interface PortfolioState {
   updateBalances: (walletDelta: number, poolDelta: number) => void;
   setEquity: (equity: number) => void;
   setWalletBalance: (balance: number) => void;
+  setCurrentTier: (tier: string) => void;
   resetDailyEquity: (walletBalance: number) => void;
   clearSellFlash: () => void;
 }
@@ -58,6 +62,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   startOfDayEquity: 0,
   startOfDayWalletBalance: 0,
   
+  currentTier: null,
   isLoading: false,
   isInitialized: false,
   lastSellTimestamp: null,
@@ -71,12 +76,18 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     
     set({ isLoading: true });
     try {
-      const response = await apiClient.get('/api/dashboard');
-      const { wallet, staking, transactions } = response.data;
+      // Fetch dashboard data and strategy in parallel
+      const [dashboardResponse, strategyResponse] = await Promise.all([
+        apiClient.get('/api/dashboard'),
+        apiClient.get('/api/profile/strategy').catch(() => ({ data: { tier: 'delta' } }))
+      ]);
+      
+      const { wallet, staking, transactions } = dashboardResponse.data;
       
       const walletBalance = wallet?.available_balance ?? 0;
       const stakedBalance = staking?.totalStaked ?? 0;
       const totalEquity = walletBalance + stakedBalance;
+      const currentTier = strategyResponse.data?.tier || 'delta';
       
       // Convert recent transactions to trades format
       const recentTrades: Trade[] = (transactions || []).slice(0, 20).map((tx: {
@@ -97,6 +108,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       set({
         walletBalance,
         totalEquity,
+        currentTier,
         startOfDayWalletBalance: walletBalance,
         startOfDayEquity: totalEquity,
         trades: recentTrades,
@@ -167,6 +179,8 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   },
 
   setEquity: (equity) => set({ totalEquity: equity }),
+  
+  setCurrentTier: (tier) => set({ currentTier: tier }),
   
   clearSellFlash: () => set({ lastSellTimestamp: null }),
 }));
