@@ -1,12 +1,12 @@
 /**
- * Asset Protocol Page - "Code is Law"
+ * Asset Protocol - "The Connected Pipeline"
  * 
- * Card-based layout explaining the CapWheel system architecture
- * Narrative: "From Execution to Settlement"
+ * Interactive scroll-linked visualization showing liquidity flow
+ * From Execution → Bonding → Settlement
  */
 
-import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { useRef, useEffect, useState } from 'react';
+import { motion, useScroll, useSpring, useInView } from 'framer-motion';
 import { 
   FileText, 
   Download, 
@@ -15,255 +15,518 @@ import {
   Landmark,
   ExternalLink,
   Shield,
-  CheckCircle2
+  Clock,
+  Zap
 } from 'lucide-react';
 
 // ============================================
-// ANIMATION HELPERS
+// THE PIPELINE - Central SVG Connection
 // ============================================
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.4, ease: 'easeOut' }
-  })
-};
+interface PipelineProps {
+  scrollProgress: number;
+}
 
-// ============================================
-// SECTION 1: EXECUTION LAYER - Network Nodes
-// ============================================
+const Pipeline = ({ scrollProgress }: PipelineProps) => {
+  // Calculate pulse position along the path
+  const pulseY = scrollProgress * 100;
+  
+  // Color transitions: Green → Blue → Gold
+  const getPulseColor = () => {
+    if (scrollProgress < 0.33) return '#00FF9D'; // Green (volatile)
+    if (scrollProgress < 0.66) return '#00B8D4'; // Blue (bonded)
+    return '#D4AF37'; // Gold (settled)
+  };
 
-const NetworkNode = ({ delay, x, y }: { delay: number; x: number; y: number }) => (
-  <motion.div
-    className="absolute"
-    style={{ left: `${x}%`, top: `${y}%` }}
-    initial={{ scale: 0, opacity: 0 }}
-    animate={{ scale: [0, 1, 1, 0.8, 1], opacity: [0, 1, 1, 0.7, 1] }}
-    transition={{ duration: 3, delay, repeat: Infinity, repeatDelay: 2 }}
-  >
-    <div className="relative">
-      <div className="absolute inset-0 w-3 h-3 bg-[#00FF9D] rounded-full blur-md opacity-60" />
-      <div className="relative w-3 h-3 bg-[#00FF9D] rounded-full border border-[#00FF9D]/50" />
-    </div>
-  </motion.div>
-);
-
-const NetworkConnection = ({ x1, y1, x2, y2, delay }: { x1: number; y1: number; x2: number; y2: number; delay: number }) => (
-  <motion.line
-    x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}
-    stroke="#00FF9D" strokeWidth="1" strokeOpacity="0.3"
-    initial={{ pathLength: 0 }}
-    animate={{ pathLength: 1 }}
-    transition={{ duration: 1.5, delay, ease: "easeInOut" }}
-  />
-);
-
-const ExecutionLayerVisual = () => {
-  const nodes = [
-    { x: 15, y: 25, delay: 0 }, { x: 40, y: 10, delay: 0.3 }, { x: 70, y: 20, delay: 0.5 },
-    { x: 25, y: 55, delay: 0.7 }, { x: 55, y: 45, delay: 0.2 }, { x: 85, y: 50, delay: 0.9 },
-    { x: 20, y: 85, delay: 0.4 }, { x: 60, y: 80, delay: 0.6 }, { x: 90, y: 75, delay: 0.8 },
-  ];
-  const connections = [
-    { x1: 15, y1: 25, x2: 40, y2: 10, delay: 0.5 }, { x1: 40, y1: 10, x2: 70, y2: 20, delay: 0.7 },
-    { x1: 15, y1: 25, x2: 25, y2: 55, delay: 0.6 }, { x1: 25, y1: 55, x2: 55, y2: 45, delay: 0.8 },
-    { x1: 55, y1: 45, x2: 85, y2: 50, delay: 1.0 }, { x1: 40, y1: 10, x2: 55, y2: 45, delay: 0.9 },
-    { x1: 70, y1: 20, x2: 85, y2: 50, delay: 1.1 }, { x1: 25, y1: 55, x2: 20, y2: 85, delay: 1.2 },
-    { x1: 55, y1: 45, x2: 60, y2: 80, delay: 1.3 }, { x1: 85, y1: 50, x2: 90, y2: 75, delay: 1.4 },
-  ];
+  const getGlowColor = () => {
+    if (scrollProgress < 0.33) return 'rgba(0, 255, 157, 0.6)';
+    if (scrollProgress < 0.66) return 'rgba(0, 184, 212, 0.6)';
+    return 'rgba(212, 175, 55, 0.6)';
+  };
 
   return (
-    <div className="relative w-full h-40">
-      <div className="absolute inset-0 opacity-10"
+    <div className="absolute left-1/2 top-0 bottom-0 w-24 -translate-x-1/2 pointer-events-none z-0">
+      <svg 
+        className="absolute inset-0 w-full h-full" 
+        viewBox="0 0 100 1000" 
+        preserveAspectRatio="none"
+        style={{ overflow: 'visible' }}
+      >
+        <defs>
+          {/* Glow filter */}
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          
+          {/* Pipeline gradient */}
+          <linearGradient id="pipeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#00FF9D" stopOpacity="0.3" />
+            <stop offset="33%" stopColor="#00FF9D" stopOpacity="0.5" />
+            <stop offset="50%" stopColor="#00B8D4" stopOpacity="0.5" />
+            <stop offset="66%" stopColor="#00B8D4" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
+        
+        {/* The Pipeline Path - Wide at top, constricts, opens to vault */}
+        <path
+          d={`
+            M 20 0 
+            C 20 50, 10 100, 10 150
+            C 10 200, 30 250, 50 280
+            C 70 310, 90 350, 90 400
+            L 90 420
+            C 90 450, 70 480, 50 500
+            C 30 520, 10 550, 10 600
+            L 10 650
+            C 10 700, 30 750, 50 780
+            C 70 810, 90 850, 90 900
+            L 90 1000
+            M 80 0
+            C 80 50, 90 100, 90 150
+            C 90 200, 70 250, 50 280
+            C 30 310, 10 350, 10 400
+            L 10 420
+            C 10 450, 30 480, 50 500
+            C 70 520, 90 550, 90 600
+            L 90 650
+            C 90 700, 70 750, 50 780
+            C 30 810, 10 850, 10 900
+            L 10 1000
+          `}
+          fill="none"
+          stroke="url(#pipeGradient)"
+          strokeWidth="2"
+          opacity="0.4"
+        />
+        
+        {/* Inner flow line */}
+        <path
+          d={`
+            M 50 0
+            C 50 100, 50 200, 50 280
+            L 50 500
+            L 50 780
+            L 50 1000
+          `}
+          fill="none"
+          stroke="url(#pipeGradient)"
+          strokeWidth="1"
+          strokeDasharray="4 4"
+          opacity="0.3"
+        />
+      </svg>
+      
+      {/* The Energy Pulse */}
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full z-10"
         style={{
-          backgroundImage: `linear-gradient(rgba(0,255,157,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,157,0.3) 1px, transparent 1px)`,
-          backgroundSize: '30px 30px'
+          top: `${pulseY}%`,
+          backgroundColor: getPulseColor(),
+          boxShadow: `0 0 20px ${getGlowColor()}, 0 0 40px ${getGlowColor()}`,
+        }}
+        animate={{
+          scale: scrollProgress < 0.33 ? [1, 1.3, 0.8, 1.2, 1] : [1, 1.1, 1],
+        }}
+        transition={{
+          duration: scrollProgress < 0.33 ? 0.5 : 2,
+          repeat: Infinity,
+          ease: scrollProgress < 0.33 ? "easeInOut" : "easeInOut"
         }}
       />
-      <svg className="absolute inset-0 w-full h-full">
-        {connections.map((conn, i) => <NetworkConnection key={i} {...conn} />)}
-      </svg>
-      {nodes.map((node, i) => <NetworkNode key={i} {...node} />)}
+      
+      {/* Trail effect */}
       <motion.div
-        className="absolute left-0 top-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#00FF9D]/50 to-transparent"
-        animate={{ top: ['0%', '100%', '0%'] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute left-1/2 -translate-x-1/2 w-2 h-16 rounded-full z-5"
+        style={{
+          top: `${Math.max(0, pulseY - 5)}%`,
+          background: `linear-gradient(to bottom, transparent, ${getPulseColor()}40, transparent)`,
+        }}
       />
     </div>
   );
 };
 
 // ============================================
-// SECTION 2: BONDING LAYER - Compressor
+// SECTION 1: THE SOURCE - Chaotic Input
 // ============================================
 
-const BondingLayerVisual = () => (
-  <div className="relative w-full h-40 flex items-center justify-center overflow-hidden">
-    {/* Compressor Plates */}
-    <motion.div
-      className="absolute top-0 left-1/4 right-1/4 h-5 bg-gradient-to-b from-slate-600 to-slate-800 rounded-b-lg border-b-2 border-slate-500"
-      animate={{ y: [0, 40, 0] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-    />
-    <motion.div
-      className="absolute bottom-0 left-1/4 right-1/4 h-5 bg-gradient-to-t from-slate-600 to-slate-800 rounded-t-lg border-t-2 border-slate-500"
-      animate={{ y: [0, -40, 0] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-    />
-    {/* Green particles in */}
-    <div className="absolute left-2 top-1/2 -translate-y-1/2 space-y-1.5">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="w-2 h-2 bg-[#00FF9D] rounded-full shadow-[0_0_8px_#00FF9D]"
-          animate={{ x: [0, 80, 80], opacity: [1, 1, 0], scale: [1, 0.7, 0.4] }}
-          transition={{ duration: 2, delay: i * 0.5, repeat: Infinity, repeatDelay: 0.5 }}
-        />
-      ))}
-    </div>
-    {/* Lock center */}
-    <motion.div
-      className="relative w-16 h-16 flex items-center justify-center"
-      animate={{ scale: [1, 0.85, 1] }}
-      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00FF9D]/20 to-[#D4AF37]/20 rounded-lg blur-lg" />
-      <Lock className="w-8 h-8 text-[#D4AF37]" />
-    </motion.div>
-    {/* Gold blocks out */}
-    <div className="absolute right-2 top-1/2 -translate-y-1/2 space-y-1.5">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          className="w-3 h-3 bg-gradient-to-br from-[#D4AF37] to-[#B8860B] rounded shadow-[0_0_8px_#D4AF37]"
-          initial={{ x: -80, opacity: 0, scale: 0.4 }}
-          animate={{ x: [-80, 0, 0], opacity: [0, 1, 1], scale: [0.4, 1, 1] }}
-          transition={{ duration: 2, delay: i * 0.5 + 1, repeat: Infinity, repeatDelay: 1 }}
-        />
-      ))}
-    </div>
-  </div>
-);
-
-// ============================================
-// SECTION 3: ANCHOR LAYER - RWA Cards
-// ============================================
-
-interface AssetCardProps {
-  title: string;
-  subtitle: string;
-  yieldValue: string;
-  icon: React.ReactNode;
-  delay: number;
-}
-
-const GlassAssetCard = ({ title, subtitle, yieldValue, icon, delay }: AssetCardProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 15 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
-    className="bg-black/20 border border-white/10 rounded-xl p-4 hover:bg-white/5 hover:border-[#00FF9D]/20 transition-all"
-  >
-    <div className="flex items-start gap-3">
-      <div className="p-2 bg-[#00FF9D]/10 rounded-lg shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <h4 className="text-white font-medium text-sm truncate">{title}</h4>
-        <p className="text-xs text-slate-500 truncate">{subtitle}</p>
-        <div className="flex items-center gap-1.5 mt-2">
-          <span className="text-[10px] text-slate-600 uppercase">Yield</span>
-          <span className="text-[#00FF9D] font-mono text-xs font-bold">{yieldValue}</span>
-        </div>
-      </div>
-    </div>
-  </motion.div>
-);
-
-const AnchorLayerVisual = () => {
-  const assets = [
-    { title: "Singapore REITs", subtitle: "Commercial Property Trust", yieldValue: "4.8% APY", icon: <Landmark className="w-4 h-4 text-[#00FF9D]" /> },
-    { title: "US Treasury Bills", subtitle: "Short-term Gov Bonds", yieldValue: "5.2% APY", icon: <Shield className="w-4 h-4 text-[#00B8D4]" /> },
-    { title: "Tokenized Gold", subtitle: "LBMA Certified", yieldValue: "2.1% APY", icon: <span className="text-[#D4AF37] font-bold text-sm">Au</span> },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 gap-3">
-      {assets.map((asset, i) => <GlassAssetCard key={asset.title} {...asset} delay={i * 0.1} />)}
-    </div>
-  );
-};
-
-// ============================================
-// PROTOCOL CARD COMPONENT
-// ============================================
-
-interface ProtocolCardProps {
-  index: number;
-  phase: string;
-  headline: string;
-  copy: string;
-  badge: string;
-  badgeColor: string;
-  children: React.ReactNode;
-  delay: number;
-}
-
-const ProtocolCard = ({ index, phase, headline, copy, badge, badgeColor, children, delay }: ProtocolCardProps) => {
+const SourceSection = ({ isActive }: { isActive: boolean }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
+  const isInView = useInView(ref, { once: false, margin: "-20%" });
+  
   return (
-    <motion.div
+    <motion.section
       ref={ref}
-      custom={delay}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
-      variants={cardVariants}
-      className="bg-[#0F1419] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-colors"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isInView ? 1 : 0.3 }}
+      transition={{ duration: 0.6 }}
+      className="relative min-h-[70vh] flex items-center py-16"
     >
-      {/* Phase Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/30 flex items-center justify-center shrink-0">
-          <span className="text-[#00FF9D] font-bold text-sm">{index}</span>
-        </div>
-        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">{phase}</span>
-      </div>
-
-      {/* Title & Copy */}
-      <h3 className="text-lg font-bold text-white mb-2">{headline}</h3>
-      <p className="text-sm text-slate-400 mb-4 leading-relaxed">{copy}</p>
-
-      {/* Badge */}
-      <div className="mb-4">
-        <span 
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
-          style={{ backgroundColor: `${badgeColor}10`, borderColor: `${badgeColor}30`, color: badgeColor }}
+      <div className="w-full max-w-2xl mx-auto px-6 lg:px-0">
+        {/* Phase indicator */}
+        <motion.div 
+          className="flex items-center gap-3 mb-6"
+          initial={{ x: -20, opacity: 0 }}
+          animate={isInView ? { x: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.2 }}
         >
-          <CheckCircle2 className="w-3 h-3" />
-          {badge}
-        </span>
-      </div>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-500 ${
+            isActive ? 'bg-[#00FF9D]/20 border-[#00FF9D]' : 'bg-white/5 border-white/20'
+          }`}>
+            <Zap className={`w-5 h-5 transition-colors ${isActive ? 'text-[#00FF9D]' : 'text-white/40'}`} />
+          </div>
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-mono">Phase 01 • The Source</span>
+        </motion.div>
 
-      {/* Visual */}
-      <div className="bg-black/20 rounded-lg overflow-hidden">
-        {children}
+        {/* Main headline */}
+        <motion.h2
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.3 }}
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 font-['Inter']"
+        >
+          Just-In-Time Execution.
+        </motion.h2>
+
+        {/* Technical jargon (the hook) */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.4 }}
+          className="text-lg text-slate-300 mb-4 font-mono"
+        >
+          "GMT Core scans mempool for mathematically guaranteed spreads."
+        </motion.p>
+
+        {/* Translation (clarity) */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.5 }}
+          className="text-base text-slate-500 italic mb-8"
+        >
+          Basically: We only trade when we see the profit first. Zero guessing.
+        </motion.p>
+
+        {/* Visual: Chaotic volatility representation */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={isInView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ delay: 0.6 }}
+          className="relative h-32 bg-black/30 rounded-xl border border-white/10 overflow-hidden"
+        >
+          {/* Erratic signal lines */}
+          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+            {[0, 1, 2].map((i) => (
+              <motion.path
+                key={i}
+                d={`M 0 ${50 + i * 15} Q 25 ${30 + i * 20}, 50 ${60 - i * 10} T 100 ${40 + i * 15} T 150 ${55 - i * 5} T 200 ${45 + i * 10}`}
+                fill="none"
+                stroke={isActive ? '#00FF9D' : '#ffffff20'}
+                strokeWidth="2"
+                initial={{ pathLength: 0 }}
+                animate={{ 
+                  pathLength: isActive ? 1 : 0.3,
+                  opacity: isActive ? [0.3, 0.8, 0.3] : 0.2
+                }}
+                transition={{ 
+                  pathLength: { duration: 1, delay: i * 0.2 },
+                  opacity: { duration: 2, repeat: Infinity, delay: i * 0.3 }
+                }}
+              />
+            ))}
+          </svg>
+          
+          {/* Status badge */}
+          <div className="absolute bottom-3 right-3">
+            <span className={`px-2 py-1 rounded text-[10px] font-mono uppercase ${
+              isActive ? 'bg-[#00FF9D]/20 text-[#00FF9D]' : 'bg-white/10 text-white/40'
+            }`}>
+              {isActive ? '● Scanning' : '○ Idle'}
+            </span>
+          </div>
+        </motion.div>
       </div>
-    </motion.div>
+    </motion.section>
   );
 };
 
 // ============================================
-// DOCUMENT FILE ROW
+// SECTION 2: THE LOCK - Bonding Choke Point
 // ============================================
 
-interface DocFileProps {
-  name: string;
-  size: string;
-  delay: number;
-}
+const LockSection = ({ isActive, daysRemaining = 14 }: { isActive: boolean; daysRemaining?: number }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, margin: "-20%" });
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isInView ? 1 : 0.3 }}
+      transition={{ duration: 0.6 }}
+      className="relative min-h-[70vh] flex items-center py-16"
+    >
+      <div className="w-full max-w-2xl mx-auto px-6 lg:px-0">
+        {/* Phase indicator */}
+        <motion.div 
+          className="flex items-center gap-3 mb-6"
+          initial={{ x: -20, opacity: 0 }}
+          animate={isInView ? { x: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.2 }}
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-500 ${
+            isActive ? 'bg-[#00B8D4]/20 border-[#00B8D4]' : 'bg-white/5 border-white/20'
+          }`}>
+            <Lock className={`w-5 h-5 transition-colors ${isActive ? 'text-[#00B8D4]' : 'text-white/40'}`} />
+          </div>
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-mono">Phase 02 • The Lock</span>
+        </motion.div>
 
-const DocumentFile = ({ name, size, delay }: DocFileProps) => (
+        {/* Main headline */}
+        <motion.h2
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.3 }}
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 font-['Inter']"
+        >
+          The Bonding Cycle.
+        </motion.h2>
+
+        {/* Technical jargon */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.4 }}
+          className="text-lg text-slate-300 mb-4 font-mono"
+        >
+          "Strategy-Aligned Bonding Epochs align liquidity depth with maturity."
+        </motion.p>
+
+        {/* Translation */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.5 }}
+          className="text-base text-slate-500 italic mb-8"
+        >
+          Basically: Your capital is bonded to the trade duration (14 Days) to prevent slippage.
+        </motion.p>
+
+        {/* Visual: The Lock mechanism */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={isInView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ delay: 0.6 }}
+          className="relative h-40 bg-black/30 rounded-xl border border-white/10 overflow-hidden flex items-center justify-center"
+        >
+          {/* Constricting walls */}
+          <motion.div
+            className="absolute left-0 top-0 bottom-0 w-1/4 bg-gradient-to-r from-slate-800 to-transparent"
+            animate={isActive ? { x: [0, 20, 0] } : {}}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute right-0 top-0 bottom-0 w-1/4 bg-gradient-to-l from-slate-800 to-transparent"
+            animate={isActive ? { x: [0, -20, 0] } : {}}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+          
+          {/* The Lock icon with tooltip */}
+          <div 
+            className="relative cursor-pointer"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            <motion.div
+              className={`w-20 h-20 rounded-xl flex items-center justify-center transition-colors duration-500 ${
+                isActive ? 'bg-[#00B8D4]/20 border-2 border-[#00B8D4]' : 'bg-white/5 border border-white/20'
+              }`}
+              animate={isActive ? { scale: [1, 0.95, 1] } : {}}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Lock className={`w-10 h-10 transition-colors ${isActive ? 'text-[#00B8D4]' : 'text-white/30'}`} />
+            </motion.div>
+            
+            {/* Tooltip */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: showTooltip ? 1 : 0, y: showTooltip ? 0 : 10 }}
+              className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 border border-[#00B8D4]/30 rounded-lg px-4 py-2 whitespace-nowrap z-20"
+            >
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="w-4 h-4 text-[#00B8D4]" />
+                <span className="text-white font-medium">Status:</span>
+                <span className="text-[#00B8D4] font-mono">{daysRemaining} Days Remaining</span>
+              </div>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-slate-900 border-r border-b border-[#00B8D4]/30" />
+            </motion.div>
+          </div>
+          
+          {/* Pulsing rings */}
+          {isActive && [1, 2, 3].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute w-24 h-24 rounded-xl border border-[#00B8D4]/30"
+              initial={{ scale: 1, opacity: 0.5 }}
+              animate={{ scale: [1, 1.5, 2], opacity: [0.5, 0.2, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+            />
+          ))}
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+};
+
+// ============================================
+// SECTION 3: THE ASSET - Vault Output
+// ============================================
+
+const AssetSection = ({ isActive }: { isActive: boolean }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, margin: "-20%" });
+  
+  const assets = [
+    { title: "Singapore REITs", subtitle: "Commercial Property Trust", yieldValue: "4.8%", icon: <Landmark className="w-5 h-5 text-[#00FF9D]" /> },
+    { title: "US Treasury Bills", subtitle: "Short-term Gov Bonds", yieldValue: "5.2%", icon: <Shield className="w-5 h-5 text-[#00B8D4]" /> },
+    { title: "Tokenized Gold", subtitle: "LBMA Certified", yieldValue: "2.1%", icon: <span className="text-[#D4AF37] font-bold">Au</span> },
+  ];
+  
+  return (
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isInView ? 1 : 0.3 }}
+      transition={{ duration: 0.6 }}
+      className="relative min-h-[70vh] flex items-center py-16"
+    >
+      <div className="w-full max-w-2xl mx-auto px-6 lg:px-0">
+        {/* Phase indicator */}
+        <motion.div 
+          className="flex items-center gap-3 mb-6"
+          initial={{ x: -20, opacity: 0 }}
+          animate={isInView ? { x: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.2 }}
+        >
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors duration-500 ${
+            isActive ? 'bg-[#D4AF37]/20 border-[#D4AF37]' : 'bg-white/5 border-white/20'
+          }`}>
+            <Landmark className={`w-5 h-5 transition-colors ${isActive ? 'text-[#D4AF37]' : 'text-white/40'}`} />
+          </div>
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-mono">Phase 03 • The Asset</span>
+        </motion.div>
+
+        {/* Main headline */}
+        <motion.h2
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.3 }}
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 font-['Inter']"
+        >
+          RWA Finality.
+        </motion.h2>
+
+        {/* Technical jargon */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.4 }}
+          className="text-lg text-slate-300 mb-4 font-mono"
+        >
+          "Protocol sweeps excess variance into Tokenized Real World Assets."
+        </motion.p>
+
+        {/* Translation */}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: 0.5 }}
+          className="text-base text-slate-500 italic mb-8"
+        >
+          Basically: Trading profits are converted into Real Estate and Gold for safe keeping.
+        </motion.p>
+
+        {/* Visual: The Vault */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={isInView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ delay: 0.6 }}
+          className="relative bg-black/30 rounded-xl border border-white/10 overflow-hidden p-6"
+        >
+          {/* Vault header */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs uppercase tracking-wider text-slate-500 font-mono">Vault Contents</span>
+            <span className={`px-2 py-1 rounded text-[10px] font-mono uppercase ${
+              isActive ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-white/10 text-white/40'
+            }`}>
+              {isActive ? '● Settled' : '○ Pending'}
+            </span>
+          </div>
+          
+          {/* Asset cards */}
+          <div className="grid gap-3">
+            {assets.map((asset, i) => (
+              <motion.div
+                key={asset.title}
+                initial={{ x: -20, opacity: 0 }}
+                animate={isInView ? { x: 0, opacity: 1 } : {}}
+                transition={{ delay: 0.7 + i * 0.1 }}
+                className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-500 ${
+                  isActive 
+                    ? 'bg-[#D4AF37]/5 border-[#D4AF37]/30 hover:bg-[#D4AF37]/10' 
+                    : 'bg-white/5 border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    isActive ? 'bg-[#D4AF37]/10' : 'bg-white/5'
+                  }`}>
+                    {asset.icon}
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">{asset.title}</p>
+                    <p className="text-xs text-slate-500">{asset.subtitle}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`font-mono font-bold ${isActive ? 'text-[#D4AF37]' : 'text-white/40'}`}>
+                    {asset.yieldValue}
+                  </p>
+                  <p className="text-[10px] text-slate-600 uppercase">APY</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Gold crystallization effect */}
+          {isActive && (
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.1, 0] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-[#D4AF37]/20 to-transparent" />
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+    </motion.section>
+  );
+};
+
+// ============================================
+// DOCUMENTATION SECTION
+// ============================================
+
+const DocumentFile = ({ name, size, delay }: { name: string; size: string; delay: number }) => (
   <motion.div
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
@@ -291,112 +554,108 @@ const DocumentFile = ({ name, size, delay }: DocFileProps) => (
 // ============================================
 
 export const AssetProtocol = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ 
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+  
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  const [progress, setProgress] = useState(0);
+  
+  useEffect(() => {
+    const unsubscribe = smoothProgress.on("change", (v) => setProgress(v));
+    return () => unsubscribe();
+  }, [smoothProgress]);
+
   const documents = [
     { name: "GMT_Architecture_v9.2.pdf", size: "2.4 MB" },
     { name: "Bonding_Settlement_Mechanics.pdf", size: "1.8 MB" },
     { name: "RWA_Title_Attestation.pdf", size: "892 KB" },
   ];
 
+  // Determine which section is active based on scroll
+  const isSourceActive = progress < 0.4;
+  const isLockActive = progress >= 0.3 && progress < 0.7;
+  const isAssetActive = progress >= 0.6;
+
   return (
-    <div className="h-full overflow-y-auto bg-[#0B1015] p-4 md:p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div ref={containerRef} className="h-full overflow-y-auto bg-[#0B1015]">
+      {/* Fixed progress indicator */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00FF9D] via-[#00B8D4] to-[#D4AF37] z-50 origin-left"
+        style={{ scaleX: smoothProgress }}
+      />
+      
+      <div className="relative max-w-4xl mx-auto">
+        {/* The Pipeline - Central connection */}
+        <Pipeline scrollProgress={progress} />
         
-        {/* Page Header Card */}
-        <motion.div
+        {/* Header */}
+        <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-[#0F1419] border border-white/5 rounded-xl p-6"
-        >
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[#00FF9D]/10 rounded-xl shrink-0">
-              <Cpu className="w-6 h-6 text-[#00FF9D]" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h1 className="text-2xl md:text-3xl font-bold text-white">ASSET PROTOCOL</h1>
-                <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/20 text-[#00FF9D] text-[10px] font-bold uppercase">
-                  v2.1
-                </span>
-              </div>
-              <p className="text-slate-400">
-                Code is Law. <span className="text-white font-medium">From Execution to Settlement.</span>
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Protocol Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ProtocolCard
-            index={1}
-            phase="The Source"
-            headline="Just-In-Time Execution"
-            copy="The GMT Core scans the mempool. The Protocol injects liquidity only when profitable spreads are mathematically guaranteed."
-            badge="AUTONOMOUS"
-            badgeColor="#00FF9D"
-            delay={0}
-          >
-            <ExecutionLayerVisual />
-          </ProtocolCard>
-
-          <ProtocolCard
-            index={2}
-            phase="The Lock"
-            headline="The Bonding Cycle"
-            copy="To ensure solvency, the Protocol enforces Strategy-Aligned Bonding Epochs. This aligns liquidity depth with institutional order flow maturity."
-            badge="HARD CODED"
-            badgeColor="#D4AF37"
-            delay={1}
-          >
-            <BondingLayerVisual />
-          </ProtocolCard>
-        </div>
-
-        {/* RWA Finality - Full Width */}
-        <ProtocolCard
-          index={3}
-          phase="The Asset"
-          headline="RWA Finality"
-          copy="Yield is not left idle. The Protocol sweeps excess variance into Tokenized Real World Assets for long-term preservation."
-          badge="VERIFIED"
-          badgeColor="#00B8D4"
-          delay={2}
-        >
-          <div className="p-4">
-            <AnchorLayerVisual />
-          </div>
-        </ProtocolCard>
-
-        {/* Documentation Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-[#0F1419] border border-white/5 rounded-xl p-5"
+          className="relative z-10 pt-12 pb-8 px-6"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-slate-800 rounded-lg">
-              <FileText className="w-4 h-4 text-slate-400" />
+            <div className="p-2.5 bg-[#00FF9D]/10 rounded-xl">
+              <Cpu className="w-6 h-6 text-[#00FF9D]" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Protocol Documentation</h3>
-              <p className="text-xs text-slate-500">Technical specifications & attestations</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">ASSET PROTOCOL</h1>
+              <p className="text-sm text-slate-500">Code is Law • From Execution to Settlement</p>
             </div>
           </div>
-          <div className="space-y-2">
-            {documents.map((doc, i) => (
-              <DocumentFile key={doc.name} {...doc} delay={0.4 + i * 0.1} />
-            ))}
+          
+          {/* Scroll hint */}
+          <motion.div
+            className="flex items-center gap-2 text-slate-600 text-sm"
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span>Scroll to follow the flow</span>
+            <span>↓</span>
+          </motion.div>
+        </motion.header>
+
+        {/* The Three Sections */}
+        <div className="relative z-10">
+          <SourceSection isActive={isSourceActive} />
+          <LockSection isActive={isLockActive} />
+          <AssetSection isActive={isAssetActive} />
+        </div>
+
+        {/* Documentation Section */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="relative z-10 px-6 py-16 border-t border-white/5"
+        >
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-slate-800 rounded-lg">
+                <FileText className="w-5 h-5 text-slate-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Protocol Documentation</h3>
+                <p className="text-sm text-slate-500">Technical specifications & attestations</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {documents.map((doc, i) => (
+                <DocumentFile key={doc.name} {...doc} delay={i * 0.1} />
+              ))}
+            </div>
           </div>
-        </motion.div>
+        </motion.section>
 
         {/* Footer */}
-        <div className="text-center py-4">
+        <footer className="relative z-10 py-12 text-center border-t border-white/5">
           <p className="text-[10px] text-slate-600 font-mono uppercase tracking-wider">
             CapWheel Protocol v2.1 • Kinetic Framework
           </p>
-        </div>
+        </footer>
       </div>
     </div>
   );
