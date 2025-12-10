@@ -15,42 +15,46 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 // System-wide AUM base value (~$2.4B)
 const SYSTEM_AUM_BASE = 2_400_000_000;
 
-// Generate system-wide AUM performance data (NOT user-specific)
+// Generate system-wide AUM performance data with steady upward trend and periodic dips
 const generateSystemAUMData = (days: number = 180) => {
   const data: Array<{ time: Time; value: number }> = [];
   const volumeData: Array<{ time: Time; value: number; color: string }> = [];
   const now = Math.floor(Date.now() / 1000);
   const daySeconds = 24 * 60 * 60;
 
-  // Start from a slightly lower base and trend upward
-  let currentValue = SYSTEM_AUM_BASE * 0.92; // Start at 92% of current
+  // Start lower and grow steadily to current value
+  const startValue = SYSTEM_AUM_BASE * 0.75; // Start at 75% of current
+  const endValue = SYSTEM_AUM_BASE; // End at current
+  const totalGrowth = endValue - startValue;
   
   for (let i = days; i >= 0; i--) {
     const time = (now - i * daySeconds) as Time;
+    const progress = (days - i) / days; // 0 to 1 progress
     
-    // Gradual upward trend with realistic daily fluctuations
-    const dailyChange = (Math.random() * 0.015 - 0.004); // Slight upward bias
-    currentValue *= (1 + dailyChange);
+    // Base value: linear diagonal growth from start to end
+    const baseValue = startValue + (totalGrowth * progress);
     
-    // Keep within realistic bounds
-    currentValue = Math.max(currentValue, SYSTEM_AUM_BASE * 0.85);
-    currentValue = Math.min(currentValue, SYSTEM_AUM_BASE * 1.05);
+    // Add periodic dips (every ~15-25 days) and small daily noise
+    const dayIndex = days - i;
+    const dipCycle = Math.sin(dayIndex * 0.25) * 0.015; // Periodic wave for dips
+    const microNoise = (Math.random() - 0.5) * 0.008; // Small random daily fluctuation
+    
+    // Occasional larger dips (about every 20-30 days)
+    const largeDip = (dayIndex % 23 < 3) ? -0.02 * Math.random() : 0;
+    
+    const fluctuation = dipCycle + microNoise + largeDip;
+    const currentValue = baseValue * (1 + fluctuation);
     
     data.push({ time, value: currentValue });
     
     // Generate volume data (daily trading volume)
-    const dailyVolume = Math.random() * 50_000_000 + 10_000_000; // $10M-$60M daily volume
-    const isPositive = dailyChange >= 0;
+    const dailyVolume = Math.random() * 50_000_000 + 10_000_000;
+    const isPositive = fluctuation >= 0;
     volumeData.push({
       time,
       value: dailyVolume,
       color: isPositive ? 'rgba(0, 255, 157, 0.3)' : 'rgba(239, 68, 68, 0.3)',
     });
-  }
-
-  // Ensure last value is close to current AUM
-  if (data.length > 0) {
-    data[data.length - 1].value = SYSTEM_AUM_BASE * (1 + (Math.random() * 0.01 - 0.005));
   }
 
   return { data, volumeData };
@@ -259,35 +263,14 @@ export const OrionWealthChart = () => {
           <div className={`bg-[#00FF9D]/10 rounded-lg ${isMobile ? 'p-1.5' : 'p-2'}`}>
             <TrendingUp className={`text-[#00FF9D] ${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
           </div>
-          {!isMobile && (
-            <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                CapWheel AUM
-              </h3>
-              <p className="text-xs text-slate-500">Platform-wide Assets Under Management</p>
-            </div>
-          )}
-          {isMobile && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
-              <span className="text-xs font-semibold text-white">Live Performance</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
+            <span className="text-xs font-semibold text-white">Live Performance</span>
+          </div>
         </div>
         
-        {/* Live indicator + Value (Desktop) or Timeframe only (Mobile) */}
+        {/* Timeframe Selector */}
         <div className="flex items-center gap-3">
-          {!isMobile && (
-            <div className="text-right">
-              <p className="text-lg font-bold text-[#00FF9D] font-mono">{formatCurrency(latestValue)}</p>
-              <div className="flex items-center gap-1 justify-end">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00FF9D] animate-pulse" />
-                <span className="text-[10px] text-[#00FF9D] uppercase tracking-wider">Live</span>
-              </div>
-            </div>
-          )}
-          
-          {/* Timeframe Selector */}
           <div className={`flex items-center gap-0.5 bg-white/5 rounded-lg ${isMobile ? 'p-0.5' : 'p-1'}`}>
             {timeframes.map((tf) => (
               <button
