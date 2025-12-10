@@ -1,12 +1,12 @@
 /**
  * Asset Protocol Page - "Code is Law"
  * 
- * Vertical scrolling page explaining the Laws of the CapWheel system
+ * Card-based layout explaining the CapWheel system architecture
  * Narrative: "From Execution to Settlement"
  */
 
 import { useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { 
   FileText, 
   Download, 
@@ -14,13 +14,25 @@ import {
   Lock, 
   Landmark,
   ExternalLink,
-  Zap,
   Shield,
   CheckCircle2
 } from 'lucide-react';
 
 // ============================================
-// SECTION 1: EXECUTION LAYER - 3D Network Nodes
+// ANIMATION HELPERS
+// ============================================
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, duration: 0.4, ease: 'easeOut' }
+  })
+};
+
+// ============================================
+// SECTION 1: EXECUTION LAYER - Network Nodes
 // ============================================
 
 const NetworkNode = ({ delay, x, y }: { delay: number; x: number; y: number }) => (
@@ -28,33 +40,20 @@ const NetworkNode = ({ delay, x, y }: { delay: number; x: number; y: number }) =
     className="absolute"
     style={{ left: `${x}%`, top: `${y}%` }}
     initial={{ scale: 0, opacity: 0 }}
-    animate={{ 
-      scale: [0, 1, 1, 0.8, 1],
-      opacity: [0, 1, 1, 0.7, 1],
-    }}
-    transition={{ 
-      duration: 3,
-      delay,
-      repeat: Infinity,
-      repeatDelay: 2
-    }}
+    animate={{ scale: [0, 1, 1, 0.8, 1], opacity: [0, 1, 1, 0.7, 1] }}
+    transition={{ duration: 3, delay, repeat: Infinity, repeatDelay: 2 }}
   >
     <div className="relative">
-      <div className="absolute inset-0 w-4 h-4 bg-[#00FF9D] rounded-full blur-md opacity-60" />
-      <div className="relative w-4 h-4 bg-[#00FF9D] rounded-full border-2 border-[#00FF9D]/50" />
+      <div className="absolute inset-0 w-3 h-3 bg-[#00FF9D] rounded-full blur-md opacity-60" />
+      <div className="relative w-3 h-3 bg-[#00FF9D] rounded-full border border-[#00FF9D]/50" />
     </div>
   </motion.div>
 );
 
 const NetworkConnection = ({ x1, y1, x2, y2, delay }: { x1: number; y1: number; x2: number; y2: number; delay: number }) => (
   <motion.line
-    x1={`${x1}%`}
-    y1={`${y1}%`}
-    x2={`${x2}%`}
-    y2={`${y2}%`}
-    stroke="#00FF9D"
-    strokeWidth="1"
-    strokeOpacity="0.3"
+    x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}
+    stroke="#00FF9D" strokeWidth="1" strokeOpacity="0.3"
     initial={{ pathLength: 0 }}
     animate={{ pathLength: 1 }}
     transition={{ duration: 1.5, delay, ease: "easeInOut" }}
@@ -63,50 +62,32 @@ const NetworkConnection = ({ x1, y1, x2, y2, delay }: { x1: number; y1: number; 
 
 const ExecutionLayerVisual = () => {
   const nodes = [
-    { x: 20, y: 30, delay: 0 },
-    { x: 45, y: 15, delay: 0.3 },
-    { x: 70, y: 25, delay: 0.5 },
-    { x: 30, y: 60, delay: 0.7 },
-    { x: 55, y: 50, delay: 0.2 },
-    { x: 80, y: 55, delay: 0.9 },
-    { x: 25, y: 85, delay: 0.4 },
-    { x: 60, y: 80, delay: 0.6 },
-    { x: 85, y: 75, delay: 0.8 },
+    { x: 15, y: 25, delay: 0 }, { x: 40, y: 10, delay: 0.3 }, { x: 70, y: 20, delay: 0.5 },
+    { x: 25, y: 55, delay: 0.7 }, { x: 55, y: 45, delay: 0.2 }, { x: 85, y: 50, delay: 0.9 },
+    { x: 20, y: 85, delay: 0.4 }, { x: 60, y: 80, delay: 0.6 }, { x: 90, y: 75, delay: 0.8 },
   ];
-
   const connections = [
-    { x1: 20, y1: 30, x2: 45, y2: 15, delay: 0.5 },
-    { x1: 45, y1: 15, x2: 70, y2: 25, delay: 0.7 },
-    { x1: 20, y1: 30, x2: 30, y2: 60, delay: 0.6 },
-    { x1: 30, y1: 60, x2: 55, y2: 50, delay: 0.8 },
-    { x1: 55, y1: 50, x2: 80, y2: 55, delay: 1.0 },
-    { x1: 45, y1: 15, x2: 55, y2: 50, delay: 0.9 },
-    { x1: 70, y1: 25, x2: 80, y2: 55, delay: 1.1 },
-    { x1: 30, y1: 60, x2: 25, y2: 85, delay: 1.2 },
-    { x1: 55, y1: 50, x2: 60, y2: 80, delay: 1.3 },
-    { x1: 80, y1: 55, x2: 85, y2: 75, delay: 1.4 },
-    { x1: 25, y1: 85, x2: 60, y2: 80, delay: 1.5 },
-    { x1: 60, y1: 80, x2: 85, y2: 75, delay: 1.6 },
+    { x1: 15, y1: 25, x2: 40, y2: 10, delay: 0.5 }, { x1: 40, y1: 10, x2: 70, y2: 20, delay: 0.7 },
+    { x1: 15, y1: 25, x2: 25, y2: 55, delay: 0.6 }, { x1: 25, y1: 55, x2: 55, y2: 45, delay: 0.8 },
+    { x1: 55, y1: 45, x2: 85, y2: 50, delay: 1.0 }, { x1: 40, y1: 10, x2: 55, y2: 45, delay: 0.9 },
+    { x1: 70, y1: 20, x2: 85, y2: 50, delay: 1.1 }, { x1: 25, y1: 55, x2: 20, y2: 85, delay: 1.2 },
+    { x1: 55, y1: 45, x2: 60, y2: 80, delay: 1.3 }, { x1: 85, y1: 50, x2: 90, y2: 75, delay: 1.4 },
   ];
 
   return (
-    <div className="relative w-full h-64 md:h-80">
+    <div className="relative w-full h-40">
       <div className="absolute inset-0 opacity-10"
         style={{
           backgroundImage: `linear-gradient(rgba(0,255,157,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,157,0.3) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px'
+          backgroundSize: '30px 30px'
         }}
       />
       <svg className="absolute inset-0 w-full h-full">
-        {connections.map((conn, i) => (
-          <NetworkConnection key={i} {...conn} />
-        ))}
+        {connections.map((conn, i) => <NetworkConnection key={i} {...conn} />)}
       </svg>
-      {nodes.map((node, i) => (
-        <NetworkNode key={i} {...node} />
-      ))}
+      {nodes.map((node, i) => <NetworkNode key={i} {...node} />)}
       <motion.div
-        className="absolute left-0 top-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00FF9D]/50 to-transparent"
+        className="absolute left-0 top-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#00FF9D]/50 to-transparent"
         animate={{ top: ['0%', '100%', '0%'] }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
       />
@@ -115,60 +96,59 @@ const ExecutionLayerVisual = () => {
 };
 
 // ============================================
-// SECTION 2: BONDING LAYER - Compressor Animation
+// SECTION 2: BONDING LAYER - Compressor
 // ============================================
 
-const BondingLayerVisual = () => {
-  return (
-    <div className="relative w-full h-64 md:h-80 flex items-center justify-center overflow-hidden">
-      <motion.div
-        className="absolute top-0 left-1/4 right-1/4 h-8 bg-gradient-to-b from-slate-600 to-slate-800 rounded-b-lg border-b-4 border-slate-500"
-        animate={{ y: [0, 60, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute bottom-0 left-1/4 right-1/4 h-8 bg-gradient-to-t from-slate-600 to-slate-800 rounded-t-lg border-t-4 border-slate-500"
-        animate={{ y: [0, -60, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 space-y-2">
-        {[0, 1, 2, 3].map((i) => (
-          <motion.div
-            key={i}
-            className="w-3 h-3 bg-[#00FF9D] rounded-full shadow-[0_0_10px_#00FF9D]"
-            animate={{ x: [0, 120, 120], opacity: [1, 1, 0], scale: [1, 0.8, 0.5] }}
-            transition={{ duration: 2, delay: i * 0.4, repeat: Infinity, repeatDelay: 0.6 }}
-          />
-        ))}
-      </div>
-
-      <motion.div
-        className="relative w-24 h-24 flex items-center justify-center"
-        animate={{ scale: [1, 0.8, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00FF9D]/20 to-[#D4AF37]/20 rounded-lg blur-xl" />
-        <Lock className="w-12 h-12 text-[#D4AF37]" />
-      </motion.div>
-
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 space-y-2">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="w-4 h-4 bg-gradient-to-br from-[#D4AF37] to-[#B8860B] rounded shadow-[0_0_10px_#D4AF37]"
-            initial={{ x: -120, opacity: 0, scale: 0.5 }}
-            animate={{ x: [-120, 0, 0], opacity: [0, 1, 1], scale: [0.5, 1, 1] }}
-            transition={{ duration: 2, delay: i * 0.5 + 1, repeat: Infinity, repeatDelay: 1 }}
-          />
-        ))}
-      </div>
+const BondingLayerVisual = () => (
+  <div className="relative w-full h-40 flex items-center justify-center overflow-hidden">
+    {/* Compressor Plates */}
+    <motion.div
+      className="absolute top-0 left-1/4 right-1/4 h-5 bg-gradient-to-b from-slate-600 to-slate-800 rounded-b-lg border-b-2 border-slate-500"
+      animate={{ y: [0, 40, 0] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <motion.div
+      className="absolute bottom-0 left-1/4 right-1/4 h-5 bg-gradient-to-t from-slate-600 to-slate-800 rounded-t-lg border-t-2 border-slate-500"
+      animate={{ y: [0, -40, 0] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    />
+    {/* Green particles in */}
+    <div className="absolute left-2 top-1/2 -translate-y-1/2 space-y-1.5">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="w-2 h-2 bg-[#00FF9D] rounded-full shadow-[0_0_8px_#00FF9D]"
+          animate={{ x: [0, 80, 80], opacity: [1, 1, 0], scale: [1, 0.7, 0.4] }}
+          transition={{ duration: 2, delay: i * 0.5, repeat: Infinity, repeatDelay: 0.5 }}
+        />
+      ))}
     </div>
-  );
-};
+    {/* Lock center */}
+    <motion.div
+      className="relative w-16 h-16 flex items-center justify-center"
+      animate={{ scale: [1, 0.85, 1] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-[#00FF9D]/20 to-[#D4AF37]/20 rounded-lg blur-lg" />
+      <Lock className="w-8 h-8 text-[#D4AF37]" />
+    </motion.div>
+    {/* Gold blocks out */}
+    <div className="absolute right-2 top-1/2 -translate-y-1/2 space-y-1.5">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="w-3 h-3 bg-gradient-to-br from-[#D4AF37] to-[#B8860B] rounded shadow-[0_0_8px_#D4AF37]"
+          initial={{ x: -80, opacity: 0, scale: 0.4 }}
+          animate={{ x: [-80, 0, 0], opacity: [0, 1, 1], scale: [0.4, 1, 1] }}
+          transition={{ duration: 2, delay: i * 0.5 + 1, repeat: Infinity, repeatDelay: 1 }}
+        />
+      ))}
+    </div>
+  </div>
+);
 
 // ============================================
-// SECTION 3: ANCHOR LAYER - Glass Cards
+// SECTION 3: ANCHOR LAYER - RWA Cards
 // ============================================
 
 interface AssetCardProps {
@@ -179,60 +159,102 @@ interface AssetCardProps {
   delay: number;
 }
 
-const GlassAssetCard = ({ title, subtitle, yieldValue, icon, delay }: AssetCardProps) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 30, rotateX: -15 }}
-      animate={isInView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
-      transition={{ duration: 0.6, delay }}
-      className="relative group"
-      style={{ perspective: 1000 }}
-    >
-      <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 overflow-hidden hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
-        <div className="relative z-10 flex items-start gap-4">
-          <div className="p-3 bg-[#00FF9D]/10 rounded-xl">{icon}</div>
-          <div className="flex-1">
-            <h4 className="text-white font-semibold mb-1">{title}</h4>
-            <p className="text-sm text-slate-400 mb-3">{subtitle}</p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 uppercase">Yield</span>
-              <span className="text-[#00FF9D] font-mono font-bold">{yieldValue}</span>
-            </div>
-          </div>
+const GlassAssetCard = ({ title, subtitle, yieldValue, icon, delay }: AssetCardProps) => (
+  <motion.div
+    initial={{ opacity: 0, y: 15 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay }}
+    className="bg-black/20 border border-white/10 rounded-xl p-4 hover:bg-white/5 hover:border-[#00FF9D]/20 transition-all"
+  >
+    <div className="flex items-start gap-3">
+      <div className="p-2 bg-[#00FF9D]/10 rounded-lg shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-white font-medium text-sm truncate">{title}</h4>
+        <p className="text-xs text-slate-500 truncate">{subtitle}</p>
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="text-[10px] text-slate-600 uppercase">Yield</span>
+          <span className="text-[#00FF9D] font-mono text-xs font-bold">{yieldValue}</span>
         </div>
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full"
-          animate={{ translateX: ['100%', '-100%'] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-        />
       </div>
-    </motion.div>
-  );
-};
+    </div>
+  </motion.div>
+);
 
 const AnchorLayerVisual = () => {
   const assets = [
-    { title: "Singapore REITs", subtitle: "Commercial Property Trust", yieldValue: "4.8% APY", icon: <Landmark className="w-6 h-6 text-[#00FF9D]" /> },
-    { title: "US Treasury Bills", subtitle: "Short-term Government Bonds", yieldValue: "5.2% APY", icon: <Shield className="w-6 h-6 text-[#00B8D4]" /> },
-    { title: "Tokenized Gold", subtitle: "LBMA Certified Reserves", yieldValue: "2.1% APY", icon: <span className="w-6 h-6 text-[#D4AF37] font-bold text-lg">Au</span> },
+    { title: "Singapore REITs", subtitle: "Commercial Property Trust", yieldValue: "4.8% APY", icon: <Landmark className="w-4 h-4 text-[#00FF9D]" /> },
+    { title: "US Treasury Bills", subtitle: "Short-term Gov Bonds", yieldValue: "5.2% APY", icon: <Shield className="w-4 h-4 text-[#00B8D4]" /> },
+    { title: "Tokenized Gold", subtitle: "LBMA Certified", yieldValue: "2.1% APY", icon: <span className="text-[#D4AF37] font-bold text-sm">Au</span> },
   ];
 
   return (
-    <div className="grid md:grid-cols-3 gap-4">
-      {assets.map((asset, i) => (
-        <GlassAssetCard key={asset.title} {...asset} delay={i * 0.15} />
-      ))}
+    <div className="grid grid-cols-1 gap-3">
+      {assets.map((asset, i) => <GlassAssetCard key={asset.title} {...asset} delay={i * 0.1} />)}
     </div>
   );
 };
 
 // ============================================
-// SECTION 4: REFERENCE LIBRARY
+// PROTOCOL CARD COMPONENT
+// ============================================
+
+interface ProtocolCardProps {
+  index: number;
+  phase: string;
+  headline: string;
+  copy: string;
+  badge: string;
+  badgeColor: string;
+  children: React.ReactNode;
+  delay: number;
+}
+
+const ProtocolCard = ({ index, phase, headline, copy, badge, badgeColor, children, delay }: ProtocolCardProps) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      custom={delay}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={cardVariants}
+      className="bg-[#0F1419] border border-white/5 rounded-xl p-5 hover:border-white/10 transition-colors"
+    >
+      {/* Phase Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/30 flex items-center justify-center shrink-0">
+          <span className="text-[#00FF9D] font-bold text-sm">{index}</span>
+        </div>
+        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">{phase}</span>
+      </div>
+
+      {/* Title & Copy */}
+      <h3 className="text-lg font-bold text-white mb-2">{headline}</h3>
+      <p className="text-sm text-slate-400 mb-4 leading-relaxed">{copy}</p>
+
+      {/* Badge */}
+      <div className="mb-4">
+        <span 
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+          style={{ backgroundColor: `${badgeColor}10`, borderColor: `${badgeColor}30`, color: badgeColor }}
+        >
+          <CheckCircle2 className="w-3 h-3" />
+          {badge}
+        </span>
+      </div>
+
+      {/* Visual */}
+      <div className="bg-black/20 rounded-lg overflow-hidden">
+        {children}
+      </div>
+    </motion.div>
+  );
+};
+
+// ============================================
+// DOCUMENT FILE ROW
 // ============================================
 
 interface DocFileProps {
@@ -241,126 +263,34 @@ interface DocFileProps {
   delay: number;
 }
 
-const DocumentFile = ({ name, size, delay }: DocFileProps) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, x: -20 }}
-      animate={isInView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.4, delay }}
-      className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-[#00FF9D]/30 transition-all cursor-pointer group"
-    >
-      <div className="flex items-center gap-4">
-        <div className="p-2 bg-red-500/10 rounded-lg">
-          <FileText className="w-5 h-5 text-red-400" />
-        </div>
-        <div>
-          <p className="text-white font-medium text-sm">{name}</p>
-          <p className="text-xs text-slate-500">{size}</p>
-        </div>
+const DocumentFile = ({ name, size, delay }: DocFileProps) => (
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ duration: 0.3, delay }}
+    className="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded-lg hover:bg-white/5 hover:border-[#00FF9D]/20 transition-all cursor-pointer group"
+  >
+    <div className="flex items-center gap-3">
+      <div className="p-1.5 bg-red-500/10 rounded">
+        <FileText className="w-4 h-4 text-red-400" />
       </div>
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Download className="w-4 h-4 text-slate-400" />
-        <ExternalLink className="w-4 h-4 text-slate-400" />
+      <div>
+        <p className="text-white font-medium text-sm">{name}</p>
+        <p className="text-[10px] text-slate-600">{size}</p>
       </div>
-    </motion.div>
-  );
-};
-
-// ============================================
-// SECTION WRAPPER
-// ============================================
-
-interface ProtocolSectionProps {
-  phase: string;
-  headline: string;
-  copy: string;
-  badge: string;
-  badgeColor: string;
-  children: React.ReactNode;
-  index: number;
-}
-
-const ProtocolSection = ({ phase, headline, copy, badge, badgeColor, children, index }: ProtocolSectionProps) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <motion.section
-      ref={ref}
-      initial={{ opacity: 0 }}
-      animate={isInView ? { opacity: 1 } : {}}
-      transition={{ duration: 0.6 }}
-      className="min-h-[80vh] flex flex-col justify-center py-16 md:py-24"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ delay: 0.1 }}
-        className="flex items-center gap-3 mb-6"
-      >
-        <div className="w-10 h-10 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/30 flex items-center justify-center">
-          <span className="text-[#00FF9D] font-bold">{index}</span>
-        </div>
-        <span className="text-xs uppercase tracking-widest text-slate-500 font-medium">{phase}</span>
-      </motion.div>
-
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ delay: 0.2 }}
-        className="text-3xl md:text-4xl font-bold text-white mb-4"
-      >
-        {headline}
-      </motion.h2>
-
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ delay: 0.3 }}
-        className="text-lg text-slate-400 mb-8 max-w-2xl leading-relaxed"
-      >
-        {copy}
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={isInView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ delay: 0.4 }}
-        className="mb-8"
-      >
-        <span 
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border"
-          style={{ backgroundColor: `${badgeColor}15`, borderColor: `${badgeColor}40`, color: badgeColor }}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          {badge}
-        </span>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ delay: 0.5 }}
-      >
-        {children}
-      </motion.div>
-    </motion.section>
-  );
-};
+    </div>
+    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <Download className="w-3.5 h-3.5 text-slate-500" />
+      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+    </div>
+  </motion.div>
+);
 
 // ============================================
 // MAIN COMPONENT
 // ============================================
 
 export const AssetProtocol = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef });
-  const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-
   const documents = [
     { name: "GMT_Architecture_v9.2.pdf", size: "2.4 MB" },
     { name: "Bonding_Settlement_Mechanics.pdf", size: "1.8 MB" },
@@ -368,107 +298,105 @@ export const AssetProtocol = () => {
   ];
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto bg-[#0B1015]">
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-0.5 bg-[#00FF9D] z-50 origin-left"
-        style={{ width: progressWidth }}
-      />
-
-      <div className="max-w-4xl mx-auto px-6">
-        <motion.header
-          initial={{ opacity: 0, y: 40 }}
+    <div className="h-full overflow-y-auto bg-[#0B1015] p-4 md:p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        {/* Page Header Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="min-h-[60vh] flex flex-col justify-center py-16"
+          transition={{ duration: 0.5 }}
+          className="bg-[#0F1419] border border-white/5 rounded-xl p-6"
         >
-          <div className="mb-6">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/20 text-[#00FF9D] text-xs font-medium">
-              <Cpu className="w-3.5 h-3.5" />
-              SYSTEM ARCHITECTURE
-            </span>
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-[#00FF9D]/10 rounded-xl shrink-0">
+              <Cpu className="w-6 h-6 text-[#00FF9D]" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-white">ASSET PROTOCOL</h1>
+                <span className="px-2 py-0.5 rounded-full bg-[#00FF9D]/10 border border-[#00FF9D]/20 text-[#00FF9D] text-[10px] font-bold uppercase">
+                  v2.1
+                </span>
+              </div>
+              <p className="text-slate-400">
+                Code is Law. <span className="text-white font-medium">From Execution to Settlement.</span>
+              </p>
+            </div>
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight">
-            ASSET<br />
-            <span className="text-[#00FF9D]">PROTOCOL</span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-slate-400 mb-8 max-w-xl">
-            Code is Law.<br />
-            <span className="text-white font-medium">From Execution to Settlement.</span>
-          </p>
+        </motion.div>
 
-          <motion.div 
-            className="flex items-center gap-2 text-slate-500"
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+        {/* Protocol Cards Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ProtocolCard
+            index={1}
+            phase="The Source"
+            headline="Just-In-Time Execution"
+            copy="The GMT Core scans the mempool. The Protocol injects liquidity only when profitable spreads are mathematically guaranteed."
+            badge="AUTONOMOUS"
+            badgeColor="#00FF9D"
+            delay={0}
           >
-            <span className="text-sm">Scroll to explore</span>
-            <Zap className="w-4 h-4" />
-          </motion.div>
-        </motion.header>
+            <ExecutionLayerVisual />
+          </ProtocolCard>
 
-        <ProtocolSection
-          index={1}
-          phase="The Source"
-          headline="Phase 1: Just-In-Time Execution"
-          copy="The GMT Core scans the mempool. The Protocol injects liquidity only when profitable spreads are mathematically guaranteed."
-          badge="Status: AUTONOMOUS"
-          badgeColor="#00FF9D"
-        >
-          <ExecutionLayerVisual />
-        </ProtocolSection>
+          <ProtocolCard
+            index={2}
+            phase="The Lock"
+            headline="The Bonding Cycle"
+            copy="To ensure solvency, the Protocol enforces Strategy-Aligned Bonding Epochs. This aligns liquidity depth with institutional order flow maturity."
+            badge="HARD CODED"
+            badgeColor="#D4AF37"
+            delay={1}
+          >
+            <BondingLayerVisual />
+          </ProtocolCard>
+        </div>
 
-        <ProtocolSection
-          index={2}
-          phase="The Lock"
-          headline="Phase 2: The Bonding Cycle"
-          copy="To ensure solvency, the Protocol enforces Strategy-Aligned Bonding Epochs. This aligns liquidity depth with the specific Maturity of each institutional order flow."
-          badge="Constraint: HARD CODED"
-          badgeColor="#D4AF37"
-        >
-          <BondingLayerVisual />
-        </ProtocolSection>
-
-        <ProtocolSection
+        {/* RWA Finality - Full Width */}
+        <ProtocolCard
           index={3}
           phase="The Asset"
-          headline="Phase 3: RWA Finality"
+          headline="RWA Finality"
           copy="Yield is not left idle. The Protocol sweeps excess variance into Tokenized Real World Assets for long-term preservation."
-          badge="Custody: VERIFIED"
+          badge="VERIFIED"
           badgeColor="#00B8D4"
+          delay={2}
         >
-          <AnchorLayerVisual />
-        </ProtocolSection>
+          <div className="p-4">
+            <AnchorLayerVisual />
+          </div>
+        </ProtocolCard>
 
-        <motion.section
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="py-16 md:py-24 border-t border-white/5"
+        {/* Documentation Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="bg-[#0F1419] border border-white/5 rounded-xl p-5"
         >
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-slate-400" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-slate-800 rounded-lg">
+              <FileText className="w-4 h-4 text-slate-400" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Protocol Documentation</h3>
-              <p className="text-sm text-slate-500">Technical specifications & attestations</p>
+              <h3 className="text-lg font-bold text-white">Protocol Documentation</h3>
+              <p className="text-xs text-slate-500">Technical specifications & attestations</p>
             </div>
           </div>
-
-          <div className="space-y-3">
+          <div className="space-y-2">
             {documents.map((doc, i) => (
-              <DocumentFile key={doc.name} {...doc} delay={i * 0.1} />
+              <DocumentFile key={doc.name} {...doc} delay={0.4 + i * 0.1} />
             ))}
           </div>
-        </motion.section>
+        </motion.div>
 
-        <footer className="py-12 border-t border-white/5 text-center">
-          <p className="text-xs text-slate-600 font-mono">
-            CAPWHEEL PROTOCOL v2.1 • KINETIC FRAMEWORK
+        {/* Footer */}
+        <div className="text-center py-4">
+          <p className="text-[10px] text-slate-600 font-mono uppercase tracking-wider">
+            CapWheel Protocol v2.1 • Kinetic Framework
           </p>
-        </footer>
+        </div>
       </div>
     </div>
   );
