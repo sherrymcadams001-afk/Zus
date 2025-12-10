@@ -21,3 +21,6 @@ export { OrionStrategyPerformance } from './OrionStrategyPerformance';
 
 // Strategy Pools & Kinetic Tiers
 export { StrategyPools, StrategyInsignia, KINETIC_STRATEGIES, getStrategyById } from './StrategyPools';
+
+// Asset Protocol Page
+export { AssetProtocol } from './AssetProtocol';

@@ -15,6 +15,7 @@ import { OrionSidebar } from './OrionSidebar';
 import { CapWheelDashboard } from './CapWheelDashboard';
 import { CapWheelProfile } from './CapWheelProfile';
 import { StrategyPools } from './StrategyPools';
+import { AssetProtocol } from './AssetProtocol';
 import TradingInterface from '../../pages/TradingInterface';
 import AdminPanel from '../../pages/AdminPanel';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -169,6 +170,57 @@ const StrategyPoolsWrapper = () => {
   );
 };
 
+// Asset Protocol wrapper with shared layout
+const AssetProtocolWrapper = () => {
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  return (
+    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+      {/* Swipe detector for mobile */}
+      <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
+      
+      {/* Mobile Navigation Drawer */}
+      <MobileNavDrawer 
+        isOpen={isMobileNavOpen} 
+        onClose={() => setIsMobileNavOpen(false)} 
+      />
+      
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block flex-shrink-0">
+        <OrionSidebar />
+      </div>
+      
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Mobile Header with back button */}
+        <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+          <button
+            onClick={() => navigate('/capwheel/dashboard')}
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <span className="text-white font-semibold">Asset Protocol</span>
+          <button
+            onClick={() => setIsMobileNavOpen(true)}
+            className="p-2 rounded-lg bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </header>
+        
+        <div className="flex-1 overflow-y-auto">
+          <AssetProtocol />
+        </div>
+        
+        {/* Mobile Bottom Nav */}
+        <MobileBottomNav />
+      </div>
+    </div>
+  );
+};
+
 const CapWheelRoutes = () => {
   return (
     <Routes>
@@ -233,10 +285,10 @@ const CapWheelRoutes = () => {
         } 
       />
       <Route 
-        path="/allocation" 
+        path="/protocol" 
         element={
           <ProtectedRoute>
-            <CapWheelDashboard />
+            <AssetProtocolWrapper />
           </ProtectedRoute>
         } 
       />

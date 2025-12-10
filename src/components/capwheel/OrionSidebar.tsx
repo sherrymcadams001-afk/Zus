@@ -16,11 +16,11 @@ import {
   User,
   ChevronDown,
   Wallet,
-  PieChart,
   ArrowRightLeft,
   Users,
   Shield,
   Zap,
+  FileCode,
 } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 
@@ -155,6 +155,11 @@ export const OrionSidebar = () => {
             label="Profile"
           />
           <NavItem
+            to="/capwheel/protocol"
+            icon={<FileCode className="w-4 h-4" />}
+            label="Asset Protocol"
+          />
+          <NavItem
             to="/capwheel/trading"
             icon={<Zap className="w-4 h-4" />}
             label="Trading Agent"
@@ -168,11 +173,6 @@ export const OrionSidebar = () => {
             to="/capwheel/strategy-pools"
             icon={<Wallet className="w-4 h-4" />}
             label="Strategy Pools"
-          />
-          <NavItem
-            to="/capwheel/allocation"
-            icon={<PieChart className="w-4 h-4" />}
-            label="Asset Allocation"
           />
           <NavItem
             to="/capwheel/liquidity"
