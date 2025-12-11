@@ -103,14 +103,14 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
             className="absolute w-2 h-2 rounded-full"
             initial={{ 
               left: '50%', 
-              top: '5%',
+              top: '7.5%',
               scale: 0,
               background: '#00FF9D',
               boxShadow: '0 0 10px #00FF9D'
             }}
             animate={{
-              left: ['50%', '95%', '50%', '5%', '50%'],
-              top: ['5%', '50%', '95%', '50%', '5%'],
+              left: ['50%', '92.5%', '50%', '7.5%', '50%'],
+              top: ['7.5%', '50%', '92.5%', '50%', '7.5%'],
               scale: [0, 1, 1, 1, 0],
               background: ['#00FF9D', '#00FF9D', '#00B8D4', '#D4AF37', '#D4AF37'],
               boxShadow: [
@@ -200,8 +200,8 @@ interface PhaseNodeProps {
 const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: PhaseNodeProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
-  // Calculate position on circle (radius ~40% from center for better fit)
-  const radius = 40; // percentage
+  // Calculate position on circle (radius ~42.5% from center to match SVG r=85/200)
+  const radius = 42.5; // percentage
   const radians = (angle * Math.PI) / 180;
   const x = 50 + radius * Math.cos(radians); // percentage from left
   const y = 50 + radius * Math.sin(radians); // percentage from top
