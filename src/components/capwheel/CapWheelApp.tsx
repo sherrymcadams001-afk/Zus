@@ -16,6 +16,7 @@ import { CapWheelDashboard } from './CapWheelDashboard';
 import { CapWheelProfile } from './CapWheelProfile';
 import { StrategyPools } from './StrategyPools';
 import { AssetProtocol } from './AssetProtocol';
+import { PartnerNetwork } from './PartnerNetwork';
 import TradingInterface from '../../pages/TradingInterface';
 import AdminPanel from '../../pages/AdminPanel';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -314,7 +315,7 @@ const CapWheelRoutes = () => {
         path="/partners" 
         element={
           <ProtectedRoute>
-            <CapWheelDashboard />
+            <PartnerNetwork />
           </ProtectedRoute>
         } 
       />

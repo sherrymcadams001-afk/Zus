@@ -24,3 +24,6 @@ export { StrategyPools, StrategyInsignia, KINETIC_STRATEGIES, getStrategyById } 
 
 // Asset Protocol Page
 export { AssetProtocol } from './AssetProtocol';
+
+// Partner Network Page
+export { PartnerNetwork } from './PartnerNetwork';

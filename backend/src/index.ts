@@ -20,6 +20,7 @@ import { handleDashboardRoutes } from './routes/dashboard';
 import { handleProfileRoutes } from './routes/profile';
 import { handleAdminRoutes } from './routes/admin';
 import { handleNowPaymentsWebhook } from './routes/nowpayments';
+import { handleInviteCodeRoutes } from './routes/inviteCodes';
 
 /**
  * Handle HTTP requests
@@ -67,6 +68,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Referral routes
   if (url.pathname.startsWith('/api/referrals')) {
     return handleReferralRoutes(request, env, url.pathname);
+  }
+
+  // Invite code routes
+  if (url.pathname.startsWith('/api/invite-codes')) {
+    return handleInviteCodeRoutes(request, env, url.pathname);
   }
 
   // Dashboard aggregate route (SINGLE call for all data)
