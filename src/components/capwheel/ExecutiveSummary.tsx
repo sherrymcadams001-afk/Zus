@@ -114,11 +114,11 @@ const MetricCard = ({
         ...springPhysics.gentle
       }}
       whileHover={{ 
-        scale: 1.02,
-        y: -2,
+        scale: 1.01, // Reduced scale for performance
+        y: -1,
         transition: springPhysics.snappy
       }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.99 }}
       className={`relative rounded-2xl p-5 transition-all duration-300 group overflow-hidden ${
         isPrimary 
           ? 'bg-gradient-to-br from-[#0F1419] via-[#111820] to-[#0D1318]' 
@@ -141,10 +141,10 @@ const MetricCard = ({
         <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#00FF9D]/40 to-transparent" />
       )}
 
-      {/* Glow pulse on hover */}
+      {/* Glow pulse on hover - Optimized */}
       <div className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
         style={{
-          boxShadow: `0 0 30px ${accentConfig.glow}20, inset 0 0 20px ${accentConfig.glow}05`
+          boxShadow: `0 0 20px ${accentConfig.glow}15` // Simplified shadow
         }}
       />
 

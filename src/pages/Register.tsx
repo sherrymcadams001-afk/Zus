@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { isAxiosError } from 'axios';
-import { Zap, Mail, Lock, ArrowRight, Shield, UserPlus, Key } from 'lucide-react';
+import { Zap, Mail, Lock, ArrowRight, Shield, UserPlus, Key, Clock } from 'lucide-react';
 import { authAPI } from '../api/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { CapWheelLogo } from '../assets/capwheel-logo';
@@ -22,6 +22,7 @@ export default function Register() {
   const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +44,12 @@ export default function Register() {
       const response = await authAPI.register(email, password, referralCode || undefined);
       
       if (response.status === 'success' && response.data) {
-        setAuth(response.data.user, response.data.token);
-        navigate('/dashboard');
+        if (response.data.waitlisted) {
+          setShowWaitlistModal(true);
+        } else {
+          setAuth(response.data.user, response.data.token);
+          navigate('/dashboard');
+        }
       } else {
         setError(response.error || 'Registration failed');
       }
@@ -58,6 +63,36 @@ export default function Register() {
       setIsLoading(false);
     }
   };
+
+  if (showWaitlistModal) {
+    return (
+      <div className="min-h-screen bg-[#020408] flex items-center justify-center p-4">
+        <div className="bg-[#0B0E11] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#00A3FF]/5 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10">
+            <div className="w-16 h-16 bg-[#00A3FF]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="w-8 h-8 text-[#00A3FF]" />
+            </div>
+            
+            <h2 className="text-2xl font-bold text-white mb-3">You're on the Waitlist</h2>
+            <p className="text-slate-400 mb-8">
+              Due to high demand, we are rolling out access in waves. You have been added to our priority waitlist.
+              <br /><br />
+              Check your email in <strong>4 hours</strong> for your access link.
+            </p>
+            
+            <Link 
+              to="/login"
+              className="inline-flex items-center justify-center w-full bg-white/5 hover:bg-white/10 text-white font-semibold py-3 rounded-lg transition-colors border border-white/10"
+            >
+              Return to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020408] via-[#0B0E11] to-[#020408] flex">
@@ -229,7 +264,7 @@ export default function Register() {
                   </>
                 ) : (
                   <>
-                    <span>Create Account</span>
+                    <span>Request Access</span>
                     <ArrowRight className="h-5 w-5" />
                   </>
                 )}

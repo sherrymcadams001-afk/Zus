@@ -311,14 +311,14 @@ export const CapWheelDashboard = () => {
               <div className="col-span-2 min-h-0 flex flex-col gap-4">
                 <motion.div 
                   className="h-[55%] min-h-0"
-                  whileHover={{ scale: 1.002 }}
+                  // Removed expensive scale animation on large container
                   transition={springPhysics.gentle}
                 >
                   <OrionWealthChart />
                 </motion.div>
                 <motion.div 
                   className="flex-1 min-h-0"
-                  whileHover={{ scale: 1.002 }}
+                  // Removed expensive scale animation on large container
                   transition={springPhysics.gentle}
                 >
                   <OrionTransactionLedger />
@@ -326,7 +326,7 @@ export const CapWheelDashboard = () => {
               </div>
               <motion.div 
                 className="col-span-1 min-h-[340px] flex flex-col"
-                whileHover={{ scale: 1.003 }}
+                // Removed expensive scale animation on large container
                 transition={springPhysics.gentle}
               >
                 <div className="flex-1">

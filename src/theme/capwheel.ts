@@ -53,21 +53,21 @@ export const lumeElevation = {
   },
   // Level 3 - Elevated (primary metrics, focused elements)
   lume3: {
-    shadow: '0 8px 32px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2)',
-    glow: '0 0 40px rgba(0, 255, 157, 0.08), 0 0 0 1px rgba(0, 255, 157, 0.1)',
-    blur: '4px',
+    shadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+    glow: '0 0 20px rgba(0, 255, 157, 0.05)',
+    blur: '0', // Removed blur for performance
   },
   // Level 4 - Floating (modals, dropdowns)
   lume4: {
-    shadow: '0 16px 48px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25)',
-    glow: '0 0 60px rgba(0, 255, 157, 0.1), 0 0 0 1px rgba(0, 255, 157, 0.15)',
-    blur: '8px',
+    shadow: '0 16px 32px rgba(0, 0, 0, 0.3)',
+    glow: '0 0 30px rgba(0, 255, 157, 0.08)',
+    blur: '4px', // Reduced from 8px
   },
   // Level 5 - Prominent (featured CTAs, hero elements)
   lume5: {
-    shadow: '0 24px 64px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.3)',
-    glow: '0 0 80px rgba(0, 255, 157, 0.15), 0 0 120px rgba(0, 184, 212, 0.1)',
-    blur: '12px',
+    shadow: '0 20px 48px rgba(0, 0, 0, 0.35)',
+    glow: '0 0 40px rgba(0, 255, 157, 0.1)',
+    blur: '8px', // Reduced from 12px
   },
 } as const;
 

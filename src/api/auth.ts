@@ -21,6 +21,7 @@ export interface AuthResponse {
   data?: {
     user: User;
     token: string;
+    waitlisted?: boolean;
   };
   error?: string;
 }

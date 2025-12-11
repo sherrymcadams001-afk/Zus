@@ -62,6 +62,7 @@ export interface AuthResponse {
     user: Omit<User, 'password_hash'>;
     token: string;
     refreshToken?: string;
+    waitlisted?: boolean;
   };
   error?: string;
 }

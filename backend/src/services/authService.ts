@@ -6,6 +6,7 @@
  */
 
 import { Env, User, AuthResponse } from '../types';
+import { sendWelcomeEmail } from './emailService';
 
 // Validation constants
 const MAX_EMAIL_LENGTH = 255;
@@ -272,6 +273,18 @@ export async function registerUser(
     // If user was referred, create referral relationships
     if (referrerId) {
       await createReferralChain(env, referrerId, result.id);
+      // Send welcome email immediately
+      await sendWelcomeEmail(result.email);
+    } else {
+      // No referral code -> Waitlist
+      // Schedule email for 4 hours later
+      const delaySeconds = 4 * 60 * 60;
+      const scheduledAt = Math.floor(Date.now() / 1000) + delaySeconds;
+      
+      await env.DB.prepare(
+        `INSERT INTO email_queue (email, template_alias, status, scheduled_at, created_at, updated_at)
+         VALUES (?, 'welcome', 'pending', ?, ?, ?)`
+      ).bind(result.email, scheduledAt, timestamp, timestamp).run();
     }
     
     // Generate JWT
@@ -291,6 +304,7 @@ export async function registerUser(
           updated_at: result.created_at,
         },
         token,
+        waitlisted: !referrerId,
       },
     };
   } catch (error) {
