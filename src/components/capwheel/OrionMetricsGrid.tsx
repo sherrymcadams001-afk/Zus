@@ -1,7 +1,7 @@
 /**
  * ORION Metrics Cards
  * 
- * Bento Grid: AUM, Net Yield, Partner Volume, Vesting Schedule
+ * Bento Grid: AUM, ROI, Partner Volume, Vesting Schedule
  * 4 cards in a row - REAL DATA from backend via DataOrchestrator
  */
 
@@ -95,9 +95,9 @@ export const OrionMetricsGrid = () => {
       icon: <ArrowUpRight className="w-3 h-3" />,
     },
     {
-      title: "Net Yield",
+      title: "ROI",
       value: `${data.netYieldPercent.toFixed(2)}%`,
-      subValue: `${data.currentTier.toUpperCase()} tier rate`,
+      subValue: `${data.currentTier.toUpperCase()} daily rate`,
       subValueColor: "green" as const,
       icon: <Percent className="w-3 h-3" />,
     },

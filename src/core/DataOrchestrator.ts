@@ -127,7 +127,7 @@ export const BOT_TIERS: Record<BotTier, {
 export interface DashboardData {
   // Metric Cards
   aum: number;                    // From wallet.available_balance + pool_stakes.amount
-  netYieldPercent: number;        // Calculated from bot tier + actual earnings
+  netYieldPercent: number;        // Daily ROI % - from bot tier rate (actual earnings shown elsewhere)
   partnerVolume: number;          // Sum of referral downstream investments
   vestingRunway: number;          // Days until capital withdrawal available
   
@@ -382,12 +382,9 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const currentTier = getBotTierForAmount(aum);
   const tierConfig = BOT_TIERS[currentTier];
   
-  // Calculate net yield from actual earnings vs investment
-  // If no earnings yet, show the tier's potential daily rate
-  const totalEarned = staking.totalEarned;
-  const netYieldPercent = totalEarned > 0 
-    ? (totalEarned / aum) * 100 
-    : tierConfig.dailyRoiMax * 100;
+  // Calculate ROI % - show the tier's daily rate
+  // This is the user's current daily ROI based on their tier
+  const netYieldPercent = tierConfig.dailyRoiMax * 100;
   
   // Calculate vesting runway from earliest active stake
   const earliestStake = activeStakes.length > 0 

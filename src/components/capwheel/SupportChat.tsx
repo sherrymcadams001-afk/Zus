@@ -502,7 +502,7 @@ export const SupportChat = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] shadow-lg shadow-[#00FF9D]/25 flex items-center justify-center group"
+            className="fixed bottom-20 right-6 sm:bottom-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] shadow-lg shadow-[#00FF9D]/25 flex items-center justify-center group"
             aria-label="Open support chat"
           >
             {/* Pulse ring */}
