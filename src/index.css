@@ -526,3 +526,374 @@ html, #root {
   -webkit-backdrop-filter: blur(24px);
 }
 
+/* ==============================================================================
+   LUME-ELEVATION SYSTEM - Atmospheric Depth
+   Progressive glow + shadow for visual hierarchy
+   ============================================================================== */
+
+/* Level 0 - Recessed (inputs, nested elements) */
+.lume-0 {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Level 1 - Surface (base cards) */
+.lume-1 {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
+              0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* Level 2 - Raised (interactive cards) */
+.lume-2 {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 
+              0 2px 4px rgba(0, 0, 0, 0.15),
+              0 0 20px rgba(0, 255, 157, 0.05);
+}
+
+/* Level 3 - Elevated (primary metrics, focused elements) */
+.lume-3 {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+              0 4px 12px rgba(0, 0, 0, 0.2),
+              0 0 40px rgba(0, 255, 157, 0.08), 
+              0 0 0 1px rgba(0, 255, 157, 0.1);
+}
+
+/* Level 4 - Floating (modals, dropdowns) */
+.lume-4 {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35), 
+              0 8px 24px rgba(0, 0, 0, 0.25),
+              0 0 60px rgba(0, 255, 157, 0.1), 
+              0 0 0 1px rgba(0, 255, 157, 0.15);
+}
+
+/* Level 5 - Prominent (featured CTAs, hero elements) */
+.lume-5 {
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4), 
+              0 12px 32px rgba(0, 0, 0, 0.3),
+              0 0 80px rgba(0, 255, 157, 0.15), 
+              0 0 120px rgba(0, 184, 212, 0.1);
+}
+
+/* ==============================================================================
+   SURGICAL ACCENT SYSTEM - Purposeful Highlights
+   ============================================================================== */
+
+/* Primary accent glow (green) */
+.accent-glow-primary {
+  box-shadow: 0 0 20px rgba(0, 255, 157, 0.4), 
+              0 0 40px rgba(0, 255, 157, 0.2);
+}
+
+/* Primary accent ring */
+.accent-ring-primary {
+  box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.3);
+}
+
+/* Primary gradient border */
+.accent-border-primary {
+  border: 1px solid transparent;
+  background: linear-gradient(var(--orion-bg), var(--orion-bg)) padding-box,
+              linear-gradient(135deg, #00FF9D 0%, #00B8D4 100%) border-box;
+}
+
+/* Secondary accent glow (cyan) */
+.accent-glow-secondary {
+  box-shadow: 0 0 20px rgba(0, 184, 212, 0.4), 
+              0 0 40px rgba(0, 184, 212, 0.2);
+}
+
+/* Gold accent glow */
+.accent-glow-gold {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.5), 
+              0 0 40px rgba(212, 175, 55, 0.25);
+}
+
+/* Success glow (profit) */
+.accent-glow-success {
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+}
+
+/* Danger glow (loss) */
+.accent-glow-danger {
+  box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+}
+
+/* Gradient text - primary */
+.accent-text-gradient {
+  background: linear-gradient(135deg, #00FF9D 0%, #00B8D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==============================================================================
+   SENSORY ANIMATIONS - Ambient Motion & Feedback
+   ============================================================================== */
+
+/* Breathing pulse - ambient life */
+@keyframes breathe {
+  0%, 100% { 
+    opacity: 0.7; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.02); 
+  }
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Floating bob - gentle vertical motion */
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-6px); 
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Glow pulse - attention draw */
+@keyframes glow-pulse-accent {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.2); 
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(0, 255, 157, 0.5); 
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse-accent 2s ease-in-out infinite;
+}
+
+/* Ring pulse - expanding ring */
+@keyframes ring-pulse {
+  0% { 
+    box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4); 
+  }
+  70% { 
+    box-shadow: 0 0 0 10px rgba(0, 255, 157, 0); 
+  }
+  100% { 
+    box-shadow: 0 0 0 0 rgba(0, 255, 157, 0); 
+  }
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 2s ease-out infinite;
+}
+
+/* Shimmer enhanced */
+@keyframes shimmer-enhanced {
+  0% { 
+    background-position: -200% 0; 
+  }
+  100% { 
+    background-position: 200% 0; 
+  }
+}
+
+.shimmer-enhanced {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(0, 255, 157, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-enhanced 2s linear infinite;
+}
+
+/* ==============================================================================
+   KINETIC HOVER - Spring-like Interactions
+   ============================================================================== */
+
+.kinetic-hover {
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0.1, 1),
+              box-shadow 0.3s cubic-bezier(0.2, 0, 0.1, 1);
+  will-change: transform;
+}
+
+.kinetic-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.kinetic-hover:active {
+  transform: translateY(-2px) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* Subtle kinetic for rows/items */
+.kinetic-subtle {
+  transition: all 0.2s cubic-bezier(0.2, 0, 0.1, 1);
+}
+
+.kinetic-subtle:hover {
+  transform: translateX(4px);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* ==============================================================================
+   FLUID TYPOGRAPHY - Responsive Scaling
+   ============================================================================== */
+
+.fluid-display {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.fluid-h1 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.fluid-h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.fluid-h3 {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.fluid-body-lg {
+  font-size: clamp(0.9375rem, 1.5vw, 1.125rem);
+  line-height: 1.6;
+}
+
+.fluid-body {
+  font-size: clamp(0.875rem, 1.25vw, 1rem);
+  line-height: 1.5;
+}
+
+.fluid-small {
+  font-size: clamp(0.75rem, 1vw, 0.875rem);
+  line-height: 1.4;
+}
+
+.fluid-micro {
+  font-size: clamp(0.625rem, 0.8vw, 0.75rem);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ==============================================================================
+   RIM LIGHTING - Top Edge Highlights
+   ============================================================================== */
+
+.rim-light {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.rim-light-subtle {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.rim-light-accent {
+  box-shadow: inset 0 1px 0 rgba(0, 255, 157, 0.15);
+}
+
+/* ==============================================================================
+   GEOMETRIC ORGANICISM - Soft Edges & Flowing Forms
+   ============================================================================== */
+
+/* Superellipse-inspired rounded corners */
+.geo-organic {
+  border-radius: 1rem;
+}
+
+.geo-organic-sm {
+  border-radius: 0.75rem;
+}
+
+.geo-organic-lg {
+  border-radius: 1.5rem;
+}
+
+/* Gradient noise texture overlay for depth */
+.noise-texture {
+  position: relative;
+}
+
+.noise-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ==============================================================================
+   PROGRESSIVE DISCLOSURE - Reveal Animations
+   ============================================================================== */
+
+.reveal-fade {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.reveal-fade.visible {
+  opacity: 1;
+}
+
+.reveal-slide-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.2, 0, 0.1, 1);
+}
+
+.reveal-slide-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ==============================================================================
+   NEGATIVE SPACE UTILITIES
+   ============================================================================== */
+
+/* Vertical rhythm spacers */
+.space-section {
+  margin-bottom: 2rem;
+}
+
+.space-section-lg {
+  margin-bottom: 3rem;
+}
+
+.space-group {
+  margin-bottom: 1.5rem;
+}
+
+.space-item {
+  margin-bottom: 0.75rem;
+}
+
+/* Breathing room for cards */
+.padding-breathe {
+  padding: 1.5rem;
+}
+
+.padding-breathe-sm {
+  padding: 1rem;
+}
+
+.padding-breathe-lg {
+  padding: 2rem;
+}

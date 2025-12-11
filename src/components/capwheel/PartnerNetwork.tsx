@@ -6,6 +6,13 @@
  * - User node at top with branching LP tiers
  * - Capital flow metrics per tier
  * - Interactive tree expansion
+ * 
+ * Enterprise UI/UX Principles:
+ * - Spring cascade on tier node reveals
+ * - Connection line stroke animation
+ * - Lume-elevation hierarchy (root=lume3, tiers=lume2)
+ * - Parallax micro-movement on hover
+ * - Atmospheric depth with gradient overlays
  */
 
 import { useState, useEffect } from 'react';
@@ -29,6 +36,7 @@ import { OrionSidebar } from './OrionSidebar';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
 import { Menu, ArrowLeft } from 'lucide-react';
+import { springPhysics, lumeElevation } from '../../theme/capwheel';
 
 interface PortfolioStats {
   totalReferrals: number;
@@ -54,18 +62,43 @@ interface LimitedPartner {
   created_at: number;
 }
 
-// Tier configuration
-const TIER_CONFIG: Record<number, { label: string; shortLabel: string; color: string; bgColor: string }> = {
-  1: { label: 'Tier 1', shortLabel: 'T1', color: '#00FF9D', bgColor: 'rgba(0, 255, 157, 0.15)' },
-  2: { label: 'Tier 2', shortLabel: 'T2', color: '#00B8D4', bgColor: 'rgba(0, 184, 212, 0.15)' },
-  3: { label: 'Tier 3', shortLabel: 'T3', color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.15)' },
-  4: { label: 'Tier 4', shortLabel: 'T4', color: '#D4AF37', bgColor: 'rgba(212, 175, 55, 0.15)' },
-  5: { label: 'Tier 5', shortLabel: 'T5', color: '#FF6B6B', bgColor: 'rgba(255, 107, 107, 0.15)' },
+// Tier configuration with enhanced styling
+const TIER_CONFIG: Record<number, { label: string; shortLabel: string; color: string; bgColor: string; glow: string }> = {
+  1: { label: 'Tier 1', shortLabel: 'T1', color: '#00FF9D', bgColor: 'rgba(0, 255, 157, 0.15)', glow: 'rgba(0,255,157,0.4)' },
+  2: { label: 'Tier 2', shortLabel: 'T2', color: '#00B8D4', bgColor: 'rgba(0, 184, 212, 0.15)', glow: 'rgba(0,184,212,0.4)' },
+  3: { label: 'Tier 3', shortLabel: 'T3', color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.15)', glow: 'rgba(139,92,246,0.4)' },
+  4: { label: 'Tier 4', shortLabel: 'T4', color: '#D4AF37', bgColor: 'rgba(212, 175, 55, 0.15)', glow: 'rgba(212,175,55,0.4)' },
+  5: { label: 'Tier 5', shortLabel: 'T5', color: '#FF6B6B', bgColor: 'rgba(255, 107, 107, 0.15)', glow: 'rgba(255,107,107,0.4)' },
 };
 
 const TIER_RATES: Record<number, number> = { 1: 10, 2: 5, 3: 3, 4: 2, 5: 1 };
 
-// Network Tree Node Component
+// Animated connection line component
+const AnimatedConnectionLine = ({ tier, isActive }: { tier: number; isActive: boolean }) => {
+  const config = TIER_CONFIG[tier];
+  
+  return (
+    <motion.div 
+      className="absolute -left-6 top-1/2 w-6 h-px overflow-hidden"
+      initial={{ scaleX: 0 }}
+      animate={{ scaleX: 1 }}
+      transition={{ delay: tier * 0.1, duration: 0.3 }}
+      style={{ transformOrigin: 'left' }}
+    >
+      <motion.div
+        className="w-full h-full"
+        style={{ 
+          backgroundColor: isActive ? config.color : config.color + '40',
+          boxShadow: isActive ? `0 0 8px ${config.glow}` : 'none'
+        }}
+        animate={{ opacity: isActive ? 1 : 0.4 }}
+        transition={{ duration: 0.3 }}
+      />
+    </motion.div>
+  );
+};
+
+// Network Tree Node Component with spring cascade
 const TreeNode = ({ 
   tier, 
   count, 
@@ -92,32 +125,56 @@ const TreeNode = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, duration: 0.3 }}
-      className="relative"
+      initial={{ opacity: 0, x: -24, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ 
+        delay, 
+        type: 'spring',
+        stiffness: springPhysics.gentle.stiffness,
+        damping: springPhysics.gentle.damping
+      }}
+      className="relative group"
     >
-      {/* Connection line from parent */}
-      <div 
-        className="absolute -left-6 top-1/2 w-6 h-px"
-        style={{ backgroundColor: config.color + '40' }}
-      />
+      {/* Animated connection line from parent */}
+      <AnimatedConnectionLine tier={tier} isActive={isExpanded} />
       
-      <button
+      <motion.button
         onClick={onToggle}
-        className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-xl border transition-all ${
+        whileHover={{ scale: 1.01, x: 4 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ type: 'spring', stiffness: springPhysics.snappy.stiffness, damping: springPhysics.snappy.damping }}
+        className={`w-full flex items-center gap-3 p-3 sm:p-4 rounded-xl transition-all ${
           isExpanded 
-            ? 'bg-[#0F1419] border-white/10' 
-            : 'bg-[#0B1015] border-white/5 hover:border-white/10'
+            ? 'bg-[#0F1419]' 
+            : 'bg-[#0B1015]/80 hover:bg-[#0D1318]'
         }`}
+        style={{ 
+          boxShadow: isExpanded 
+            ? `${lumeElevation.lume2.shadow}, ${lumeElevation.lume2.glow}` 
+            : `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}`,
+          border: `1px solid ${isExpanded ? config.color + '30' : 'rgba(255,255,255,0.05)'}`
+        }}
       >
-        {/* Node indicator */}
-        <div 
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
+        {/* Node indicator with glow */}
+        <motion.div 
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 relative"
           style={{ backgroundColor: config.bgColor, color: config.color }}
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: 'spring', stiffness: springPhysics.bouncy.stiffness, damping: springPhysics.bouncy.damping }}
         >
           {config.shortLabel}
-        </div>
+          {/* Glow ring on active */}
+          {isExpanded && (
+            <motion.div
+              className="absolute inset-0 rounded-xl"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              style={{
+                boxShadow: `0 0 20px ${config.glow}, inset 0 0 10px ${config.glow}30`
+              }}
+            />
+          )}
+        </motion.div>
         
         {/* Info */}
         <div className="flex-1 min-w-0 text-left">
@@ -133,38 +190,65 @@ const TreeNode = ({
           <p className="text-xs text-slate-500">{count} LPs • {formatCurrency(capital)} capital</p>
         </div>
         
-        {/* Expand indicator */}
-        <ChevronDown 
-          className={`w-4 h-4 text-slate-500 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
-        />
-      </button>
+        {/* Expand indicator with spring rotation */}
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: springPhysics.quick.stiffness, damping: springPhysics.quick.damping }}
+        >
+          <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+        </motion.div>
+      </motion.button>
       
-      {/* Expanded details */}
+      {/* Expanded details with spring animation */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ height: 0, opacity: 0, y: -8 }}
+            animate={{ height: 'auto', opacity: 1, y: 0 }}
+            exit={{ height: 0, opacity: 0, y: -8 }}
+            transition={{ 
+              type: 'spring',
+              stiffness: springPhysics.gentle.stiffness,
+              damping: springPhysics.gentle.damping
+            }}
             className="overflow-hidden"
           >
-            <div className="pt-3 pl-4 grid grid-cols-3 gap-2">
-              <div className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center">
+            <motion.div 
+              className="pt-3 pl-4 grid grid-cols-3 gap-2"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 20 }}
+            >
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center"
+                style={{ boxShadow: `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}` }}
+              >
                 <p className="text-lg font-bold text-white font-mono">{count}</p>
                 <p className="text-[10px] text-slate-500 uppercase">LPs</p>
-              </div>
-              <div className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center"
+                style={{ boxShadow: `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}` }}
+              >
                 <p className="text-lg font-bold font-mono" style={{ color: config.color }}>
                   {formatCurrency(capital * (rate / 100))}
                 </p>
                 <p className="text-[10px] text-slate-500 uppercase">Revenue</p>
-              </div>
-              <div className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center">
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.03, y: -2 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                className="bg-[#0B1015] border border-white/5 rounded-lg p-3 text-center"
+                style={{ boxShadow: `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}` }}
+              >
                 <p className="text-lg font-bold text-white">{rate}%</p>
                 <p className="text-[10px] text-slate-500 uppercase">Rate</p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -246,68 +330,114 @@ const PartnerNetworkContent = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0B1015]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="h-full overflow-y-auto bg-[#0B1015] relative">
+      {/* Atmospheric background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0B1015] via-[#0D1318] to-[#0A0E12] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,157,0.04),transparent_60%)] pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,184,212,0.03),transparent_60%)] pointer-events-none" />
+      
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 relative z-10">
         
-        {/* Page Header */}
+        {/* Page Header with enhanced animation */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
           className="flex items-center justify-between"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#00FF9D]/10 rounded-xl">
-              <Network className="w-5 h-5 text-[#00FF9D]" />
-            </div>
+          <div className="flex items-center gap-4">
+            <motion.div 
+              className="p-3 bg-[#00FF9D]/10 rounded-2xl relative"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            >
+              <Network className="w-6 h-6 text-[#00FF9D]" />
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-2xl opacity-60" 
+                style={{ boxShadow: '0 0 20px rgba(0,255,157,0.3)' }} 
+              />
+            </motion.div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white">Network Tree</h1>
-              <p className="text-xs sm:text-sm text-slate-500">Capital flow orchestration</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Network Tree</h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Capital flow orchestration</p>
             </div>
           </div>
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.03, boxShadow: '0 0 24px rgba(0,255,157,0.3)' }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
             onClick={() => navigate('/capwheel/profile')}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00FF9D]/10 hover:bg-[#00FF9D]/20 border border-[#00FF9D]/30 rounded-xl text-[#00FF9D] text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#00FF9D]/10 hover:bg-[#00FF9D]/15 border border-[#00FF9D]/30 rounded-xl text-[#00FF9D] text-sm font-medium transition-colors"
+            style={{ boxShadow: '0 0 16px rgba(0,255,157,0.15)' }}
           >
             <Zap className="w-4 h-4" />
             <span className="hidden sm:inline">Invite</span>
           </motion.button>
         </motion.div>
 
-        {/* Network Tree Visualization */}
+        {/* Network Tree Visualization with lume-elevation */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-[#0F1419] border border-white/5 rounded-2xl overflow-hidden"
+          transition={{ delay: 0.1, type: 'spring', stiffness: 100, damping: 20 }}
+          className="bg-gradient-to-br from-[#0F1419] via-[#111820] to-[#0D1318] border border-white/[0.06] rounded-2xl overflow-hidden relative"
+          style={{ boxShadow: `${lumeElevation.lume3.shadow}, ${lumeElevation.lume3.glow}` }}
         >
+          {/* Rim light on top edge */}
+          <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#00FF9D]/20 to-transparent" />
+          
           {/* Tree Header */}
-          <div className="p-4 sm:p-5 border-b border-white/5">
+          <div className="p-4 sm:p-5 border-b border-white/[0.06]">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <GitBranch className="w-4 h-4" />
-              <span>Downstream Capital Distribution</span>
+              <span className="uppercase tracking-wider">Downstream Capital Distribution</span>
             </div>
           </div>
 
           <div className="p-4 sm:p-6">
-            {/* Root Node - YOU */}
+            {/* Root Node - YOU - with lume-elevation and parallax */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.15 }}
-              className="relative"
+              initial={{ opacity: 0, scale: 0.92, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 20 }}
+              whileHover={{ scale: 1.01, y: -2 }}
+              className="relative group"
             >
-              <div className="bg-gradient-to-r from-[#00FF9D]/10 via-[#00B8D4]/10 to-[#8B5CF6]/10 border border-white/10 rounded-2xl p-4 sm:p-5">
-                <div className="flex items-center gap-4">
-                  {/* User avatar/node */}
+              <motion.div 
+                className="bg-gradient-to-br from-[#00FF9D]/12 via-[#00B8D4]/10 to-[#8B5CF6]/08 rounded-2xl p-5 sm:p-6 relative overflow-hidden"
+                style={{ 
+                  boxShadow: `${lumeElevation.lume3.shadow}, ${lumeElevation.lume3.glow}, 0 0 40px rgba(0,255,157,0.1)`,
+                  border: '1px solid rgba(0,255,157,0.15)'
+                }}
+              >
+                {/* Animated gradient rim */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00FF9D]/50 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00B8D4]/30 to-transparent" />
+                
+                <div className="flex items-center gap-4 relative z-10">
+                  {/* User avatar/node with breathing glow */}
                   <div className="relative">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center shadow-lg shadow-[#00FF9D]/20">
+                    <motion.div 
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center"
+                      style={{ boxShadow: '0 0 30px rgba(0,255,157,0.35), 0 4px 20px rgba(0,0,0,0.3)' }}
+                      animate={{ 
+                        boxShadow: [
+                          '0 0 30px rgba(0,255,157,0.35), 0 4px 20px rgba(0,0,0,0.3)',
+                          '0 0 40px rgba(0,255,157,0.5), 0 4px 20px rgba(0,0,0,0.3)',
+                          '0 0 30px rgba(0,255,157,0.35), 0 4px 20px rgba(0,0,0,0.3)'
+                        ]
+                      }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    >
                       <User className="w-7 h-7 sm:w-8 sm:h-8 text-[#0B1015]" />
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0B1015] rounded-full flex items-center justify-center border-2 border-[#00FF9D]">
+                    </motion.div>
+                    <motion.div 
+                      className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0B1015] rounded-full flex items-center justify-center border-2 border-[#00FF9D]"
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
                       <CircleDot className="w-2.5 h-2.5 text-[#00FF9D]" />
-                    </div>
+                    </motion.div>
                   </div>
                   
                   {/* User info */}
@@ -316,47 +446,78 @@ const PartnerNetworkContent = () => {
                       <span className="text-lg sm:text-xl font-bold text-white truncate">
                         {user?.email?.split('@')[0] || 'You'}
                       </span>
-                      <span className="px-2 py-0.5 bg-[#00FF9D]/20 rounded text-[10px] font-bold text-[#00FF9D] uppercase">
+                      <motion.span 
+                        className="px-2.5 py-1 bg-[#00FF9D]/20 rounded-lg text-[10px] font-bold text-[#00FF9D] uppercase tracking-wide"
+                        style={{ boxShadow: '0 0 12px rgba(0,255,157,0.2)' }}
+                        animate={{ opacity: [0.9, 1, 0.9] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
                         Root
-                      </span>
+                      </motion.span>
                     </div>
                     <p className="text-xs sm:text-sm text-slate-400">Network Orchestrator</p>
                   </div>
                   
-                  {/* Total stats */}
+                  {/* Total stats with glow */}
                   <div className="text-right hidden sm:block">
-                    <p className="text-xl font-bold text-white font-mono">{formatCurrency(totalAUM, true)}</p>
-                    <p className="text-xs text-slate-500">Total AUM</p>
+                    <p className="text-2xl font-bold text-white font-mono" style={{ textShadow: '0 0 20px rgba(255,255,255,0.1)' }}>
+                      {formatCurrency(totalAUM, true)}
+                    </p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wide">Total AUM</p>
                   </div>
                 </div>
                 
-                {/* Quick stats row */}
-                <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-3 gap-3">
-                  <div className="text-center">
+                {/* Quick stats row with kinetic cards */}
+                <div className="mt-5 pt-5 border-t border-white/[0.08] grid grid-cols-3 gap-3">
+                  <motion.div 
+                    className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]"
+                    whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  >
                     <p className="text-lg sm:text-xl font-bold text-white">{lpCount}</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500">Total LPs</p>
-                  </div>
-                  <div className="text-center">
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Total LPs</p>
+                  </motion.div>
+                  <motion.div 
+                    className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]"
+                    whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  >
                     <p className="text-lg sm:text-xl font-bold text-[#00FF9D] font-mono">{formatCurrency(earnedRevenue, true)}</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500">Earned</p>
-                  </div>
-                  <div className="text-center">
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Earned</p>
+                  </motion.div>
+                  <motion.div 
+                    className="text-center p-3 rounded-xl bg-white/[0.03] border border-white/[0.05]"
+                    whileHover={{ scale: 1.03, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  >
                     <p className="text-lg sm:text-xl font-bold text-amber-400 font-mono">{formatCurrency(pendingRevenue, true)}</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500">Pending</p>
-                  </div>
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wide">Pending</p>
+                  </motion.div>
                 </div>
-              </div>
-              
-              {/* Vertical connector line */}
-              <div className="flex justify-center py-2">
-                <div className="w-px h-6 bg-gradient-to-b from-[#00FF9D]/40 to-[#00FF9D]/10" />
-              </div>
+              </motion.div>
             </motion.div>
+            
+            {/* Animated vertical connector from root to tiers */}
+            <div className="flex justify-center py-3">
+              <motion.div 
+                className="w-px h-8 bg-gradient-to-b from-[#00FF9D]/50 via-[#00FF9D]/30 to-[#00FF9D]/10"
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                style={{ transformOrigin: 'top', boxShadow: '0 0 8px rgba(0,255,157,0.3)' }}
+              />
+            </div>
 
-            {/* Tier Branches */}
-            <div className="relative pl-6 space-y-2">
-              {/* Vertical line connecting all tiers */}
-              <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-[#00FF9D]/30 via-[#00B8D4]/20 to-[#FF6B6B]/10" />
+            {/* Tier Branches with animated vertical connector */}
+            <div className="relative pl-6 space-y-3">
+              {/* Vertical line connecting all tiers with gradient */}
+              <motion.div 
+                className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-[#00FF9D]/40 via-[#00B8D4]/25 to-[#FF6B6B]/15"
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                style={{ transformOrigin: 'top' }}
+              />
               
               {[1, 2, 3, 4, 5].map((tier) => {
                 const capital = capitalByTier?.[tier as keyof CapitalByTier] ?? 0;
