@@ -151,7 +151,7 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
         </motion.div>
       </div>
       
-      {/* Phase nodes on the ring */}
+      {/* Phase nodes on the ring - equally spaced 120° apart */}
       <PhaseNode 
         angle={-90} 
         phase={1} 
@@ -162,7 +162,7 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
         isActive={activePhase === 1}
       />
       <PhaseNode 
-        angle={0} 
+        angle={30} 
         phase={2} 
         title="Bonding" 
         tooltip="Assets are locked into yield-bearing vaults for collateralization"
@@ -171,7 +171,7 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
         isActive={activePhase === 2}
       />
       <PhaseNode 
-        angle={195} 
+        angle={150} 
         phase={3} 
         title="Settlement" 
         tooltip="Final reconciliation converts volatile holdings to stable value"
