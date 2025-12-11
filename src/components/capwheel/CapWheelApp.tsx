@@ -2,7 +2,7 @@
  * CapWheel App Component
  * 
  * Main application wrapper with providers and routing
- * Includes Trading Agent integration
+ * Includes Trading Agent integration and AI Support Chat
  */
 
 import { useState } from 'react';
@@ -17,6 +17,7 @@ import { CapWheelProfile } from './CapWheelProfile';
 import { StrategyPools } from './StrategyPools';
 import { AssetProtocol } from './AssetProtocol';
 import { PartnerNetwork } from './PartnerNetwork';
+import { SupportChat } from './SupportChat';
 import TradingInterface from '../../pages/TradingInterface';
 import AdminPanel from '../../pages/AdminPanel';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -336,9 +337,13 @@ const CapWheelRoutes = () => {
 };
 
 export const CapWheelApp = () => {
+  const { isAuthenticated } = useAuthStore();
+  
   return (
     <CapWheelProvider>
       <CapWheelRoutes />
+      {/* AI Support Chat - visible on all authenticated pages */}
+      {isAuthenticated && <SupportChat />}
     </CapWheelProvider>
   );
 };
