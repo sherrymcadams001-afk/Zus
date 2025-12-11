@@ -153,25 +153,28 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
       
       {/* Phase nodes on the ring */}
       <PhaseNode 
-        position="top" 
+        angle={-90} 
         phase={1} 
         title="Execution" 
+        tooltip="Trade orders are validated and routed through the execution engine"
         icon={<Zap className="w-4 h-4" />}
         color="#00FF9D"
         isActive={activePhase === 1}
       />
       <PhaseNode 
-        position="right" 
+        angle={0} 
         phase={2} 
         title="Bonding" 
+        tooltip="Assets are locked into yield-bearing vaults for collateralization"
         icon={<Lock className="w-4 h-4" />}
         color="#00B8D4"
         isActive={activePhase === 2}
       />
       <PhaseNode 
-        position="bottom" 
+        angle={195} 
         phase={3} 
         title="Settlement" 
+        tooltip="Final reconciliation converts volatile holdings to stable value"
         icon={<Landmark className="w-4 h-4" />}
         color="#D4AF37"
         isActive={activePhase === 3}
@@ -181,29 +184,36 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
 };
 
 // ============================================
-// PHASE NODE - Positioned on the ring
+// PHASE NODE - Positioned on the ring by angle
 // ============================================
 
 interface PhaseNodeProps {
-  position: 'top' | 'right' | 'bottom' | 'left';
+  angle: number; // Degrees: 0=right, 90=bottom, 180=left, -90=top
   phase: number;
   title: string;
+  tooltip: string;
   icon: React.ReactNode;
   color: string;
   isActive: boolean;
 }
 
-const PhaseNode = ({ position, phase, title, icon, color, isActive }: PhaseNodeProps) => {
-  const positionStyles = {
-    top: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2',
-    right: 'right-0 top-1/2 translate-x-1/2 -translate-y-1/2',
-    bottom: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2',
-    left: 'left-0 top-1/2 -translate-x-1/2 -translate-y-1/2',
-  };
+const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: PhaseNodeProps) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  // Calculate position on circle (radius ~42% from center)
+  const radius = 42; // percentage
+  const radians = (angle * Math.PI) / 180;
+  const x = 50 + radius * Math.cos(radians); // percentage from left
+  const y = 50 + radius * Math.sin(radians); // percentage from top
 
   return (
     <motion.div 
-      className={`absolute ${positionStyles[position]} z-10`}
+      className="absolute z-10"
+      style={{ 
+        left: `${x}%`, 
+        top: `${y}%`,
+        transform: 'translate(-50%, -50%)'
+      }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay: phase * 0.2, type: "spring", stiffness: 200 }}
@@ -214,6 +224,8 @@ const PhaseNode = ({ position, phase, title, icon, color, isActive }: PhaseNodeP
         whileTap={{ scale: 0.95 }}
         animate={isActive ? { scale: [1, 1.05, 1] } : {}}
         transition={{ duration: 2, repeat: isActive ? Infinity : 0 }}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
       >
         {/* Glow effect */}
         <motion.div 
@@ -247,6 +259,35 @@ const PhaseNode = ({ position, phase, title, icon, color, isActive }: PhaseNodeP
         <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <p className="text-xs font-medium text-white">{title}</p>
         </div>
+        
+        {/* Tooltip on hover */}
+        <AnimatePresence>
+          {showTooltip && (
+            <motion.div
+              initial={{ opacity: 0, y: 5, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 5, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-lg text-xs text-center"
+              style={{ 
+                backgroundColor: '#1A1F26',
+                border: `1px solid ${color}40`,
+                boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 10px ${color}20`
+              }}
+            >
+              <p className="text-slate-300 leading-relaxed">{tooltip}</p>
+              {/* Tooltip arrow */}
+              <div 
+                className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0"
+                style={{
+                  borderLeft: '6px solid transparent',
+                  borderRight: '6px solid transparent',
+                  borderTop: `6px solid ${color}40`
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
