@@ -11,7 +11,7 @@
  * - Lume-elevation hierarchy
  */
 
-import { motion, useSpring, useTransform, useMotionValue, AnimatePresence } from 'framer-motion';
+import { motion, useSpring, useMotionValue } from 'framer-motion';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import { useEffect, useRef, useState } from 'react';
 import { 
@@ -111,13 +111,12 @@ const MetricCard = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ 
         delay: index * 0.06, 
-        type: 'spring',
         ...springPhysics.gentle
       }}
       whileHover={{ 
         scale: 1.02,
         y: -2,
-        transition: { type: 'spring', ...springPhysics.snappy }
+        transition: springPhysics.snappy
       }}
       whileTap={{ scale: 0.98 }}
       className={`relative rounded-2xl p-5 transition-all duration-300 group overflow-hidden ${
@@ -126,7 +125,7 @@ const MetricCard = ({
           : 'bg-[#0F1419]/80'
       }`}
       style={{ 
-        boxShadow: lumeLevel.boxShadow,
+        boxShadow: `${lumeLevel.shadow}, ${lumeLevel.glow}`,
         border: `1px solid ${isPrimary ? 'rgba(0,255,157,0.15)' : 'rgba(255,255,255,0.05)'}`
       }}
     >
@@ -155,7 +154,7 @@ const MetricCard = ({
           <motion.div 
             className={`p-2.5 rounded-xl ${isPrimary ? 'bg-[#00FF9D]/10' : 'bg-white/5'}`}
             whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ type: 'spring', ...springPhysics.snappy }}
+            transition={springPhysics.snappy}
           >
             <div className={isPrimary ? 'text-[#00FF9D]' : 'text-[#D4AF37]'} 
               style={{ filter: isPrimary ? `drop-shadow(0 0 6px ${surgicalAccents.primary.glow}60)` : undefined }}>
@@ -168,7 +167,7 @@ const MetricCard = ({
             <motion.div 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.06 + 0.2, type: 'spring', ...springPhysics.bouncy }}
+              transition={{ delay: index * 0.06 + 0.2, ...springPhysics.bouncy }}
               className={`px-2.5 py-1 rounded-full text-xs font-mono font-semibold ${trendColor} ${trendBg}`}
               style={{
                 boxShadow: trend > 0 

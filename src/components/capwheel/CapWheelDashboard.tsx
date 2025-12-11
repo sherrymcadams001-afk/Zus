@@ -54,7 +54,7 @@ const staggerItem = {
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { type: 'spring', ...springPhysics.gentle }
+    transition: springPhysics.gentle
   }
 };
 
@@ -91,9 +91,9 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
     <motion.header 
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', ...springPhysics.gentle }}
+      transition={springPhysics.gentle}
       className="h-14 flex items-center justify-between px-5 border-b border-white/[0.06] bg-gradient-to-r from-[#0B1015] via-[#0D1318] to-[#0B1015] flex-shrink-0 relative"
-      style={{ boxShadow: lumeElevation.lume1.boxShadow }}
+      style={{ boxShadow: `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}` }}
     >
       {/* Subtle rim light on bottom edge */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#00FF9D]/10 to-transparent" />
@@ -103,7 +103,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
           onClick={onMenuClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          transition={{ type: 'spring', ...hoverSpring }}
+          transition={hoverSpring}
           className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
         >
           <Menu size={20} />
@@ -118,7 +118,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
           onClick={onDepositClick}
           whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(0,255,157,0.3)' }}
           whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', ...hoverSpring }}
+          transition={hoverSpring}
           className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00FF9D] to-[#00E88A] text-black text-xs font-bold rounded-lg shadow-lg shadow-[#00FF9D]/20"
         >
           <Wallet className="w-3.5 h-3.5" />
@@ -137,7 +137,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
         <motion.button 
           whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.08)' }}
           whileTap={{ scale: 0.95 }}
-          transition={{ type: 'spring', ...hoverSpring }}
+          transition={hoverSpring}
           className="relative p-2 text-slate-400 hover:text-white rounded-lg transition-colors"
         >
           <Bell className="w-4 h-4" />
@@ -148,7 +148,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
         <motion.button 
           whileHover={{ scale: 1.1, rotate: 45, backgroundColor: 'rgba(255,255,255,0.08)' }}
           whileTap={{ scale: 0.95 }}
-          transition={{ type: 'spring', ...hoverSpring }}
+          transition={hoverSpring}
           className="p-2 text-slate-400 hover:text-white rounded-lg transition-colors hidden sm:block"
         >
           <Settings className="w-4 h-4" />
@@ -160,7 +160,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            transition={{ type: 'spring', ...hoverSpring }}
+            transition={hoverSpring}
             className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/[0.06] transition-colors border border-transparent hover:border-white/[0.08]"
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] flex items-center justify-center shadow-lg shadow-[#00FF9D]/20">
@@ -168,7 +168,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
             </div>
             <motion.div
               animate={{ rotate: showProfileMenu ? 180 : 0 }}
-              transition={{ type: 'spring', ...springPhysics.quick }}
+              transition={springPhysics.quick}
             >
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
             </motion.div>
@@ -180,9 +180,9 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
                 initial={{ opacity: 0, y: 12, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                transition={{ type: 'spring', ...dropdownSpring }}
+                transition={dropdownSpring}
                 className="absolute right-0 top-full mt-3 w-52 bg-[#0F1419]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden z-50"
-                style={{ boxShadow: `${lumeElevation.lume3.boxShadow}, 0 0 40px rgba(0,0,0,0.5)` }}
+                style={{ boxShadow: `${lumeElevation.lume3.shadow}, ${lumeElevation.lume3.glow}, 0 0 40px rgba(0,0,0,0.5)` }}
               >
                 {/* User Info with gradient border accent */}
                 <div className="px-4 py-4 border-b border-white/[0.06] relative">
@@ -202,7 +202,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
                     variants={staggerItem}
                     onClick={() => { navigate('/capwheel/profile'); setShowProfileMenu(false); }}
                     whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.06)' }}
-                    transition={{ type: 'spring', ...hoverSpring }}
+                    transition={hoverSpring}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:text-white transition-colors"
                   >
                     <UserCircle className="w-4 h-4 text-[#00B8D4]" />
@@ -212,7 +212,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
                     variants={staggerItem}
                     onClick={handleLogout}
                     whileHover={{ x: 4, backgroundColor: 'rgba(239,68,68,0.1)' }}
-                    transition={{ type: 'spring', ...hoverSpring }}
+                    transition={hoverSpring}
                     className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:text-red-300 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
@@ -312,14 +312,14 @@ export const CapWheelDashboard = () => {
                 <motion.div 
                   className="h-[55%] min-h-0"
                   whileHover={{ scale: 1.002 }}
-                  transition={{ type: 'spring', ...springPhysics.gentle }}
+                  transition={springPhysics.gentle}
                 >
                   <OrionWealthChart />
                 </motion.div>
                 <motion.div 
                   className="flex-1 min-h-0"
                   whileHover={{ scale: 1.002 }}
-                  transition={{ type: 'spring', ...springPhysics.gentle }}
+                  transition={springPhysics.gentle}
                 >
                   <OrionTransactionLedger />
                 </motion.div>
@@ -327,7 +327,7 @@ export const CapWheelDashboard = () => {
               <motion.div 
                 className="col-span-1 min-h-[340px] flex flex-col"
                 whileHover={{ scale: 1.003 }}
-                transition={{ type: 'spring', ...springPhysics.gentle }}
+                transition={springPhysics.gentle}
               >
                 <div className="flex-1">
                   <OrionWealthProjection />
