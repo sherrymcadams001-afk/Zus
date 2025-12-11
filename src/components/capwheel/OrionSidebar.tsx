@@ -16,7 +16,6 @@ import {
   User,
   ChevronDown,
   Wallet,
-  ArrowRightLeft,
   Users,
   Shield,
   Zap,
@@ -165,19 +164,10 @@ export const OrionSidebar = () => {
             label="Trading Agent"
             badge="LIVE"
           />
-        </NavGroup>
-
-        {/* Capital Management Module */}
-        <NavGroup title="Capital Management" defaultOpen={true}>
           <NavItem
             to="/capwheel/strategy-pools"
             icon={<Wallet className="w-4 h-4" />}
             label="Strategy Pools"
-          />
-          <NavItem
-            to="/capwheel/liquidity"
-            icon={<ArrowRightLeft className="w-4 h-4" />}
-            label="Liquidity Events"
           />
         </NavGroup>
 

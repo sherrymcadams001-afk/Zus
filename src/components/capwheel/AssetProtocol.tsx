@@ -38,7 +38,7 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
   }, []);
 
   return (
-    <div className="relative w-72 h-72 md:w-80 md:h-80 mx-auto">
+    <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto">
       {/* Outer glow ring */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00FF9D]/20 via-[#00B8D4]/20 to-[#D4AF37]/20 blur-xl" />
       
@@ -260,7 +260,7 @@ const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: Phas
           <p className="text-xs font-medium text-white">{title}</p>
         </div>
         
-        {/* Tooltip on hover */}
+        {/* Tooltip on hover - hidden on mobile to prevent overflow */}
         <AnimatePresence>
           {showTooltip && (
             <motion.div
@@ -268,14 +268,14 @@ const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: Phas
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 5, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 rounded-lg text-xs text-center"
+              className="hidden sm:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-44 p-2 rounded-lg text-xs text-center pointer-events-none"
               style={{ 
                 backgroundColor: '#1A1F26',
                 border: `1px solid ${color}40`,
                 boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 10px ${color}20`
               }}
             >
-              <p className="text-slate-300 leading-relaxed">{tooltip}</p>
+              <p className="text-slate-300 leading-relaxed text-[11px]">{tooltip}</p>
               {/* Tooltip arrow */}
               <div 
                 className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0"
@@ -470,7 +470,7 @@ export const AssetProtocol = () => {
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0B1015] p-4 md:p-6">
+    <div className="h-full overflow-y-auto overflow-x-hidden bg-[#0B1015] p-4 md:p-6">
       <div className="max-w-5xl mx-auto" ref={ref}>
         
         {/* Header */}
@@ -502,7 +502,7 @@ export const AssetProtocol = () => {
         </motion.div>
 
         {/* Main Layout: Circle + Details */}
-        <div className="grid lg:grid-cols-[1fr_1.2fr] gap-8 mb-8">
+        <div className="grid lg:grid-cols-[1fr_1.2fr] gap-4 lg:gap-8 mb-8">
           
           {/* Circular Flow */}
           <motion.div

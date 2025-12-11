@@ -131,7 +131,7 @@ export const StrategyInsignia = ({
   return (
     <div className="flex items-center gap-1.5">
       <div 
-        className={`${sizeClasses[size]} rounded flex items-center justify-center font-bold tracking-wider`}
+        className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-bold tracking-wider`}
         style={{ 
           backgroundColor: strategy.color + '25',
           color: strategy.color,
@@ -212,7 +212,7 @@ const StrategyCard = ({
         {/* Header */}
         <div className="flex items-start justify-between mb-4 relative z-10">
           <div 
-            className="p-2.5 rounded-xl"
+            className="p-2.5 rounded-full"
             style={{ backgroundColor: strategy.color + '20' }}
           >
             <div style={{ color: strategy.color }}>

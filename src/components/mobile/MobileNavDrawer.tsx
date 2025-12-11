@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
-import { X, LayoutDashboard, User, Wallet, PieChart, ArrowRightLeft, Zap, Users, Shield, FileCode } from 'lucide-react';
+import { X, LayoutDashboard, User, Wallet, Zap, Users, Shield, FileCode } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRef, useCallback } from 'react';
@@ -64,14 +64,7 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
         { to: '/capwheel/profile', icon: <User size={20} />, label: 'Profile' },
         { to: '/capwheel/protocol', icon: <FileCode size={20} />, label: 'Asset Protocol' },
         { to: '/capwheel/trading', icon: <Zap size={20} />, label: 'Trading Agent', badge: 'LIVE' },
-      ]
-    },
-    {
-      title: 'Capital Management',
-      items: [
         { to: '/capwheel/strategy-pools', icon: <Wallet size={20} />, label: 'Strategy Pools' },
-        { to: '/capwheel/allocation', icon: <PieChart size={20} />, label: 'Asset Allocation' },
-        { to: '/capwheel/liquidity', icon: <ArrowRightLeft size={20} />, label: 'Liquidity Events' },
       ]
     },
     {
