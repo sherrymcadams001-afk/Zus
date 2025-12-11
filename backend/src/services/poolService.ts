@@ -5,6 +5,7 @@
  */
 
 import { Env, ApiResponse } from '../types';
+import { notifyStake } from './notificationService';
 
 export interface Pool {
   id: number;
@@ -121,6 +122,11 @@ export async function createStake(
     await env.DB.prepare(
       `UPDATE pools SET current_staked = current_staked + ?, updated_at = ? WHERE id = ?`
     ).bind(amount, timestamp, poolId).run();
+
+    // Create stake notification (non-blocking)
+    notifyStake(env.DB, userId, pool.name, amount, 'USDT').catch(err =>
+      console.error('Failed to create stake notification:', err)
+    );
     
     return {
       status: 'success',

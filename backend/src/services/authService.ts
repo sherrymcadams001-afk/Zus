@@ -7,6 +7,7 @@
 
 import { Env, User, AuthResponse } from '../types';
 import { sendWelcomeEmail } from './emailService';
+import { notifyLogin } from './notificationService';
 
 // Validation constants
 const MAX_EMAIL_LENGTH = 255;
@@ -375,6 +376,11 @@ export async function loginUser(
     
     // Generate JWT
     const token = await generateJWT(user.id, user.email, user.role);
+    
+    // Create login notification (non-blocking)
+    notifyLogin(env.DB, user.id).catch(err => 
+      console.error('Failed to create login notification:', err)
+    );
     
     return {
       status: 'success',

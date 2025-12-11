@@ -5,6 +5,7 @@
  */
 
 import { Env, Wallet, Transaction, ApiResponse } from '../types';
+import { notifyDeposit, notifyWithdrawal } from './notificationService';
 
 // Validation constants
 const MAX_DEPOSIT_AMOUNT = 1000000; // Maximum single deposit in USD
@@ -217,6 +218,11 @@ export async function approveDeposit(
       return { status: 'error', error: 'Wallet not found' };
     }
 
+    // Create deposit notification (non-blocking)
+    notifyDeposit(env.DB, transaction.user_id, transaction.amount, 'USDT').catch(err =>
+      console.error('Failed to create deposit notification:', err)
+    );
+
     return {
       status: 'success',
       data: { wallet, transaction: updatedTx }
@@ -282,6 +288,11 @@ export async function processWithdrawal(
     if (!updatedWallet) {
       return { status: 'error', error: 'Failed to update wallet' };
     }
+
+    // Create withdrawal notification (non-blocking)
+    notifyWithdrawal(env.DB, userId, amount, 'USDT', 'pending').catch(err =>
+      console.error('Failed to create withdrawal notification:', err)
+    );
     
     return {
       status: 'success',

@@ -109,16 +109,23 @@ export const CapWheelLogin = () => {
 
         const response = await authAPI.register(email, password, inviteCode);
         
-        if (response.status === 'success') {
-          setSuccess('Account created successfully');
-          // Auto-transition to login after brief success display
-          setTimeout(() => {
-            setMode('login');
-            setStep('password');
-            setPassword('');
-            setConfirmPassword('');
-            setSuccess('');
-          }, 1500);
+        if (response.status === 'success' && response.data) {
+          if (response.data.waitlisted) {
+            // User is on waitlist (no invite code)
+            setSuccess('You have been added to our waitlist. Check your email in 4 hours for access.');
+          } else {
+            // User has valid invite code - log them in directly
+            setAuth(response.data.user, response.data.token);
+            setEnterpriseUser({
+              id: String(response.data.user.id),
+              name: response.data.user.email.split('@')[0],
+              email: response.data.user.email,
+              role: response.data.user.role === 'admin' ? 'Executive' : 'Trader',
+              desk: 'Volatility Harvesting',
+              permissions: ['trade', 'view_positions', 'manage_risk'],
+            });
+            navigate('/dashboard');
+          }
         } else {
           setError(response.error ?? 'Registration failed');
         }
@@ -279,7 +286,7 @@ export const CapWheelLogin = () => {
                 {/* Step Indicator */}
                 <div className="text-center mb-2">
                   <span className="text-slate-500 text-xs uppercase tracking-widest font-medium">
-                    {mode === 'login' ? 'Sign In' : 'Create Account'}
+                    {mode === 'login' ? 'Sign In' : 'Request Access'}
                   </span>
                 </div>
 
@@ -329,7 +336,7 @@ export const CapWheelLogin = () => {
                     onClick={toggleMode}
                     className="text-sm text-slate-400 hover:text-emerald-400 transition-colors focus:outline-none focus:underline"
                   >
-                    {mode === 'login' ? 'Create an account' : 'Sign in instead'}
+                    {mode === 'login' ? 'Request Access' : 'Sign in instead'}
                   </button>
                 </div>
               </motion.form>
@@ -492,9 +499,8 @@ export const CapWheelLogin = () => {
         <div className="px-10 py-5 border-t border-white/[0.04] flex items-center justify-center gap-2">
           <Shield className="h-3.5 w-3.5 text-slate-500" />
           <span className="text-slate-500 text-xs">
-            256-bit encrypted · SOC 2 compliant
+            SOC 2 compliant
           </span>
-          <Lock className="h-3 w-3 text-slate-500" />
         </div>
       </motion.div>
 

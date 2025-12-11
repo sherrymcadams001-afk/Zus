@@ -127,14 +127,24 @@ export const BOT_TIERS: Record<BotTier, {
 export interface DashboardData {
   // Metric Cards
   aum: number;                    // From wallet.available_balance + pool_stakes.amount
-  netYieldPercent: number;        // Daily ROI % - from bot tier rate (actual earnings shown elsewhere)
+  netYieldPercent: number;        // Current dynamic ROI % (fluctuates)
+  actualDailyYieldPercent: number; // Actual daily rate that will settle
   partnerVolume: number;          // Sum of referral downstream investments
   vestingRunway: number;          // Days until capital withdrawal available
   
   // Dynamic Data Matrix (Cash Flow)
-  dailyEarnings: number;          // AUM × dailyRoiMax
+  dailyEarnings: number;          // Actual daily earnings based on tier
   weeklyEarnings: number;         // dailyEarnings × tradingDaysPerWeek
   monthlyEarnings: number;        // weeklyEarnings × 4.33 (avg weeks/month)
+  currentHourlyEarning: number;   // Current fluctuating hourly earning
+  projectedDailyEarning: number;  // If current rate continued all day
+  
+  // Dynamic ROI Info
+  rateMultiplier: number;         // How much above/below base rate (1.0 = normal)
+  marketSentiment: 'bullish' | 'bearish' | 'neutral';
+  volatility: 'high' | 'medium' | 'low';
+  displayRate: string;            // Formatted current rate (e.g., "+1.25%")
+  roiHistory: Array<{ timestamp: number; hourlyRate: number; ratePercent: number }>;
   
   // Strategy Performance
   sharpeRatio: number;            // (mean return - risk free) / std dev
@@ -262,6 +272,19 @@ export async function fetchDashboardAggregate(): Promise<{
   transactions: TransactionData[];
   staking: { activeStakes: PoolStakeData[]; totalStaked: number; totalEarned: number };
   referrals: { partnerVolume: number };
+  roi: {
+    currentRatePercent: number;
+    actualDailyRatePercent: number;
+    currentHourlyEarning: number;
+    projectedDailyEarning: number;
+    actualDailyEarning: number;
+    rateMultiplier: number;
+    marketSentiment: 'bullish' | 'bearish' | 'neutral';
+    volatility: 'high' | 'medium' | 'low';
+    displayRate: string;
+    tier: string;
+    history: Array<{ timestamp: number; hourlyRate: number; ratePercent: number }>;
+  } | null;
 } | null> {
   try {
     const response = await apiClient.get('/api/dashboard');
@@ -371,7 +394,7 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     return getDefaultDashboardData();
   }
   
-  const { wallet, portfolio, trades, transactions, staking, referrals } = aggregateData;
+  const { wallet, portfolio, trades, transactions, staking, referrals, roi } = aggregateData;
   const { activeStakes, totalStaked } = staking;
   const { partnerVolume } = referrals;
   
@@ -379,12 +402,12 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const aum = (wallet?.available_balance ?? 0) + totalStaked;
   
   // Determine bot tier based on total investment
-  const currentTier = getBotTierForAmount(aum);
+  const currentTier = (roi?.tier as BotTier) || getBotTierForAmount(aum);
   const tierConfig = BOT_TIERS[currentTier];
   
-  // Calculate ROI % - show the tier's daily rate
-  // This is the user's current daily ROI based on their tier
-  const netYieldPercent = tierConfig.dailyRoiMax * 100;
+  // Use dynamic ROI from backend if available, otherwise fallback
+  const netYieldPercent = roi?.currentRatePercent ?? tierConfig.dailyRoiMax * 100;
+  const actualDailyYieldPercent = roi?.actualDailyRatePercent ?? tierConfig.dailyRoiMax * 100;
   
   // Calculate vesting runway from earliest active stake
   const earliestStake = activeStakes.length > 0 
@@ -392,8 +415,21 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     : Math.floor(Date.now() / 1000);
   const vestingRunway = calculateVestingRunway(earliestStake, currentTier);
   
-  // Calculate earnings projections
-  const earnings = calculateEarningsProjections(aum, currentTier);
+  // Use backend earnings if available, otherwise calculate
+  const dailyEarnings = roi?.actualDailyEarning ?? aum * tierConfig.dailyRoiMax;
+  const weeklyEarnings = dailyEarnings * tierConfig.tradingDaysPerWeek;
+  const monthlyEarnings = weeklyEarnings * 4.33;
+  
+  // Current fluctuating values
+  const currentHourlyEarning = roi?.currentHourlyEarning ?? 0;
+  const projectedDailyEarning = roi?.projectedDailyEarning ?? dailyEarnings;
+  
+  // Dynamic ROI info
+  const rateMultiplier = roi?.rateMultiplier ?? 1.0;
+  const marketSentiment = roi?.marketSentiment ?? 'neutral';
+  const volatility = roi?.volatility ?? 'low';
+  const displayRate = roi?.displayRate ?? `+${netYieldPercent.toFixed(2)}%`;
+  const roiHistory = roi?.history ?? [];
   
   // Calculate strategy metrics from trade history
   const sharpeRatio = calculateSharpeRatio(trades);
@@ -410,13 +446,23 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     // Metric Cards
     aum,
     netYieldPercent,
+    actualDailyYieldPercent,
     partnerVolume,
     vestingRunway,
     
     // Dynamic Data Matrix
-    dailyEarnings: earnings.daily,
-    weeklyEarnings: earnings.weekly,
-    monthlyEarnings: earnings.monthly,
+    dailyEarnings,
+    weeklyEarnings,
+    monthlyEarnings,
+    currentHourlyEarning,
+    projectedDailyEarning,
+    
+    // Dynamic ROI Info
+    rateMultiplier,
+    marketSentiment,
+    volatility,
+    displayRate,
+    roiHistory,
     
     // Strategy Performance
     sharpeRatio,
@@ -450,12 +496,21 @@ export function getDefaultDashboardData(): DashboardData {
   return {
     aum: 0,
     netYieldPercent: config.dailyRoiMax * 100,
+    actualDailyYieldPercent: config.dailyRoiMax * 100,
     partnerVolume: 0,
     vestingRunway: config.capitalWithdrawalDays,
     
     dailyEarnings: 0,
     weeklyEarnings: 0,
     monthlyEarnings: 0,
+    currentHourlyEarning: 0,
+    projectedDailyEarning: 0,
+    
+    rateMultiplier: 1.0,
+    marketSentiment: 'neutral',
+    volatility: 'low',
+    displayRate: '+0.00%',
+    roiHistory: [],
     
     sharpeRatio: 0,
     maxDrawdown: 0,

@@ -21,6 +21,7 @@ import { handleProfileRoutes } from './routes/profile';
 import { handleAdminRoutes } from './routes/admin';
 import { handleNowPaymentsWebhook } from './routes/nowpayments';
 import { handleInviteCodeRoutes } from './routes/inviteCodes';
+import { handleNotificationRoutes } from './routes/notifications';
 import { sendWelcomeEmail } from './services/emailService';
 
 /**
@@ -74,6 +75,11 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Invite code routes
   if (url.pathname.startsWith('/api/invite-codes')) {
     return handleInviteCodeRoutes(request, env, url.pathname);
+  }
+
+  // Notification routes
+  if (url.pathname.startsWith('/api/notifications')) {
+    return handleNotificationRoutes(request, env, url.pathname);
   }
 
   // Dashboard aggregate route (SINGLE call for all data)

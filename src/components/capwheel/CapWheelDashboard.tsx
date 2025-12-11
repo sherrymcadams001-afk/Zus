@@ -25,9 +25,10 @@ import { OrionTransactionLedger } from './OrionTransactionLedger';
 import { OrionWealthProjection } from './OrionWealthProjection';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Bell, Settings, User, Menu, Wallet, LogOut, ChevronDown, UserCircle } from 'lucide-react';
+import { User, Menu, Wallet, LogOut, ChevronDown, UserCircle } from 'lucide-react';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
+import { NotificationCenter } from './NotificationCenter';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { CollapsibleCard } from '../mobile/CollapsibleCard';
 import { DepositModal } from './DepositModal';
@@ -134,25 +135,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
         </div>
 
         {/* Icon buttons with kinetic hover */}
-        <motion.button 
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.08)' }}
-          whileTap={{ scale: 0.95 }}
-          transition={hoverSpring}
-          className="relative p-2 text-slate-400 hover:text-white rounded-lg transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-          {/* Notification dot */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#00FF9D] shadow-lg shadow-[#00FF9D]/50" />
-        </motion.button>
-        
-        <motion.button 
-          whileHover={{ scale: 1.1, rotate: 45, backgroundColor: 'rgba(255,255,255,0.08)' }}
-          whileTap={{ scale: 0.95 }}
-          transition={hoverSpring}
-          className="p-2 text-slate-400 hover:text-white rounded-lg transition-colors hidden sm:block"
-        >
-          <Settings className="w-4 h-4" />
-        </motion.button>
+        <NotificationCenter />
         
         {/* Profile Dropdown with spring animation */}
         <div ref={profileRef} className="relative">

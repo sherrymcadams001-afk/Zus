@@ -11,6 +11,7 @@ import { getUserWallet, getTransactionHistory } from '../services/walletService'
 import { getUserPortfolio, getTradeHistory } from '../services/portfolioService';
 import { getUserActiveStakes, getTotalStaked, getTotalEarned } from '../services/poolService';
 import { getPartnerVolume, getReferralStats } from '../services/referralService';
+import { calculateCurrentEarnings, generateROIHistory } from '../services/roiService';
 
 /**
  * Handle dashboard aggregate route
@@ -55,6 +56,11 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
         getReferralStats(env, user.userId),
       ]);
       
+      // Calculate dynamic ROI based on user's stake and tier
+      const stakedAmount = totalStaked || 0;
+      const roiData = calculateCurrentEarnings(user.userId, stakedAmount);
+      const roiHistory = generateROIHistory(user.userId, roiData.tier, 24);
+      
       return new Response(JSON.stringify({
         status: 'success',
         data: {
@@ -70,6 +76,19 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
           referrals: {
             partnerVolume,
             stats: referralStats,
+          },
+          roi: {
+            currentRatePercent: roiData.currentRatePercent,
+            actualDailyRatePercent: roiData.actualDailyRatePercent,
+            currentHourlyEarning: roiData.currentHourlyEarning,
+            projectedDailyEarning: roiData.projectedDailyEarning,
+            actualDailyEarning: roiData.actualDailyEarning,
+            rateMultiplier: roiData.rateMultiplier,
+            marketSentiment: roiData.marketSentiment,
+            volatility: roiData.volatility,
+            displayRate: roiData.displayRate,
+            tier: roiData.tier,
+            history: roiHistory,
           },
           timestamp: Math.floor(Date.now() / 1000),
         },
