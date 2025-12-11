@@ -200,23 +200,26 @@ interface PhaseNodeProps {
 const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: PhaseNodeProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
-  // Calculate position on circle (radius ~42.5% from center to match SVG r=85/200)
-  const radius = 42.5; // percentage
+  // Calculate position on circle
+  // SVG viewBox is 200x200, circle center at (100,100), radius=85
+  // Circle edge at 85/200 = 42.5% from center
+  // Using exact 42.5% to place node centers precisely on the ring line
+  const radius = 42.5; // matches SVG circle r=85 in viewBox 200
   const radians = (angle * Math.PI) / 180;
-  const x = 50 + radius * Math.cos(radians); // percentage from left
-  const y = 50 + radius * Math.sin(radians); // percentage from top
+  const x = 50 + radius * Math.cos(radians);
+  const y = 50 + radius * Math.sin(radians);
 
   const handleTap = () => {
     setShowTooltip(prev => !prev);
   };
 
+  // Use CSS calc to ensure precise centering regardless of node size
   return (
     <motion.div 
-      className="absolute z-10"
+      className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
       style={{ 
         left: `${x}%`, 
-        top: `${y}%`,
-        transform: 'translate(-50%, -50%)'
+        top: `${y}%`
       }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
