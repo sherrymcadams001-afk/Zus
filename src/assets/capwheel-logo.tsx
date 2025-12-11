@@ -34,7 +34,7 @@ export const CapWheelLogo = ({
       <div className="absolute inset-0 bg-emerald-500/10 blur-xl rounded-full -z-10 animate-pulse" />
       
       <img 
-        src="/logo.svg" 
+        src="/icon.svg" 
         alt="CapWheel Logo" 
         className="w-full h-full object-contain drop-shadow-[0_0_2px_rgba(0,255,157,0.3)]"
       />
@@ -52,7 +52,7 @@ export const CapWheelLogoStatic = ({
       style={{ width: size, height: size }}
     >
       <img 
-        src="/logo.svg" 
+        src="/icon.svg" 
         alt="CapWheel Logo" 
         className="w-full h-full object-contain"
       />
