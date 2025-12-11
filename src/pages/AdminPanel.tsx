@@ -123,7 +123,7 @@ const AdminPanel = () => {
 
   if (loading && !users.length && !pendingDeposits.length) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0f172a] text-gray-400">
+      <div className="fixed inset-0 flex items-center justify-center bg-[#0f172a] text-gray-400">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <p>Loading admin panel...</p>
@@ -133,7 +133,7 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[#0f172a] text-white font-sans overflow-hidden">
+    <div className="fixed inset-0 flex bg-[#0f172a] text-white font-sans overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 bg-[#1e293b] border-r border-gray-800 flex flex-col flex-shrink-0">
         <div className="p-6 border-b border-gray-800 flex items-center gap-3">

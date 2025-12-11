@@ -54,18 +54,71 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  overflow-x: hidden;
-  max-width: 100vw;
+/* ==============================================================================
+   MOBILE VIEWPORT STABILITY - CRITICAL
+   Prevents horizontal shift, bounce scrolling, and layout instability
+   ============================================================================== */
+
+html {
+  /* Lock the viewport */
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Prevent iOS bounce scrolling */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Mobile viewport control - prevent horizontal scroll */
-html, #root {
-  overflow-x: hidden;
-  max-width: 100vw;
+body {
+  margin: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Prevent any horizontal scroll */
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  /* Only allow vertical pan and pinch zoom */
+  touch-action: pan-y pinch-zoom;
+  /* iOS safe area support */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+#root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Contain all children */
+  contain: layout style;
+}
+
+/* Scrollable content areas - use this class for any scrollable container */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+/* Prevent text selection on interactive elements for app-like feel */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent horizontal overflow from animations */
+.contain-paint {
+  contain: paint;
 }
 
 /* Safe area support for mobile devices with notches */

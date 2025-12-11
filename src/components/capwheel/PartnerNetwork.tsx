@@ -330,7 +330,7 @@ const PartnerNetworkContent = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0B1015] relative">
+    <div className="h-full overflow-y-auto mobile-scroll bg-[#0B1015] relative">
       {/* Atmospheric background */}
       <div className="fixed inset-0 bg-gradient-to-br from-[#0B1015] via-[#0D1318] to-[#0A0E12] pointer-events-none" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,157,0.04),transparent_60%)] pointer-events-none" />
@@ -668,7 +668,7 @@ export const PartnerNetwork = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
       <MobileNavDrawer 

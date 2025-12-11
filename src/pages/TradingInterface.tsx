@@ -79,7 +79,7 @@ export default function TradingInterface() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden font-sans select-none">
+    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden font-sans select-none">
       {/* Swipe Edge Detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       

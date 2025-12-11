@@ -192,7 +192,7 @@ export const CapWheelLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="fixed inset-0 bg-[#0a0f1a] flex items-center justify-center p-6 overflow-y-auto">
       {/* Subtle ambient gradient */}
       <div 
         className="absolute inset-0 pointer-events-none"

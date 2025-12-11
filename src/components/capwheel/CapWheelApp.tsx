@@ -26,7 +26,7 @@ import { MobileBottomNav } from '../mobile/MobileBottomNav';
 
 // Branded loading screen
 const LoadingScreen = () => (
-  <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0B1015] gap-6">
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0B1015] gap-6">
     <CapWheelLogo size={80} animate={true} />
     <div className="flex items-center gap-3">
       <div className="w-2 h-2 bg-[#00FF9D] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -78,7 +78,7 @@ const ProfileWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -127,7 +127,7 @@ const StrategyPoolsWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -161,7 +161,7 @@ const StrategyPoolsWrapper = () => {
           </button>
         </header>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto mobile-scroll">
           <StrategyPools />
         </div>
         
@@ -178,7 +178,7 @@ const AssetProtocolWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
+    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -212,7 +212,7 @@ const AssetProtocolWrapper = () => {
           </button>
         </header>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto mobile-scroll">
           <AssetProtocol />
         </div>
         
