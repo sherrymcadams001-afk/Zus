@@ -204,7 +204,7 @@ export default function Login() {
               <p className="text-orion-slate-dark text-sm text-center">
                 Don't have an account?{' '}
                 <Link to="/register" className="text-orion-cyan hover:text-orion-cyan-bright font-semibold transition-colors">
-                  Create Account →
+                  Request Access →
                 </Link>
               </p>
             </div>
