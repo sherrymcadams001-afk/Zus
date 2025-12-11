@@ -38,9 +38,9 @@ const CircularFlowRing = ({ activePhase }: { activePhase: number }) => {
   }, []);
 
   return (
-    <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto">
+    <div className="relative w-56 h-56 xs:w-64 xs:h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto">
       {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#00FF9D]/20 via-[#00B8D4]/20 to-[#D4AF37]/20 blur-xl" />
+      <div className="absolute inset-2 rounded-full bg-gradient-to-r from-[#00FF9D]/20 via-[#00B8D4]/20 to-[#D4AF37]/20 blur-xl" />
       
       {/* Main ring track */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
@@ -200,11 +200,15 @@ interface PhaseNodeProps {
 const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: PhaseNodeProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   
-  // Calculate position on circle (radius ~42% from center)
-  const radius = 42; // percentage
+  // Calculate position on circle (radius ~40% from center for better fit)
+  const radius = 40; // percentage
   const radians = (angle * Math.PI) / 180;
   const x = 50 + radius * Math.cos(radians); // percentage from left
   const y = 50 + radius * Math.sin(radians); // percentage from top
+
+  const handleTap = () => {
+    setShowTooltip(prev => !prev);
+  };
 
   return (
     <motion.div 
@@ -226,6 +230,7 @@ const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: Phas
         transition={{ duration: 2, repeat: isActive ? Infinity : 0 }}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
+        onTouchStart={handleTap}
       >
         {/* Glow effect */}
         <motion.div 
@@ -237,30 +242,30 @@ const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: Phas
         
         {/* Node circle */}
         <div 
-          className="relative w-14 h-14 rounded-full flex items-center justify-center border-2"
+          className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-2"
           style={{ 
             backgroundColor: '#0F1419',
             borderColor: isActive ? color : `${color}60`,
             boxShadow: isActive ? `0 0 20px ${color}40` : 'none'
           }}
         >
-          <div style={{ color }}>{icon}</div>
+          <div className="scale-75 sm:scale-100" style={{ color }}>{icon}</div>
         </div>
         
         {/* Phase number */}
         <div 
-          className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+          className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center text-[8px] sm:text-[10px] font-bold"
           style={{ backgroundColor: color, color: '#0B1015' }}
         >
           {phase}
         </div>
         
         {/* Label */}
-        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <p className="text-xs font-medium text-white">{title}</p>
+        <div className="absolute top-full mt-1 sm:mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <p className="text-[10px] sm:text-xs font-medium text-white">{title}</p>
         </div>
         
-        {/* Tooltip on hover - hidden on mobile to prevent overflow */}
+        {/* Tooltip on hover/tap */}
         <AnimatePresence>
           {showTooltip && (
             <motion.div
@@ -268,14 +273,14 @@ const PhaseNode = ({ angle, phase, title, tooltip, icon, color, isActive }: Phas
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 5, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="hidden sm:block absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-44 p-2 rounded-lg text-xs text-center pointer-events-none"
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-36 sm:w-44 p-2 rounded-lg text-xs text-center z-50"
               style={{ 
                 backgroundColor: '#1A1F26',
                 border: `1px solid ${color}40`,
                 boxShadow: `0 4px 20px rgba(0,0,0,0.4), 0 0 10px ${color}20`
               }}
             >
-              <p className="text-slate-300 leading-relaxed text-[11px]">{tooltip}</p>
+              <p className="text-slate-300 leading-relaxed text-[10px] sm:text-[11px]">{tooltip}</p>
               {/* Tooltip arrow */}
               <div 
                 className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0"
