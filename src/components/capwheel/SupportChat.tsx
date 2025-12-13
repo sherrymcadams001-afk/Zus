@@ -311,8 +311,13 @@ export const SupportChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const user = useAuthStore((state) => state.user);
+  const { user, isAuthenticated } = useAuthStore();
   const { currentTier } = usePortfolioStore();
+
+  // Hide chat widget for unauthenticated users
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
