@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const INPUT_FILE = join(__dirname, 'api-specification.md');
+const INPUT_FILE = join(__dirname, 'EXTERNAL_API_SPEC.md');
 const OUTPUT_FILE = join(__dirname, 'Trading-Agent-API-Specification.pdf');
 
 /**

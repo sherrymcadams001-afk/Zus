@@ -1,7 +1,7 @@
 # Zus Trading Agent API Specification
 
 **Version:** 1.0.0  
-**Base URL:** `https://your-worker.workers.dev` (Production) | `http://localhost:8787` (Development)
+**Base URL:** `https://trading-agent-engine.sherry-mcadams001.workers.dev` (Production) | `http://localhost:8787` (Development)
 
 ---
 
@@ -23,7 +23,7 @@ Health check endpoint for monitoring.
 
 **Request:**
 ```bash
-curl https://your-worker.workers.dev/health
+curl https://trading-agent-engine.sherry-mcadams001.workers.dev/health
 ```
 
 **Response (200 OK):**
@@ -42,7 +42,7 @@ Returns the latest AI-generated trading log.
 
 **Request:**
 ```bash
-curl https://your-worker.workers.dev/api/narrative
+curl https://trading-agent-engine.sherry-mcadams001.workers.dev/api/narrative
 ```
 
 **Response (200 OK):**
@@ -66,7 +66,7 @@ Retrieves user balance, tier configuration, and profit projections.
 
 **Request:**
 ```bash
-curl https://your-worker.workers.dev/api/balance/user123
+curl https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance/user123
 ```
 
 **Path Parameters:**
@@ -119,7 +119,7 @@ Creates a new user balance record.
 
 **Request:**
 ```bash
-curl -X POST https://your-worker.workers.dev/api/balance \
+curl -X POST https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance \
   -H "Content-Type: application/json" \
   -d '{"userId": "user123", "balance": 10000, "currency": "USD"}'
 ```
@@ -172,7 +172,7 @@ Updates an existing user's balance.
 
 **Request:**
 ```bash
-curl -X PUT https://your-worker.workers.dev/api/balance/user123 \
+curl -X PUT https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance/user123 \
   -H "Content-Type: application/json" \
   -d '{"balance": 25000}'
 ```
@@ -231,7 +231,7 @@ curl -X PUT https://your-worker.workers.dev/api/balance/user123 \
 
 ```javascript
 // 1. Create user with initial deposit
-const response = await fetch('https://your-worker.workers.dev/api/balance', {
+const response = await fetch('https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ userId: 'user123', balance: 10000 })
@@ -245,7 +245,7 @@ console.log(`Daily profit: $${data.projectedDailyProfit.min} - $${data.projected
 ### Update Balance After Deposit/Withdrawal
 
 ```javascript
-const response = await fetch('https://your-worker.workers.dev/api/balance/user123', {
+const response = await fetch('https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance/user123', {
   method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ balance: 50000 })
@@ -258,7 +258,7 @@ const { data } = await response.json();
 
 ```javascript
 async function pollNarrative() {
-  const response = await fetch('https://your-worker.workers.dev/api/narrative');
+  const response = await fetch('https://trading-agent-engine.sherry-mcadams001.workers.dev/api/narrative');
   const { log, timestamp } = await response.json();
   console.log(`[${new Date(timestamp).toLocaleTimeString()}] ${log}`);
 }
@@ -271,7 +271,7 @@ setInterval(pollNarrative, 5000);
 ```javascript
 // User has $60,000 but wants Titan instead of Omega
 // Use PUT to update an existing user's tier preference
-const response = await fetch('https://your-worker.workers.dev/api/balance/user123', {
+const response = await fetch('https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance/user123', {
   method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ balance: 60000, botTier: 'titan' })
@@ -283,7 +283,7 @@ const response = await fetch('https://your-worker.workers.dev/api/balance/user12
 ```python
 import requests
 
-BASE_URL = 'https://your-worker.workers.dev'
+BASE_URL = 'https://trading-agent-engine.sherry-mcadams001.workers.dev'
 
 # Create user
 response = requests.post(f'{BASE_URL}/api/balance', json={

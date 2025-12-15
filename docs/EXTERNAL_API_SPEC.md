@@ -7,7 +7,7 @@ This document is the authoritative API specification for integrating an external
 
 ## Base URL
 
-- Production: `https://<your-worker>.workers.dev`
+ - Production: `https://trading-agent-engine.sherry-mcadams001.workers.dev`
 - Development (Wrangler): `http://127.0.0.1:8787`
 
 Optional client env for the included frontend: set `VITE_API_URL` to your base URL.
@@ -70,7 +70,7 @@ Where supported: `?limit=<number>&offset=<number>` (defaults vary by endpoint).
 Examples:
 
 ```bash
-BASE="https://<your-worker>.workers.dev"
+BASE="https://trading-agent-engine.sherry-mcadams001.workers.dev"
 curl -X POST "$BASE/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"secret","referralCode":"ABC123"}'
@@ -292,7 +292,7 @@ Order ID format used by the system: `user_{userId}_tx_{transactionId}`
 ### 1) Register, Login, and Fetch Dashboard
 
 ```bash
-BASE="https://<your-worker>.workers.dev"
+BASE="https://trading-agent-engine.sherry-mcadams001.workers.dev"
 
 curl -X POST "$BASE/api/auth/register" \
   -H "Content-Type: application/json" \

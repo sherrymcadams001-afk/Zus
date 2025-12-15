@@ -35,15 +35,15 @@ A production-ready trading simulation engine with multi-tier bot system and REST
 
 ```bash
 # Test the API
-curl https://your-worker.workers.dev/health
+curl https://trading-agent-engine.sherry-mcadams001.workers.dev/health
 
 # Create a user balance
-curl -X POST https://your-worker.workers.dev/api/balance \
+curl -X POST https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance \
   -H "Content-Type: application/json" \
   -d '{"userId": "user123", "balance": 10000}'
 
 # Get user balance and projections
-curl https://your-worker.workers.dev/api/balance/user123
+curl https://trading-agent-engine.sherry-mcadams001.workers.dev/api/balance/user123
 ```
 
 ### Full-Stack Development
