@@ -31,8 +31,3 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "trading-platform"
 database_id = "05d79612-7bfe-4c0c-8511-300ad9943042"
-
-# Scheduled tasks (cron triggers)
-# Runs every minute to check for pending emails
-[triggers]
-crons = ["* * * * *"]

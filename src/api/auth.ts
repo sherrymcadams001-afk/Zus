@@ -11,6 +11,7 @@ export interface User {
   email: string;
   role: 'user' | 'admin';
   kyc_status: 'pending' | 'approved' | 'rejected';
+  account_status?: 'pending' | 'approved';
   referral_code: string;
   created_at: number;
   updated_at: number;

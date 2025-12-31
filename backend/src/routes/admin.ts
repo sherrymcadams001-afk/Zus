@@ -7,11 +7,18 @@
 import { Env } from '../types';
 import { requireAdmin } from '../middleware/admin';
 import { processDeposit, approveDeposit } from '../services/walletService';
+import { sendApprovalEmail } from '../services/emailService';
 
 /**
  * Handle admin routes
+ * @param ctx - ExecutionContext for background tasks (emails via waitUntil)
  */
-export async function handleAdminRoutes(request: Request, env: Env, path: string): Promise<Response> {
+export async function handleAdminRoutes(
+  request: Request, 
+  env: Env, 
+  path: string,
+  ctx: ExecutionContext
+): Promise<Response> {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -21,6 +28,103 @@ export async function handleAdminRoutes(request: Request, env: Env, path: string
   // All admin routes require admin authentication
   const authResult = await requireAdmin(request);
   if (authResult instanceof Response) return authResult;
+
+  // GET /api/admin/users/pending - List users awaiting approval
+  if (path === '/api/admin/users/pending' && request.method === 'GET') {
+    try {
+      const users = await env.DB.prepare(`
+        SELECT 
+          u.id, 
+          u.email, 
+          u.role, 
+          u.created_at, 
+          u.kyc_status,
+          u.account_status
+        FROM users u 
+        WHERE u.account_status = 'pending'
+        ORDER BY u.created_at DESC
+      `).all();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: users.results
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      console.error('Admin pending users error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to fetch pending users'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // POST /api/admin/users/:id/approve - Approve a pending user's account
+  const approveUserMatch = path.match(/^\/api\/admin\/users\/(\d+)\/approve$/);
+  if (approveUserMatch && request.method === 'POST') {
+    const userId = parseInt(approveUserMatch[1]);
+    
+    try {
+      // Get user details first
+      const user = await env.DB.prepare(
+        'SELECT id, email, account_status FROM users WHERE id = ?'
+      ).bind(userId).first<{ id: number; email: string; account_status: string }>();
+
+      if (!user) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'User not found'
+        }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      if (user.account_status === 'approved') {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'User is already approved'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      // Update account status to approved
+      const timestamp = Math.floor(Date.now() / 1000);
+      await env.DB.prepare(
+        'UPDATE users SET account_status = ?, updated_at = ? WHERE id = ?'
+      ).bind('approved', timestamp, userId).run();
+
+      // Send approval email in background
+      ctx.waitUntil(
+        sendApprovalEmail(user.email).catch(err =>
+          console.error('Failed to send approval email:', err)
+        )
+      );
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        message: 'User approved successfully',
+        data: { userId, email: user.email }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      console.error('Approve user error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to approve user'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
 
   // GET /api/admin/deposits/pending - List pending deposits
   if (path === '/api/admin/deposits/pending' && request.method === 'GET') {
@@ -74,6 +178,7 @@ export async function handleAdminRoutes(request: Request, env: Env, path: string
           u.role, 
           u.created_at, 
           u.kyc_status,
+          u.account_status,
           COALESCE(w.available_balance, 0) as balance,
           (SELECT MAX(created_at) FROM user_sessions WHERE user_id = u.id) as last_login
         FROM users u 
@@ -171,7 +276,7 @@ export async function handleAdminRoutes(request: Request, env: Env, path: string
     try {
       // Get user details
       const user = await env.DB.prepare(
-        'SELECT id, email, role, created_at, kyc_status, referral_code FROM users WHERE id = ?'
+        'SELECT id, email, role, created_at, kyc_status, account_status, referral_code FROM users WHERE id = ?'
       ).bind(userId).first();
 
       if (!user) {

@@ -5,9 +5,10 @@
  * Uses Web Crypto API available in Cloudflare Workers.
  */
 
-import { Env, User, AuthResponse } from '../types';
-import { sendWelcomeEmail } from './emailService';
+import { Env, User, AuthResponse, AccountStatus } from '../types';
+import { sendWelcomeEmail, sendRequestReceivedEmail } from './emailService';
 import { notifyLogin } from './notificationService';
+import { validateInviteCode, useInviteCode } from './inviteCodeService';
 
 // Validation constants
 const MAX_EMAIL_LENGTH = 255;
@@ -218,17 +219,24 @@ export async function registerUser(
       return { status: 'error', error: 'Email already registered' };
     }
     
-    // Find referrer if code provided
-    let referrerId: number | null = null;
-    if (referralCode) {
-      const referrer = await env.DB.prepare(
-        'SELECT id FROM users WHERE referral_code = ?'
-      ).bind(referralCode).first<{ id: number }>();
-      
-      if (referrer) {
-        referrerId = referrer.id;
+    // Validate invite code if provided (INV-XXXXXXXX format)
+    // This is different from referral codes (user-to-user sharing)
+    let hasValidInviteCode = false;
+    let inviteCodeCreatorId: number | null = null;
+    
+    if (referralCode && referralCode.startsWith('INV-')) {
+      // It's an admin/user-generated invite code
+      const inviteValidation = await validateInviteCode(env, referralCode);
+      if (inviteValidation.status === 'success' && inviteValidation.data) {
+        hasValidInviteCode = true;
+        inviteCodeCreatorId = inviteValidation.data.creatorId;
+      } else {
+        return { status: 'error', error: inviteValidation.error || 'Invalid invite code' };
       }
     }
+    
+    // Determine account status based on invite code
+    const accountStatus: AccountStatus = hasValidInviteCode ? 'approved' : 'pending';
     
     // Hash password
     const passwordHash = await hashPassword(password);
@@ -247,13 +255,13 @@ export async function registerUser(
       }
     }
     
-    // Create user
+    // Create user with appropriate account_status
     const timestamp = Math.floor(Date.now() / 1000);
     const result = await env.DB.prepare(
-      `INSERT INTO users (email, password_hash, role, kyc_status, referrer_id, referral_code, created_at, updated_at)
-       VALUES (?, ?, 'user', 'pending', ?, ?, ?, ?)
-       RETURNING id, email, role, kyc_status, referral_code, created_at`
-    ).bind(normalizedEmail, passwordHash, referrerId, userReferralCode, timestamp, timestamp).first<User>();
+      `INSERT INTO users (email, password_hash, role, kyc_status, account_status, referrer_id, referral_code, created_at, updated_at)
+       VALUES (?, ?, 'user', 'pending', ?, ?, ?, ?, ?)
+       RETURNING id, email, role, kyc_status, account_status, referral_code, created_at`
+    ).bind(normalizedEmail, passwordHash, accountStatus, inviteCodeCreatorId, userReferralCode, timestamp, timestamp).first<User>();
     
     if (!result) {
       return { status: 'error', error: 'Failed to create user' };
@@ -271,24 +279,16 @@ export async function registerUser(
        VALUES (?, 0, 0, 0, 0, 0, ?)`
     ).bind(result.id, timestamp).run();
     
-    // If user was referred, create referral relationships
-    if (referrerId) {
-      await createReferralChain(env, referrerId, result.id);
-      // Send welcome email immediately
-      await sendWelcomeEmail(result.email);
-    } else {
-      // No referral code -> Waitlist
-      // Schedule email for 4 hours later
-      const delaySeconds = 4 * 60 * 60;
-      const scheduledAt = Math.floor(Date.now() / 1000) + delaySeconds;
-      
-      await env.DB.prepare(
-        `INSERT INTO email_queue (email, template_alias, status, scheduled_at, created_at, updated_at)
-         VALUES (?, 'welcome', 'pending', ?, ?, ?)`
-      ).bind(result.email, scheduledAt, timestamp, timestamp).run();
+    // If user had valid invite code, mark it as used and create referral chain
+    if (hasValidInviteCode && referralCode) {
+      await useInviteCode(env, referralCode, result.id);
+      // Create referral relationship with invite code creator
+      if (inviteCodeCreatorId) {
+        await createReferralChain(env, inviteCodeCreatorId, result.id);
+      }
     }
     
-    // Generate JWT
+    // Generate JWT (but pending users won't be able to use it for protected routes)
     const token = await generateJWT(result.id, result.email, result.role);
     
     return {
@@ -299,13 +299,14 @@ export async function registerUser(
           email: result.email,
           role: result.role,
           kyc_status: result.kyc_status,
-          referrer_id: referrerId,
+          account_status: accountStatus,
+          referrer_id: inviteCodeCreatorId,
           referral_code: result.referral_code,
           created_at: result.created_at,
           updated_at: result.created_at,
         },
         token,
-        waitlisted: !referrerId,
+        waitlisted: !hasValidInviteCode,
       },
     };
   } catch (error) {
@@ -366,6 +367,14 @@ export async function loginUser(
     
     if (!user) {
       return { status: 'error', error: 'Invalid email or password' };
+    }
+    
+    // Check if account is pending approval
+    if (user.account_status === 'pending') {
+      return { 
+        status: 'error', 
+        error: 'Your account is pending approval. We\'ll notify you via email once your access has been granted.' 
+      };
     }
     
     // Verify password

@@ -7,11 +7,18 @@
 import { Env } from '../types';
 import { registerUser, loginUser } from '../services/authService';
 import { requireAuth } from '../middleware/auth';
+import { sendWelcomeEmail, sendRequestReceivedEmail } from '../services/emailService';
 
 /**
  * Handle authentication routes
+ * @param ctx - ExecutionContext for background tasks (emails via waitUntil)
  */
-export async function handleAuthRoutes(request: Request, env: Env, path: string): Promise<Response> {
+export async function handleAuthRoutes(
+  request: Request, 
+  env: Env, 
+  path: string,
+  ctx: ExecutionContext
+): Promise<Response> {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -34,6 +41,25 @@ export async function handleAuthRoutes(request: Request, env: Env, path: string)
       }
       
       const result = await registerUser(env, body.email, body.password, body.referralCode);
+      
+      // Send appropriate email immediately in background (non-blocking)
+      if (result.status === 'success' && result.data) {
+        if (result.data.waitlisted) {
+          // Pending approval - send "request received" email
+          ctx.waitUntil(
+            sendRequestReceivedEmail(result.data.user.email).catch(err => 
+              console.error('Failed to send request received email:', err)
+            )
+          );
+        } else {
+          // Approved via invite code - send welcome email
+          ctx.waitUntil(
+            sendWelcomeEmail(result.data.user.email).catch(err => 
+              console.error('Failed to send welcome email:', err)
+            )
+          );
+        }
+      }
       
       return new Response(JSON.stringify(result), {
         status: result.status === 'success' ? 201 : 400,

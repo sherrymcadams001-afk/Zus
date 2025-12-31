@@ -111,8 +111,8 @@ export const CapWheelLogin = () => {
         
         if (response.status === 'success' && response.data) {
           if (response.data.waitlisted) {
-            // User is on waitlist (no invite code)
-            setSuccess('You have been added to our waitlist. Check your email in 4 hours for access.');
+            // User requires admin approval (no invite code)
+            setSuccess('Your access request has been submitted successfully. Please check your email for confirmation. Our team will review your application and notify you once approved.');
           } else {
             // User has valid invite code - log them in directly
             setAuth(response.data.user, response.data.token);
@@ -124,7 +124,7 @@ export const CapWheelLogin = () => {
               desk: 'Volatility Harvesting',
               permissions: ['trade', 'view_positions', 'manage_risk'],
             });
-            navigate('/dashboard');
+            navigate('/capwheel/dashboard');
           }
         } else {
           setError(response.error ?? 'Registration failed');
@@ -452,7 +452,7 @@ export const CapWheelLogin = () => {
                         className="w-full h-12 px-4 bg-[#0a0f1a] border border-slate-700/80 rounded-lg text-white text-[15px] placeholder-slate-500 
                                  focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 
                                  transition-all duration-200"
-                        placeholder="CW-XXXX-XXXX"
+                        placeholder="INV-XXXXXXXX"
                       />
                     </motion.div>
                   )}

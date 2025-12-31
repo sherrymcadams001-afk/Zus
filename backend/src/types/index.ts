@@ -36,12 +36,15 @@ export interface BotTierConfig {
 // Users & Authentication
 // ============================================
 
+export type AccountStatus = 'pending' | 'approved';
+
 export interface User {
   id: number;
   email: string;
   password_hash: string;
   role: 'user' | 'admin';
   kyc_status: 'pending' | 'approved' | 'rejected';
+  account_status: AccountStatus;
   referrer_id: number | null;
   referral_code: string;
   created_at: number;
