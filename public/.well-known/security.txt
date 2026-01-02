@@ -1,0 +1,14 @@
+# CapWheel Security Policy
+# https://capwheel.io/.well-known/security.txt
+
+Contact: mailto:security@capwheel.io
+Expires: 2027-01-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://capwheel.io/.well-known/security.txt
+
+# Acknowledgments
+# We appreciate responsible disclosure of security vulnerabilities.
+
+# Policy
+# Please report any security issues responsibly.
+# We aim to respond to all reports within 48 hours.

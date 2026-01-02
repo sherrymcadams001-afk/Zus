@@ -1,1 +1,11 @@
+# Static assets should be served directly
+/robots.txt         /robots.txt         200
+/sitemap.xml        /sitemap.xml        200
+/manifest.json      /manifest.json      200
+/humans.txt         /humans.txt         200
+/logo.svg           /logo.svg           200
+/og-image.png       /og-image.png       200
+/.well-known/*      /.well-known/:splat 200
+
+# SPA fallback for client-side routing
 /*    /index.html   200

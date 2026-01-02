@@ -1,15 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
+                            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  
+  <!-- Homepage - Highest Priority -->
   <url>
     <loc>https://capwheel.io/</loc>
-    <lastmod>2025-12-31</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://capwheel.io/og-image.png</image:loc>
+      <image:title>CapWheel - Institutional Capital Management Platform</image:title>
+      <image:caption>Enterprise-grade trading and portfolio management platform</image:caption>
+    </image:image>
   </url>
+  
+  <!-- CapWheel Main Entry -->
+  <url>
+    <loc>https://capwheel.io/capwheel</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Login Page -->
   <url>
     <loc>https://capwheel.io/capwheel/login</loc>
-    <lastmod>2025-12-31</lastmod>
+    <lastmod>2026-01-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  
+  <!-- Dashboard (for logged-in users, still indexable) -->
+  <url>
+    <loc>https://capwheel.io/capwheel/dashboard</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Trading Interface -->
+  <url>
+    <loc>https://capwheel.io/capwheel/trading</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Strategy Pools -->
+  <url>
+    <loc>https://capwheel.io/capwheel/pools</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Asset Protocol -->
+  <url>
+    <loc>https://capwheel.io/capwheel/assets</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Partner Network -->
+  <url>
+    <loc>https://capwheel.io/capwheel/partners</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <!-- Profile Page -->
+  <url>
+    <loc>https://capwheel.io/capwheel/profile</loc>
+    <lastmod>2026-01-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  
 </urlset>

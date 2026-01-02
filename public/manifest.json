@@ -1,0 +1,21 @@
+{
+  "name": "CapWheel - Institutional Capital Management",
+  "short_name": "CapWheel",
+  "description": "Enterprise-grade capital management platform with automated trading strategies and yield optimization.",
+  "start_url": "/capwheel",
+  "display": "standalone",
+  "background_color": "#0B1015",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
