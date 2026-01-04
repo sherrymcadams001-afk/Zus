@@ -61,33 +61,33 @@ export async function getReferralNetwork(env: Env, userId: number): Promise<Refe
 
 /**
  * Calculate total partner volume (sum of all referral investments across all levels)
+ * Uses a single CTE query to avoid N+1 pattern.
  */
 export async function getPartnerVolume(env: Env, userId: number): Promise<number> {
-  // Get all referred user IDs
-  const referrals = await getReferralNetwork(env, userId);
+  const result = await env.DB.prepare(`
+    WITH network AS (
+      SELECT referred_id
+      FROM referrals
+      WHERE referrer_id = ?
+    ),
+    deposits AS (
+      SELECT COALESCE(SUM(amount), 0) AS total
+      FROM transactions
+      WHERE type = 'deposit'
+        AND status = 'completed'
+        AND user_id IN (SELECT referred_id FROM network)
+    ),
+    stakes AS (
+      SELECT COALESCE(SUM(amount), 0) AS total
+      FROM pool_stakes
+      WHERE status = 'active'
+        AND user_id IN (SELECT referred_id FROM network)
+    )
+    SELECT 
+      (SELECT total FROM deposits) + (SELECT total FROM stakes) AS total_volume
+  `).bind(userId).first<{ total_volume: number }>();
   
-  if (referrals.length === 0) {
-    return 0;
-  }
-  
-  const referredIds = referrals.map(r => r.referred_id);
-  
-  // Sum their total investments (deposits + active stakes)
-  const placeholders = referredIds.map(() => '?').join(',');
-  
-  // Sum of deposits
-  const deposits = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
-     WHERE user_id IN (${placeholders}) AND type = 'deposit' AND status = 'completed'`
-  ).bind(...referredIds).first<{ total: number }>();
-  
-  // Sum of active stakes
-  const stakes = await env.DB.prepare(
-    `SELECT COALESCE(SUM(amount), 0) as total FROM pool_stakes 
-     WHERE user_id IN (${placeholders}) AND status = 'active'`
-  ).bind(...referredIds).first<{ total: number }>();
-  
-  return (deposits?.total ?? 0) + (stakes?.total ?? 0);
+  return result?.total_volume ?? 0;
 }
 
 /**

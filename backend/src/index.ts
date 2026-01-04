@@ -43,11 +43,11 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Edge rate limiting (Cache API; free-tier compatible)
+  // Edge rate limiting (KV-backed; persistent across cold starts)
   // Exempt health + webhooks to avoid breaking upstream delivery.
   if (url.pathname !== '/health' && url.pathname !== '/api/webhook/nowpayments') {
     const isAuthEndpoint = url.pathname === '/api/auth/login' || url.pathname === '/api/auth/register' || url.pathname === '/api/invite-codes/validate';
-    const limited = await enforceRateLimit(request, {
+    const limited = await enforceRateLimit(request, env, {
       windowSeconds: 60,
       maxRequests: isAuthEndpoint ? 20 : 120,
       keyPrefix: isAuthEndpoint ? 'auth' : 'api',

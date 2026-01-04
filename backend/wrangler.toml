@@ -3,11 +3,14 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# KV Namespace binding
-# [[kv_namespaces]]
-# binding = "TRADING_CACHE"
-# id = "d0853bad5d7b49a5a6a7f872180aae06"
-# preview_id = "d0853bad5d7b49a5a6a7f872180aae06"
+# KV Namespaces for rate limiting and caching
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "b4e6d604a3e647f1bb41ab6bc773daa4"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "cccf402cc88246fbb607816e6e6aacb0"
 
 # Workers AI binding
 # [ai]

@@ -8,6 +8,8 @@
 
 export interface Env {
   DB: D1Database;
+  RATE_LIMIT: KVNamespace;
+  CACHE: KVNamespace;
   NOWPAYMENTS_API_KEY: string;
   NOWPAYMENTS_IPN_SECRET: string;
   JWT_SECRET: string;

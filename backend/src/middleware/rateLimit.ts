@@ -1,10 +1,9 @@
 /**
- * Rate Limiting Middleware
+ * Rate Limiting Middleware (KV-backed)
  * 
- * Edge-based rate limiting using in-memory Map with sliding window.
- * For production at scale, migrate to KV-backed implementation.
- * 
- * Limits: 100 requests per minute per IP (configurable)
+ * Persistent rate limiting using Cloudflare KV.
+ * Survives cold starts and works across isolates.
+ * Falls back to in-memory if KV unavailable.
  */
 
 import type { Env } from '../types';
@@ -14,15 +13,11 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
-// In-memory store (resets on cold start - acceptable for free tier)
+// In-memory fallback store
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Configuration
-const WINDOW_MS = 60_000; // 1 minute
-const MAX_REQUESTS = 100; // requests per window
-const CLEANUP_INTERVAL = 300_000; // Clean expired entries every 5 minutes
-
-let lastCleanup = Date.now();
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 100;
 
 /**
  * Extract client IP from request headers
@@ -37,83 +32,32 @@ function getClientIP(request: Request): string {
 }
 
 /**
- * Cleanup expired entries to prevent memory bloat
+ * Build rate limit response
  */
-function cleanupExpiredEntries(): void {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  
-  lastCleanup = now;
-  for (const [key, entry] of rateLimitStore) {
-    if (entry.resetAt < now) {
-      rateLimitStore.delete(key);
-    }
-  }
+function buildRateLimitResponse(retryAfter: number, maxRequests: number, resetAt: number): Response {
+  return new Response(JSON.stringify({
+    status: 'error',
+    error: 'Too many requests. Please try again later.',
+    retryAfter,
+  }), {
+    status: 429,
+    headers: {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+      'X-RateLimit-Limit': String(maxRequests),
+      'X-RateLimit-Remaining': '0',
+      'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+    },
+  });
 }
 
 /**
- * Rate limit check - returns null if allowed, Response if blocked
- */
-export function checkRateLimit(
-  request: Request,
-  _env: Env,
-  options?: { maxRequests?: number; windowMs?: number }
-): Response | null {
-  const maxRequests = options?.maxRequests ?? MAX_REQUESTS;
-  const windowMs = options?.windowMs ?? WINDOW_MS;
-  
-  const ip = getClientIP(request);
-  const now = Date.now();
-  
-  // Periodic cleanup
-  cleanupExpiredEntries();
-  
-  const entry = rateLimitStore.get(ip);
-  
-  if (!entry || entry.resetAt < now) {
-    // New window
-    rateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
-    return null; // Allowed
-  }
-  
-  if (entry.count >= maxRequests) {
-    // Rate limited
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    return new Response(JSON.stringify({
-      status: 'error',
-      error: 'Too many requests. Please try again later.',
-      retryAfter,
-    }), {
-      status: 429,
-      headers: {
-        'Content-Type': 'application/json',
-        'Retry-After': String(retryAfter),
-        'X-RateLimit-Limit': String(maxRequests),
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': String(Math.ceil(entry.resetAt / 1000)),
-      },
-    });
-  }
-  
-  // Increment and allow
-  entry.count++;
-  return null; // Allowed
-}
-
-/**
- * Stricter rate limit for auth endpoints (prevent brute force)
- * 10 requests per minute per IP
- */
-export function checkAuthRateLimit(request: Request, env: Env): Response | null {
-  return checkRateLimit(request, env, { maxRequests: 10, windowMs: 60_000 });
-}
-
-/**
- * Enforce rate limit - async signature matching index.ts usage
- * Returns Response if rate limited, null if allowed
+ * KV-backed rate limit enforcement
+ * Persistent across cold starts and isolates
  */
 export async function enforceRateLimit(
   request: Request,
+  env: Env,
   options: { windowSeconds?: number; maxRequests?: number; keyPrefix?: string }
 ): Promise<Response | null> {
   const windowMs = (options.windowSeconds ?? 60) * 1000;
@@ -121,35 +65,52 @@ export async function enforceRateLimit(
   const keyPrefix = options.keyPrefix ?? 'global';
   
   const ip = getClientIP(request);
-  const key = `${keyPrefix}:${ip}`;
+  const key = `rl:${keyPrefix}:${ip}`;
   const now = Date.now();
   
-  // Periodic cleanup
-  cleanupExpiredEntries();
+  // Use KV if available
+  if (env.RATE_LIMIT) {
+    try {
+      const cached = await env.RATE_LIMIT.get(key, 'json') as RateLimitEntry | null;
+      
+      if (!cached || cached.resetAt < now) {
+        // New window
+        const entry: RateLimitEntry = { count: 1, resetAt: now + windowMs };
+        await env.RATE_LIMIT.put(key, JSON.stringify(entry), {
+          expirationTtl: Math.ceil(windowMs / 1000) + 60
+        });
+        return null;
+      }
+      
+      if (cached.count >= maxRequests) {
+        const retryAfter = Math.ceil((cached.resetAt - now) / 1000);
+        return buildRateLimitResponse(retryAfter, maxRequests, cached.resetAt);
+      }
+      
+      // Increment count
+      const updated: RateLimitEntry = { count: cached.count + 1, resetAt: cached.resetAt };
+      await env.RATE_LIMIT.put(key, JSON.stringify(updated), {
+        expirationTtl: Math.ceil((cached.resetAt - now) / 1000) + 60
+      });
+      return null;
+    } catch (e) {
+      console.error('KV rate limit error, falling back to memory:', e);
+      // Fall through to in-memory
+    }
+  }
   
-  const entry = rateLimitStore.get(key);
+  // In-memory fallback
+  const memKey = key;
+  const entry = rateLimitStore.get(memKey);
   
   if (!entry || entry.resetAt < now) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    rateLimitStore.set(memKey, { count: 1, resetAt: now + windowMs });
     return null;
   }
   
   if (entry.count >= maxRequests) {
     const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    return new Response(JSON.stringify({
-      status: 'error',
-      error: 'Too many requests. Please try again later.',
-      retryAfter,
-    }), {
-      status: 429,
-      headers: {
-        'Content-Type': 'application/json',
-        'Retry-After': String(retryAfter),
-        'X-RateLimit-Limit': String(maxRequests),
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': String(Math.ceil(entry.resetAt / 1000)),
-      },
-    });
+    return buildRateLimitResponse(retryAfter, maxRequests, entry.resetAt);
   }
   
   entry.count++;
@@ -157,26 +118,12 @@ export async function enforceRateLimit(
 }
 
 /**
- * Add rate limit headers to response
+ * Legacy sync functions - deprecated, use enforceRateLimit
  */
-export function addRateLimitHeaders(
-  response: Response,
-  request: Request,
-  maxRequests = MAX_REQUESTS
-): Response {
-  const ip = getClientIP(request);
-  const entry = rateLimitStore.get(ip);
-  
-  if (!entry) return response;
-  
-  const headers = new Headers(response.headers);
-  headers.set('X-RateLimit-Limit', String(maxRequests));
-  headers.set('X-RateLimit-Remaining', String(Math.max(0, maxRequests - entry.count)));
-  headers.set('X-RateLimit-Reset', String(Math.ceil(entry.resetAt / 1000)));
-  
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+export function checkRateLimit(_request: Request, _env: Env): Response | null {
+  return null;
+}
+
+export function checkAuthRateLimit(_request: Request, _env: Env): Response | null {
+  return null;
 }
