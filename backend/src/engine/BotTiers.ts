@@ -10,11 +10,11 @@ import { BotTier, BotTierConfig } from '../types';
 /**
  * Bot tier configurations
  * All ROI rates, staking requirements, and withdrawal rules
- * Kinetic Strategy Naming: Delta < Gamma < Alpha < Omega
+ * Strategy Naming: Anchor < Vector < Kinetic < Horizon
  */
 export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
-  delta: {
-    name: 'Kinetic Delta',
+  anchor: {
+    name: 'Anchor',
     hourlyRoiMin: 0.001,    // 0.1%
     hourlyRoiMax: 0.0012,   // 0.12%
     dailyRoiMin: 0.008,     // 0.8% (8 hours × 0.1%)
@@ -26,8 +26,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 40,
     investmentDurationDays: 365,
   },
-  gamma: {
-    name: 'Kinetic Gamma',
+  vector: {
+    name: 'Vector',
     hourlyRoiMin: 0.0012,   // 0.12%
     hourlyRoiMax: 0.0014,   // 0.14%
     dailyRoiMin: 0.0096,    // 0.96% (8 hours × 0.12%)
@@ -39,8 +39,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 45,
     investmentDurationDays: 365,
   },
-  alpha: {
-    name: 'Kinetic Alpha',
+  kinetic: {
+    name: 'Kinetic',
     hourlyRoiMin: 0.0014,   // 0.14%
     hourlyRoiMax: 0.0016,   // 0.16%
     dailyRoiMin: 0.0112,    // 1.12% (8 hours × 0.14%)
@@ -52,8 +52,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 65,
     investmentDurationDays: 365,
   },
-  omega: {
-    name: 'Kinetic Omega',
+  horizon: {
+    name: 'Horizon',
     hourlyRoiMin: 0.00225,  // 0.225% per hour (1.8% / 8)
     hourlyRoiMax: 0.00225,  // Fixed rate
     dailyRoiMin: 0.018,     // 1.8% fixed
@@ -70,17 +70,17 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
 /**
  * Valid bot tier identifiers
  */
-export const VALID_BOT_TIERS: BotTier[] = ['delta', 'gamma', 'alpha', 'omega'];
+export const VALID_BOT_TIERS: BotTier[] = ['anchor', 'vector', 'kinetic', 'horizon'];
 
 /**
  * Get the appropriate bot tier based on stake amount
  * Returns the highest tier the stake qualifies for
  */
 export function getBotTierForStake(stakeAmount: number): BotTier {
-  if (stakeAmount >= BOT_TIERS.omega.minimumStake) return 'omega';
-  if (stakeAmount >= BOT_TIERS.alpha.minimumStake) return 'alpha';
-  if (stakeAmount >= BOT_TIERS.gamma.minimumStake) return 'gamma';
-  return 'delta';
+  if (stakeAmount >= BOT_TIERS.horizon.minimumStake) return 'horizon';
+  if (stakeAmount >= BOT_TIERS.kinetic.minimumStake) return 'kinetic';
+  if (stakeAmount >= BOT_TIERS.vector.minimumStake) return 'vector';
+  return 'anchor';
 }
 
 /**

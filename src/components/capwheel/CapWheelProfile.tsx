@@ -52,7 +52,7 @@ interface InviteStats {
 export const CapWheelProfile = () => {
   const { user } = useAuthStore();
   const { currentTier } = usePortfolioStore();
-  const strategy = getStrategyById(currentTier || 'delta');
+  const strategy = getStrategyById(currentTier || 'anchor');
   
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

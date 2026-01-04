@@ -62,7 +62,7 @@ export interface TradeData {
   created_at: number;
 }
 
-export type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
+export type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 
 // Bot tier configurations (mirrored from backend/src/engine/BotTiers.ts)
 export const BOT_TIERS: Record<BotTier, {
@@ -76,8 +76,8 @@ export const BOT_TIERS: Record<BotTier, {
   tradingDaysPerWeek: number;
   capitalWithdrawalDays: number;
 }> = {
-  protobot: {
-    name: 'Protobot',
+  anchor: {
+    name: 'Anchor',
     hourlyRoiMin: 0.001,
     hourlyRoiMax: 0.0012,
     dailyRoiMin: 0.008,
@@ -87,8 +87,8 @@ export const BOT_TIERS: Record<BotTier, {
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 40,
   },
-  chainpulse: {
-    name: 'Chainpulse Bot',
+  vector: {
+    name: 'Vector',
     hourlyRoiMin: 0.0012,
     hourlyRoiMax: 0.0014,
     dailyRoiMin: 0.0096,
@@ -98,8 +98,8 @@ export const BOT_TIERS: Record<BotTier, {
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 45,
   },
-  titan: {
-    name: 'Titan Bot',
+  kinetic: {
+    name: 'Kinetic',
     hourlyRoiMin: 0.0014,
     hourlyRoiMax: 0.0016,
     dailyRoiMin: 0.0112,
@@ -109,8 +109,8 @@ export const BOT_TIERS: Record<BotTier, {
     tradingDaysPerWeek: 6,
     capitalWithdrawalDays: 65,
   },
-  omega: {
-    name: 'Omega Bot',
+  horizon: {
+    name: 'Horizon',
     hourlyRoiMin: 0.00225,
     hourlyRoiMax: 0.00225,
     dailyRoiMin: 0.018,
@@ -160,10 +160,10 @@ export interface DashboardData {
  * Determine bot tier based on total staked amount
  */
 export function getBotTierForAmount(amount: number): BotTier {
-  if (amount >= BOT_TIERS.omega.minimumStake) return 'omega';
-  if (amount >= BOT_TIERS.titan.minimumStake) return 'titan';
-  if (amount >= BOT_TIERS.chainpulse.minimumStake) return 'chainpulse';
-  return 'protobot';
+  if (amount >= BOT_TIERS.horizon.minimumStake) return 'horizon';
+  if (amount >= BOT_TIERS.kinetic.minimumStake) return 'kinetic';
+  if (amount >= BOT_TIERS.vector.minimumStake) return 'vector';
+  return 'anchor';
 }
 
 /**
@@ -444,7 +444,7 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
  * Uses minimum tier values for projections
  */
 export function getDefaultDashboardData(): DashboardData {
-  const tier: BotTier = 'protobot';
+  const tier: BotTier = 'anchor';
   const config = BOT_TIERS[tier];
   
   return {

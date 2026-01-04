@@ -19,7 +19,7 @@ type MarketVolatility = 'low' | 'medium' | 'high';
 type BotMode = 'smart' | 'dumb' | 'recovering';
 
 /** Bot tier types for multi-tier trading system */
-export type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
+export type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 
 /** Bot tier configuration */
 export interface BotTierConfig {
@@ -38,8 +38,8 @@ export interface BotTierConfig {
 
 /** Bot tier configurations - mirroring backend */
 export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
-  protobot: {
-    name: 'Protobot',
+  anchor: {
+    name: 'Anchor',
     hourlyRoiMin: 0.001,
     hourlyRoiMax: 0.0012,
     dailyRoiMin: 0.008,
@@ -51,8 +51,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 40,
     investmentDurationDays: 365,
   },
-  chainpulse: {
-    name: 'Chainpulse Bot',
+  vector: {
+    name: 'Vector',
     hourlyRoiMin: 0.0012,
     hourlyRoiMax: 0.0014,
     dailyRoiMin: 0.0096,
@@ -64,8 +64,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 45,
     investmentDurationDays: 365,
   },
-  titan: {
-    name: 'Titan Bot',
+  kinetic: {
+    name: 'Kinetic',
     hourlyRoiMin: 0.0014,
     hourlyRoiMax: 0.0016,
     dailyRoiMin: 0.0112,
@@ -77,8 +77,8 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
     capitalWithdrawalDays: 65,
     investmentDurationDays: 365,
   },
-  omega: {
-    name: 'Omega Bot',
+  horizon: {
+    name: 'Horizon',
     hourlyRoiMin: 0.00225,
     hourlyRoiMax: 0.00225,
     dailyRoiMin: 0.018,
@@ -94,10 +94,10 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
 
 /** Get bot tier based on stake amount */
 export function getBotTierForStake(stakeAmount: number): BotTier {
-  if (stakeAmount >= BOT_TIERS.omega.minimumStake) return 'omega';
-  if (stakeAmount >= BOT_TIERS.titan.minimumStake) return 'titan';
-  if (stakeAmount >= BOT_TIERS.chainpulse.minimumStake) return 'chainpulse';
-  return 'protobot';
+  if (stakeAmount >= BOT_TIERS.horizon.minimumStake) return 'horizon';
+  if (stakeAmount >= BOT_TIERS.kinetic.minimumStake) return 'kinetic';
+  if (stakeAmount >= BOT_TIERS.vector.minimumStake) return 'vector';
+  return 'anchor';
 }
 
 class PortfolioManager {

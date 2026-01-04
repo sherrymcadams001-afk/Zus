@@ -20,7 +20,7 @@ export interface Env {
 // Bot Tiers (Single Source of Truth)
 // ============================================
 
-export type BotTier = 'delta' | 'gamma' | 'alpha' | 'omega';
+export type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 
 export interface BotTierConfig {
   name: string;

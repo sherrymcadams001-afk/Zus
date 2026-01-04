@@ -25,9 +25,9 @@ import { Input } from '../ui/Input';
 import { apiClient } from '../../api/client';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
 
-// Strategy tier configuration - mapped from Kinetic tiers
+// Strategy tier configuration
 export interface StrategyConfig {
-  id: 'delta' | 'gamma' | 'alpha' | 'omega';
+  id: 'anchor' | 'vector' | 'kinetic' | 'horizon';
   name: string;
   tagline: string;
   color: string;
@@ -43,10 +43,10 @@ export interface StrategyConfig {
   isRestricted?: boolean;
 }
 
-export const KINETIC_STRATEGIES: StrategyConfig[] = [
+export const STRATEGY_POOLS: StrategyConfig[] = [
   {
-    id: 'delta',
-    name: 'KINETIC DELTA',
+    id: 'anchor',
+    name: 'ANCHOR',
     tagline: 'Conservative Growth',
     color: '#6B7FD7',
     bgGradient: 'from-[#6B7FD7]/10 to-transparent',
@@ -59,8 +59,8 @@ export const KINETIC_STRATEGIES: StrategyConfig[] = [
     features: ['Low risk entry', '0.8% - 0.96% daily', '40-day capital lock'],
   },
   {
-    id: 'gamma',
-    name: 'KINETIC GAMMA',
+    id: 'vector',
+    name: 'VECTOR',
     tagline: 'Balanced Momentum',
     color: '#00B8D4',
     bgGradient: 'from-[#00B8D4]/10 to-transparent',
@@ -73,8 +73,8 @@ export const KINETIC_STRATEGIES: StrategyConfig[] = [
     features: ['Optimized returns', '0.96% - 1.12% daily', '45-day capital lock'],
   },
   {
-    id: 'alpha',
-    name: 'KINETIC ALPHA',
+    id: 'kinetic',
+    name: 'KINETIC',
     tagline: 'Aggressive Performance',
     color: '#00FF9D',
     bgGradient: 'from-[#00FF9D]/15 to-transparent',
@@ -88,8 +88,8 @@ export const KINETIC_STRATEGIES: StrategyConfig[] = [
     isHighlighted: true,
   },
   {
-    id: 'omega',
-    name: 'KINETIC OMEGA',
+    id: 'horizon',
+    name: 'HORIZON',
     tagline: 'Elite Reserved',
     color: '#D4AF37',
     bgGradient: 'from-[#3A3A3A]/20 to-transparent',
@@ -106,8 +106,11 @@ export const KINETIC_STRATEGIES: StrategyConfig[] = [
 
 // Get strategy by ID
 export const getStrategyById = (id: string): StrategyConfig | undefined => {
-  return KINETIC_STRATEGIES.find(s => s.id === id);
+  return STRATEGY_POOLS.find(s => s.id === id);
 };
+
+// Legacy alias for backwards compatibility
+export const KINETIC_STRATEGIES = STRATEGY_POOLS;
 
 // Insignia component for profile/sidebar display
 export const StrategyInsignia = ({ 
@@ -202,7 +205,7 @@ const StrategyCard = ({
           </div>
         )}
 
-        {/* Restricted overlay for Omega */}
+        {/* Restricted overlay for Horizon */}
         {strategy.isRestricted && (
           <div className="absolute top-3 right-3">
             <Lock className="w-4 h-4 text-gray-500" />
@@ -488,7 +491,7 @@ const YieldProjectionEngine = () => {
 // Main Strategy Pools Component
 export const StrategyPools = () => {
   const { walletBalance, currentTier, setCurrentTier } = usePortfolioStore();
-  const [currentStrategy, setCurrentStrategy] = useState<string>('delta');
+  const [currentStrategy, setCurrentStrategy] = useState<string>('anchor');
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
 
@@ -497,17 +500,21 @@ export const StrategyPools = () => {
   // Load current strategy from store
   useEffect(() => {
     if (currentTier) {
-      // Map old tier names to new Kinetic names
+      // Map legacy tier names to new pool names
       const tierMap: Record<string, string> = {
-        protobot: 'delta',
-        chainpulse: 'gamma',
-        titan: 'alpha',
-        omega: 'omega',
-        delta: 'delta',
-        gamma: 'gamma',
-        alpha: 'alpha',
+        protobot: 'anchor',
+        chainpulse: 'vector',
+        titan: 'kinetic',
+        omega: 'horizon',
+        delta: 'anchor',
+        gamma: 'vector',
+        alpha: 'kinetic',
+        anchor: 'anchor',
+        vector: 'vector',
+        kinetic: 'kinetic',
+        horizon: 'horizon',
       };
-      const mapped = tierMap[currentTier] || 'delta';
+      const mapped = tierMap[currentTier] || 'anchor';
       setCurrentStrategy(mapped);
     }
   }, [currentTier]);

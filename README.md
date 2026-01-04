@@ -14,20 +14,20 @@ A production-ready trading simulation engine with multi-tier bot system and REST
 
 ## Features
 
-- **Multi-Tier Bot System**: Four bot tiers (Protobot, Chainpulse, Titan, Omega) with varying ROI rates
+- **Multi-Tier Strategy Pools**: Four strategy pools (Anchor, Vector, Kinetic, Horizon) with varying ROI rates
 - **AI-Powered Trading Logs**: Real-time trading activity generation using Workers AI
 - **User Balance Management**: REST API for managing user balances and tracking projected profits
 - **Real-Time Market Data**: WebSocket integration with Binance for live price feeds
 - **Professional Trading UI**: React-based dashboard with charts, watchlists, and activity feeds
 
-## Bot Tier Overview
+## Strategy Pool Overview
 
-| Tier | Minimum Stake | Daily ROI | Best For |
+| Pool | Minimum Stake | Daily ROI | Best For |
 |------|---------------|-----------|----------|
-| Protobot | $100 | 0.80% - 0.96% | Entry-level users |
-| Chainpulse | $4,000 | 0.96% - 1.12% | Serious investors |
-| Titan | $25,000 | 1.12% - 1.28% | High-net-worth investors |
-| Omega | $50,000 | 1.80% (fixed) | Institutional investors |
+| Anchor | $100 | 0.80% - 0.96% | Entry-level users |
+| Vector | $4,000 | 0.96% - 1.12% | Serious investors |
+| Kinetic | $25,000 | 1.12% - 1.28% | High-net-worth investors |
+| Horizon | $50,000 | 1.80% (fixed) | Institutional investors |
 
 ## Quick Start
 

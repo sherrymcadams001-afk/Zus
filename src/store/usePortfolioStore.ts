@@ -79,7 +79,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       // Fetch dashboard data and strategy in parallel
       const [dashboardResponse, strategyResponse] = await Promise.all([
         apiClient.get('/api/dashboard'),
-        apiClient.get('/api/profile/strategy').catch(() => ({ data: { tier: 'delta' } }))
+        apiClient.get('/api/profile/strategy').catch(() => ({ data: { tier: 'anchor' } }))
       ]);
       
       const { wallet, staking, transactions } = dashboardResponse.data;
@@ -87,7 +87,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       const walletBalance = wallet?.available_balance ?? 0;
       const stakedBalance = staking?.totalStaked ?? 0;
       const totalEquity = walletBalance + stakedBalance;
-      const currentTier = strategyResponse.data?.tier || 'delta';
+      const currentTier = strategyResponse.data?.tier || 'anchor';
       
       // Convert recent transactions to trades format
       const recentTrades: Trade[] = (transactions || []).slice(0, 20).map((tx: {

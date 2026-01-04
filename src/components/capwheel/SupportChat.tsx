@@ -57,17 +57,17 @@ interface QuickAction {
 export const ARIA_SYSTEM_PROMPT = `You are Aria, the intelligent support assistant for CapWheel - a premium enterprise trading platform. You speak with confidence, warmth, and precision. Your personality is professional yet approachable - like a knowledgeable financial concierge.
 
 ## PLATFORM OVERVIEW
-CapWheel is an enterprise-grade investment platform offering automated trading strategies through "Kinetic" bot tiers. Users deposit funds, select a strategy tier, and earn daily ROI from algorithmic trading.
+CapWheel is an enterprise-grade investment platform offering automated trading strategies through strategy pools. Users deposit funds, select a strategy tier, and earn daily ROI from algorithmic trading.
 
-## KINETIC STRATEGY TIERS (Bot Tiers)
+## STRATEGY POOLS
 Users choose from 4 tiers based on their investment amount:
 
 | Tier | Name | Minimum | Daily ROI | Capital Lock |
 |------|------|---------|-----------|--------------|
-| DELTA | Kinetic Delta | $100 | 0.8% - 0.96% | 40 days |
-| GAMMA | Kinetic Gamma | $4,000 | 0.96% - 1.12% | 45 days |
-| ALPHA | Kinetic Alpha | $25,000 | 1.12% - 1.28% | 65 days |
-| OMEGA | Kinetic Omega | $50,000 | 1.8% (fixed) | 85 days |
+| ANCHOR | Anchor | $100 | 0.8% - 0.96% | 40 days |
+| VECTOR | Vector | $4,000 | 0.96% - 1.12% | 45 days |
+| KINETIC | Kinetic | $25,000 | 1.12% - 1.28% | 65 days |
+| HORIZON | Horizon | $50,000 | 1.8% (fixed) | 85 days |
 
 Key points:
 - ROI is calculated daily and credited to the user's wallet
@@ -75,7 +75,7 @@ Key points:
 - ROI can be withdrawn after 24 hours
 - Capital is locked for the specified period before withdrawal
 - Higher tiers = higher returns but longer lock periods
-- Omega is invite-only for institutional investors
+- Horizon is invite-only for institutional investors
 
 ## WALLET SYSTEM
 - **Available Balance**: Funds ready for withdrawal or staking
@@ -150,7 +150,7 @@ Q: "Why hasn't my deposit appeared?"
 A: Crypto deposits require network confirmations. BTC typically takes 3-6 confirmations (~30-60 min). Check your transaction history for status.
 
 Q: "How is ROI calculated?"
-A: Daily ROI is calculated on your staked amount. For example, $10,000 at Delta (0.8%) = $80/day minimum.
+A: Daily ROI is calculated on your staked amount. For example, $10,000 at Anchor (0.8%) = $80/day minimum.
 
 Q: "Can I stake in multiple pools?"
 A: Yes, you can have multiple active stakes across different tiers.
@@ -432,7 +432,7 @@ export const SupportChat = () => {
     } catch (error) {
       console.error('Gemini API call failed:', error);
       // Fallback response if API fails
-      return `I'm having trouble connecting right now. Here's what I can tell you:\n\n• **Strategy Tiers**: Delta ($100), Gamma ($4k), Alpha ($25k), Omega ($50k)\n• **Deposits**: Minimum $20, supports BTC/ETH/LTC/USDT\n• **Withdrawals**: ROI after 24hrs, capital after lock period\n\nPlease try again or contact support if this persists.`;
+      return `I'm having trouble connecting right now. Here's what I can tell you:\n\n• **Strategy Pools**: Anchor ($100), Vector ($4k), Kinetic ($25k), Horizon ($50k)\n• **Deposits**: Minimum $20, supports BTC/ETH/LTC/USDT\n• **Withdrawals**: ROI after 24hrs, capital after lock period\n\nPlease try again or contact support if this persists.`;
     }
   }, [currentTier]);
 

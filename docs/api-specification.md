@@ -322,10 +322,10 @@ The system automatically selects the highest tier for which the user's balance q
 
 ```typescript
 function getBotTierForStake(stakeAmount: number): BotTier {
-  if (stakeAmount >= 50000) return 'omega';
-  if (stakeAmount >= 25000) return 'titan';
-  if (stakeAmount >= 4000) return 'chainpulse';
-  return 'protobot';
+  if (stakeAmount >= 50000) return 'horizon';
+  if (stakeAmount >= 25000) return 'kinetic';
+  if (stakeAmount >= 4000) return 'vector';
+  return 'anchor';
 }
 ```
 
@@ -959,7 +959,7 @@ interface UserBalance {
 #### BotTier
 
 ```typescript
-type BotTier = 'protobot' | 'chainpulse' | 'titan' | 'omega';
+type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 ```
 
 #### BotTierConfig

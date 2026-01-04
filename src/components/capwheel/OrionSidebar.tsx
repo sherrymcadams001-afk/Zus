@@ -122,7 +122,7 @@ export const OrionSidebar = () => {
   const [latency] = useState(() => Math.floor(Math.random() * 15) + 8);
   const user = useAuthStore((state) => state.user);
   const { currentTier } = usePortfolioStore();
-  const strategy = getStrategyById(currentTier || 'delta');
+  const strategy = getStrategyById(currentTier || 'anchor');
 
   return (
     <aside className="w-64 h-screen bg-[#0B1015] border-r border-white/5 flex flex-col">

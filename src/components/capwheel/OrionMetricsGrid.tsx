@@ -95,9 +95,9 @@ export const OrionMetricsGrid = () => {
       icon: <ArrowUpRight className="w-3 h-3" />,
     },
     {
-      title: "ROI",
-      value: `${data.netYieldPercent.toFixed(2)}%`,
-      subValue: `${data.currentTier.toUpperCase()} daily rate`,
+      title: "Daily ROI",
+      value: formatCurrency(data.dailyEarnings),
+      subValue: `${data.netYieldPercent.toFixed(2)}% • ${data.currentTier.charAt(0).toUpperCase() + data.currentTier.slice(1)} tier`,
       subValueColor: "green" as const,
       icon: <Percent className="w-3 h-3" />,
     },
