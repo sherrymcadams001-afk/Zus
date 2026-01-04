@@ -26,7 +26,7 @@ export async function handleAdminRoutes(
   };
 
   // All admin routes require admin authentication
-  const authResult = await requireAdmin(request);
+  const authResult = await requireAdmin(request, env);
   if (authResult instanceof Response) return authResult;
 
   // GET /api/admin/users/pending - List users awaiting approval
@@ -102,7 +102,7 @@ export async function handleAdminRoutes(
 
       // Send approval email in background
       ctx.waitUntil(
-        sendApprovalEmail(user.email).catch(err =>
+        sendApprovalEmail(env, user.email).catch(err =>
           console.error('Failed to send approval email:', err)
         )
       );

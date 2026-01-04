@@ -86,14 +86,6 @@ export const OrionMetricsGrid = () => {
     }).format(value);
   };
 
-  // Determine ROI display color based on rate multiplier
-  const roiColor = data.rateMultiplier >= 1.1 ? "green" as const :
-                   data.rateMultiplier <= 0.9 ? "red" as const : "green" as const;
-  
-  // Format sentiment for display
-  const sentimentText = data.marketSentiment === 'bullish' ? '▲ Bullish' :
-                        data.marketSentiment === 'bearish' ? '▼ Bearish' : '◆ Neutral';
-
   const metrics = [
     {
       title: "AUM",
@@ -104,9 +96,9 @@ export const OrionMetricsGrid = () => {
     },
     {
       title: "ROI",
-      value: data.displayRate || `${data.netYieldPercent.toFixed(2)}%`,
-      subValue: `${sentimentText} · ${data.volatility} vol`,
-      subValueColor: roiColor,
+      value: `${data.netYieldPercent.toFixed(2)}%`,
+      subValue: `${data.currentTier.toUpperCase()} daily rate`,
+      subValueColor: "green" as const,
       icon: <Percent className="w-3 h-3" />,
     },
     {

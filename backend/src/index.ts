@@ -22,6 +22,7 @@ import { handleAdminRoutes } from './routes/admin';
 import { handleNowPaymentsWebhook } from './routes/nowpayments';
 import { handleInviteCodeRoutes } from './routes/inviteCodes';
 import { handleNotificationRoutes } from './routes/notifications';
+import { enforceRateLimit } from './middleware/rateLimit';
 
 /**
  * Handle HTTP requests
@@ -40,6 +41,23 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Edge rate limiting (Cache API; free-tier compatible)
+  // Exempt health + webhooks to avoid breaking upstream delivery.
+  if (url.pathname !== '/health' && url.pathname !== '/api/webhook/nowpayments') {
+    const isAuthEndpoint = url.pathname === '/api/auth/login' || url.pathname === '/api/auth/register' || url.pathname === '/api/invite-codes/validate';
+    const limited = await enforceRateLimit(request, {
+      windowSeconds: 60,
+      maxRequests: isAuthEndpoint ? 20 : 120,
+      keyPrefix: isAuthEndpoint ? 'auth' : 'api',
+    });
+    if (limited) {
+      limited.headers.set('Access-Control-Allow-Origin', corsHeaders['Access-Control-Allow-Origin']);
+      limited.headers.set('Access-Control-Allow-Methods', corsHeaders['Access-Control-Allow-Methods']);
+      limited.headers.set('Access-Control-Allow-Headers', corsHeaders['Access-Control-Allow-Headers']);
+      return limited;
+    }
   }
 
   // Auth routes (pass ctx for immediate email sending)

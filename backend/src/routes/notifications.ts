@@ -27,7 +27,7 @@ export async function handleNotificationRoutes(request: Request, env: Env, path:
   };
 
   // All notification routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
 
   const { user } = authResult;

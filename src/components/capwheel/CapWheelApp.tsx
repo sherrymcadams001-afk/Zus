@@ -2,7 +2,7 @@
  * CapWheel App Component
  * 
  * Main application wrapper with providers and routing
- * Includes Trading Agent integration and AI Support Chat
+ * Includes Trading Agent integration
  */
 
 import { useState } from 'react';
@@ -17,7 +17,6 @@ import { CapWheelProfile } from './CapWheelProfile';
 import { StrategyPools } from './StrategyPools';
 import { AssetProtocol } from './AssetProtocol';
 import { PartnerNetwork } from './PartnerNetwork';
-import { SupportChat } from './SupportChat';
 import TradingInterface from '../../pages/TradingInterface';
 import AdminPanel from '../../pages/AdminPanel';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
@@ -26,7 +25,7 @@ import { MobileBottomNav } from '../mobile/MobileBottomNav';
 
 // Branded loading screen
 const LoadingScreen = () => (
-  <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0B1015] gap-6">
+  <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0B1015] gap-6">
     <CapWheelLogo size={80} animate={true} />
     <div className="flex items-center gap-3">
       <div className="w-2 h-2 bg-[#00FF9D] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -78,7 +77,7 @@ const ProfileWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
+    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -127,7 +126,7 @@ const StrategyPoolsWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
+    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -161,7 +160,7 @@ const StrategyPoolsWrapper = () => {
           </button>
         </header>
         
-        <div className="flex-1 overflow-y-auto mobile-scroll">
+        <div className="flex-1 overflow-y-auto">
           <StrategyPools />
         </div>
         
@@ -178,7 +177,7 @@ const AssetProtocolWrapper = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
+    <div className="h-screen w-screen flex bg-[#0B1015] overflow-hidden">
       {/* Swipe detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -212,7 +211,7 @@ const AssetProtocolWrapper = () => {
           </button>
         </header>
         
-        <div className="flex-1 overflow-y-auto mobile-scroll">
+        <div className="flex-1 overflow-y-auto">
           <AssetProtocol />
         </div>
         
@@ -337,13 +336,9 @@ const CapWheelRoutes = () => {
 };
 
 export const CapWheelApp = () => {
-  const { isAuthenticated } = useAuthStore();
-  
   return (
     <CapWheelProvider>
       <CapWheelRoutes />
-      {/* AI Support Chat - visible on all authenticated pages */}
-      {isAuthenticated && <SupportChat />}
     </CapWheelProvider>
   );
 };

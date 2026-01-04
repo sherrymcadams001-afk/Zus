@@ -27,6 +27,3 @@ export { AssetProtocol } from './AssetProtocol';
 
 // Partner Network Page
 export { PartnerNetwork } from './PartnerNetwork';
-
-// AI Support Chat Widget
-export { SupportChat } from './SupportChat';

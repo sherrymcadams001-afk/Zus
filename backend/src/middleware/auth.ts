@@ -4,6 +4,7 @@
  * Validates JWT tokens and extracts user information from requests.
  */
 
+import type { Env } from '../types';
 import { verifyJWT } from '../services/authService';
 
 export interface AuthenticatedRequest extends Request {
@@ -31,20 +32,33 @@ function extractToken(request: Request): string | null {
  * Authenticate request
  * Validates JWT and attaches user info to request
  */
-export async function authenticate(request: Request): Promise<AuthenticatedRequest | Response> {
+export async function authenticateWithEnv(
+  request: Request,
+  env: Env
+): Promise<AuthenticatedRequest | Response> {
   const token = extractToken(request);
-  
+
   if (!token) {
-    return new Response(JSON.stringify({ 
-      status: 'error', 
-      error: 'Missing authentication token' 
+    return new Response(JSON.stringify({
+      status: 'error',
+      error: 'Missing authentication token'
     }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
   }
-  
-  const user = await verifyJWT(token);
+
+  if (!env.JWT_SECRET) {
+    return new Response(JSON.stringify({
+      status: 'error',
+      error: 'Server misconfiguration'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const user = await verifyJWT(token, env.JWT_SECRET);
   
   if (!user) {
     return new Response(JSON.stringify({ 
@@ -67,8 +81,11 @@ export async function authenticate(request: Request): Promise<AuthenticatedReque
  * Require authentication middleware
  * Returns error response if not authenticated
  */
-export async function requireAuth(request: Request): Promise<{ user: { userId: number; email: string; role: string }; request: Request } | Response> {
-  const result = await authenticate(request);
+export async function requireAuth(
+  request: Request,
+  env: Env
+): Promise<{ user: { userId: number; email: string; role: string }; request: Request } | Response> {
+  const result = await authenticateWithEnv(request, env);
   
   if (result instanceof Response) {
     return result; // Return error response

@@ -57,7 +57,7 @@ export async function handleInviteCodeRoutes(request: Request, env: Env, path: s
   }
 
   // All other invite code routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
 
   const { user } = authResult;

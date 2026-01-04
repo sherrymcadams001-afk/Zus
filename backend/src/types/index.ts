@@ -10,6 +10,8 @@ export interface Env {
   DB: D1Database;
   NOWPAYMENTS_API_KEY: string;
   NOWPAYMENTS_IPN_SECRET: string;
+  JWT_SECRET: string;
+  ZEPTOMAIL_API_KEY: string;
 }
 
 // ============================================

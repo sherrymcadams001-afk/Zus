@@ -97,26 +97,48 @@ export async function getVolumeByLevel(
   env: Env,
   userId: number
 ): Promise<Record<number, number>> {
-  const referrals = await getReferralNetwork(env, userId);
-  
   const volumeByLevel: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  
-  for (const referral of referrals) {
-    // Get referred user's investment
-    const deposits = await env.DB.prepare(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM transactions 
-       WHERE user_id = ? AND type = 'deposit' AND status = 'completed'`
-    ).bind(referral.referred_id).first<{ total: number }>();
-    
-    const stakes = await env.DB.prepare(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM pool_stakes 
-       WHERE user_id = ? AND status = 'active'`
-    ).bind(referral.referred_id).first<{ total: number }>();
-    
-    const userVolume = (deposits?.total ?? 0) + (stakes?.total ?? 0);
-    volumeByLevel[referral.level] = (volumeByLevel[referral.level] ?? 0) + userVolume;
+
+  const result = await env.DB.prepare(`
+    WITH network AS (
+      SELECT referred_id, level
+      FROM referrals
+      WHERE referrer_id = ?
+    ),
+    deposits AS (
+      SELECT user_id, SUM(amount) AS total_deposits
+      FROM transactions
+      WHERE type = 'deposit'
+        AND status = 'completed'
+        AND user_id IN (SELECT referred_id FROM network)
+      GROUP BY user_id
+    ),
+    stakes AS (
+      SELECT user_id, SUM(amount) AS total_stakes
+      FROM pool_stakes
+      WHERE status = 'active'
+        AND user_id IN (SELECT referred_id FROM network)
+      GROUP BY user_id
+    ),
+    per_user AS (
+      SELECT
+        n.level AS level,
+        COALESCE(d.total_deposits, 0) + COALESCE(s.total_stakes, 0) AS volume
+      FROM network n
+      LEFT JOIN deposits d ON d.user_id = n.referred_id
+      LEFT JOIN stakes s ON s.user_id = n.referred_id
+    )
+    SELECT level, COALESCE(SUM(volume), 0) AS total
+    FROM per_user
+    GROUP BY level
+  `).bind(userId).all<{ level: number; total: number }>();
+
+  for (const row of result.results) {
+    if (row.level >= 1 && row.level <= 5) {
+      volumeByLevel[row.level] = row.total;
+    }
   }
-  
+
   return volumeByLevel;
 }
 

@@ -31,3 +31,23 @@ compatibility_flags = ["nodejs_compat"]
 binding = "DB"
 database_name = "trading-platform"
 database_id = "05d79612-7bfe-4c0c-8511-300ad9943042"
+
+# ==============================================================================
+# SECRETS (set via `wrangler secret put <NAME>`)
+# ==============================================================================
+# Required secrets:
+#   JWT_SECRET          - HMAC key for JWT signing (min 32 chars)
+#   ZEPTOMAIL_API_KEY   - ZeptoMail API key for transactional emails
+#   NOWPAYMENTS_API_KEY - NowPayments API key for crypto deposits
+#   NOWPAYMENTS_IPN_SECRET - NowPayments IPN webhook secret
+#
+# To set a secret:
+#   npx wrangler secret put JWT_SECRET
+#   npx wrangler secret put ZEPTOMAIL_API_KEY
+#   npx wrangler secret put NOWPAYMENTS_API_KEY
+#   npx wrangler secret put NOWPAYMENTS_IPN_SECRET
+# ==============================================================================
+
+# Secrets are configured via `wrangler secret put` (encrypted at rest)
+# Currently configured: JWT_SECRET, ZEPTOMAIL_API_KEY, NOWPAYMENTS_API_KEY, NOWPAYMENTS_IPN_SECRET
+# Run `npx wrangler secret list` to verify

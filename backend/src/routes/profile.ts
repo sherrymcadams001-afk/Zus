@@ -10,7 +10,7 @@ export async function handleProfileRoutes(request: Request, env: Env, path: stri
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
   const { user } = authResult;
 

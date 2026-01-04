@@ -5,13 +5,17 @@
  */
 
 import { requireAuth } from './auth';
+import type { Env } from '../types';
 
 /**
  * Require admin role
  * Returns error response if not admin
  */
-export async function requireAdmin(request: Request): Promise<{ user: { userId: number; email: string; role: string }; request: Request } | Response> {
-  const authResult = await requireAuth(request);
+export async function requireAdmin(
+  request: Request,
+  env: Env
+): Promise<{ user: { userId: number; email: string; role: string }; request: Request } | Response> {
+  const authResult = await requireAuth(request, env);
   
   // If authentication failed, return error response
   if (authResult instanceof Response) {

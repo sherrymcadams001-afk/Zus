@@ -47,14 +47,14 @@ export async function handleAuthRoutes(
         if (result.data.waitlisted) {
           // Pending approval - send "request received" email
           ctx.waitUntil(
-            sendRequestReceivedEmail(result.data.user.email).catch(err => 
+            sendRequestReceivedEmail(env, result.data.user.email).catch(err => 
               console.error('Failed to send request received email:', err)
             )
           );
         } else {
           // Approved via invite code - send welcome email
           ctx.waitUntil(
-            sendWelcomeEmail(result.data.user.email).catch(err => 
+            sendWelcomeEmail(env, result.data.user.email).catch(err => 
               console.error('Failed to send welcome email:', err)
             )
           );
@@ -110,7 +110,7 @@ export async function handleAuthRoutes(
   
   // POST /api/auth/logout
   if (path === '/api/auth/logout' && request.method === 'POST') {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth(request, env);
     if (authResult instanceof Response) return authResult;
     
     // In a stateless JWT system, logout is handled client-side
@@ -125,7 +125,7 @@ export async function handleAuthRoutes(
   
   // GET /api/auth/me - Get current user info
   if (path === '/api/auth/me' && request.method === 'GET') {
-    const authResult = await requireAuth(request);
+    const authResult = await requireAuth(request, env);
     if (authResult instanceof Response) return authResult;
     
     // Fetch full user details

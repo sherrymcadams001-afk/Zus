@@ -19,7 +19,7 @@ export async function handlePortfolioRoutes(request: Request, env: Env, path: st
   };
   
   // All portfolio routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
   
   const { user } = authResult;

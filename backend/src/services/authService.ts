@@ -100,7 +100,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 /**
  * Generate a JWT token
  */
-export async function generateJWT(userId: number, email: string, role: string): Promise<string> {
+export async function generateJWT(
+  userId: number,
+  email: string,
+  role: string,
+  jwtSecret: string
+): Promise<string> {
   const header = {
     alg: 'HS256',
     typ: 'JWT',
@@ -119,8 +124,7 @@ export async function generateJWT(userId: number, email: string, role: string): 
   const payloadStr = btoa(JSON.stringify(payload)).replace(/=/g, '');
   const data = `${headerStr}.${payloadStr}`;
   
-  // Use a secret key (in production, this should be in environment variables)
-  const secret = encoder.encode('your-secret-key-change-in-production');
+  const secret = encoder.encode(jwtSecret);
   const key = await crypto.subtle.importKey(
     'raw',
     secret,
@@ -138,7 +142,10 @@ export async function generateJWT(userId: number, email: string, role: string): 
 /**
  * Verify and decode a JWT token
  */
-export async function verifyJWT(token: string): Promise<{ userId: number; email: string; role: string } | null> {
+export async function verifyJWT(
+  token: string,
+  jwtSecret: string
+): Promise<{ userId: number; email: string; role: string } | null> {
   try {
     const [headerStr, payloadStr, signatureStr] = token.split('.');
     if (!headerStr || !payloadStr || !signatureStr) return null;
@@ -147,7 +154,7 @@ export async function verifyJWT(token: string): Promise<{ userId: number; email:
     const data = `${headerStr}.${payloadStr}`;
     
     // Verify signature
-    const secret = encoder.encode('your-secret-key-change-in-production');
+    const secret = encoder.encode(jwtSecret);
     const key = await crypto.subtle.importKey(
       'raw',
       secret,
@@ -187,6 +194,10 @@ export async function registerUser(
   referralCode?: string
 ): Promise<AuthResponse> {
   try {
+    if (!env.JWT_SECRET) {
+      return { status: 'error', error: 'Server misconfiguration' };
+    }
+
     // Validate email format first
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -289,7 +300,7 @@ export async function registerUser(
     }
     
     // Generate JWT (but pending users won't be able to use it for protected routes)
-    const token = await generateJWT(result.id, result.email, result.role);
+    const token = await generateJWT(result.id, result.email, result.role, env.JWT_SECRET);
     
     return {
       status: 'success',
@@ -357,6 +368,10 @@ export async function loginUser(
   password: string
 ): Promise<AuthResponse> {
   try {
+    if (!env.JWT_SECRET) {
+      return { status: 'error', error: 'Server misconfiguration' };
+    }
+
     // Normalize email for consistent lookup
     const normalizedEmail = email.toLowerCase().trim();
     
@@ -384,7 +399,7 @@ export async function loginUser(
     }
     
     // Generate JWT
-    const token = await generateJWT(user.id, user.email, user.role);
+    const token = await generateJWT(user.id, user.email, user.role, env.JWT_SECRET);
     
     // Create login notification (non-blocking)
     notifyLogin(env.DB, user.id).catch(err => 
@@ -399,6 +414,7 @@ export async function loginUser(
           email: user.email,
           role: user.role,
           kyc_status: user.kyc_status,
+          account_status: user.account_status,
           referrer_id: user.referrer_id,
           referral_code: user.referral_code,
           created_at: user.created_at,

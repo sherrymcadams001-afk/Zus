@@ -1,7 +1,6 @@
 import { Env } from '../types';
 
 const ZEPTOMAIL_API_URL = 'https://api.zeptomail.com/v1.1/email';
-const ZEPTOMAIL_API_KEY = 'wSsVR60lrhDzDqgrzz38Ju0xkF1QDgvxHR4p0VWh63L9TfvFocczn0HGVwT0GaNMR2JgFzoWrL8gnBkD0zQJ24t7yVABXSiF9mqRe1U4J3x17qnvhDzOXWtUlhCAJY0KwwVtnWFlEM4l+g==';
 
 // CapWheel brand colors
 const BRAND = {
@@ -74,14 +73,23 @@ function wrapEmailTemplate(content: string): string {
 </html>`;
 }
 
-export async function sendEmail(options: EmailOptions): Promise<boolean> {
+export async function sendEmail(env: Pick<Env, 'ZEPTOMAIL_API_KEY'>, options: EmailOptions): Promise<boolean> {
+  return sendEmailWithApiKey(env.ZEPTOMAIL_API_KEY, options);
+}
+
+export async function sendEmailWithApiKey(apiKey: string, options: EmailOptions): Promise<boolean> {
   try {
+    if (!apiKey) {
+      console.error('ZeptoMail API key missing');
+      return false;
+    }
+
     const response = await fetch(ZEPTOMAIL_API_URL, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `Zoho-enczapikey ${ZEPTOMAIL_API_KEY}`,
+        'Authorization': `Zoho-enczapikey ${apiKey}`,
       },
       body: JSON.stringify({
         from: { address: 'noreply@capwheel.io', name: 'CapWheel' },
@@ -108,7 +116,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
  * Send welcome email to new users
  * Used for both immediate (referred) and delayed (waitlist) signups
  */
-export async function sendWelcomeEmail(email: string, name?: string): Promise<boolean> {
+export async function sendWelcomeEmail(env: Pick<Env, 'ZEPTOMAIL_API_KEY'>, email: string, name?: string): Promise<boolean> {
   const displayName = name || 'there';
   
   const content = `
@@ -153,7 +161,7 @@ export async function sendWelcomeEmail(email: string, name?: string): Promise<bo
     </p>
   `;
 
-  return sendEmail({
+  return sendEmailWithApiKey(env.ZEPTOMAIL_API_KEY, {
     to: [{ email_address: { address: email, name: name || undefined } }],
     subject: 'Welcome to CapWheel – Your Account is Ready',
     htmlbody: wrapEmailTemplate(content),
@@ -164,7 +172,7 @@ export async function sendWelcomeEmail(email: string, name?: string): Promise<bo
  * Send "Request Received" email to users who registered without an invite code
  * These users require admin approval before gaining platform access
  */
-export async function sendRequestReceivedEmail(email: string, name?: string): Promise<boolean> {
+export async function sendRequestReceivedEmail(env: Pick<Env, 'ZEPTOMAIL_API_KEY'>, email: string, name?: string): Promise<boolean> {
   const displayName = name || 'there';
   
   const content = `
@@ -209,7 +217,7 @@ export async function sendRequestReceivedEmail(email: string, name?: string): Pr
     </p>
   `;
 
-  return sendEmail({
+  return sendEmailWithApiKey(env.ZEPTOMAIL_API_KEY, {
     to: [{ email_address: { address: email, name: name || undefined } }],
     subject: 'CapWheel – Access Request Received',
     htmlbody: wrapEmailTemplate(content),
@@ -219,7 +227,7 @@ export async function sendRequestReceivedEmail(email: string, name?: string): Pr
 /**
  * Send approval notification email when admin approves a user's account
  */
-export async function sendApprovalEmail(email: string, name?: string): Promise<boolean> {
+export async function sendApprovalEmail(env: Pick<Env, 'ZEPTOMAIL_API_KEY'>, email: string, name?: string): Promise<boolean> {
   const displayName = name || 'there';
   
   const content = `
@@ -264,7 +272,7 @@ export async function sendApprovalEmail(email: string, name?: string): Promise<b
     </p>
   `;
 
-  return sendEmail({
+  return sendEmailWithApiKey(env.ZEPTOMAIL_API_KEY, {
     to: [{ email_address: { address: email, name: name || undefined } }],
     subject: 'CapWheel – Your Account Has Been Approved',
     htmlbody: wrapEmailTemplate(content),

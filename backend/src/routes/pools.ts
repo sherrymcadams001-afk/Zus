@@ -28,18 +28,31 @@ export async function handlePoolRoutes(request: Request, env: Env, path: string)
   
   // GET /api/pools - Get all active pools (public)
   if (path === '/api/pools' && request.method === 'GET') {
+    const cacheKey = new Request('https://cache.local/pools', { method: 'GET' });
+    const cached = await caches.default.match(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const pools = await getActivePools(env);
-    
-    return new Response(JSON.stringify({
+
+    const response = new Response(JSON.stringify({
       status: 'success',
       data: pools,
     }), {
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=60',
+        ...corsHeaders,
+      },
     });
+
+    await caches.default.put(cacheKey, response.clone());
+    return response;
   }
   
   // All other pool routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
   
   const { user } = authResult;

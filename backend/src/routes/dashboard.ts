@@ -25,7 +25,7 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
   };
   
   // All dashboard routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
   
   const { user } = authResult;
@@ -33,6 +33,12 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
   // GET /api/dashboard - Aggregate all dashboard data
   if (path === '/api/dashboard' && request.method === 'GET') {
     try {
+      const cacheKey = new Request(`https://cache.local/dashboard/${user.userId}`, { method: 'GET' });
+      const cached = await caches.default.match(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
       // Parallel fetch all data in ONE Worker request
       const [
         wallet,
@@ -61,7 +67,7 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
       const roiData = calculateCurrentEarnings(user.userId, stakedAmount);
       const roiHistory = generateROIHistory(user.userId, roiData.tier, 24);
       
-      return new Response(JSON.stringify({
+      const response = new Response(JSON.stringify({
         status: 'success',
         data: {
           wallet,
@@ -99,6 +105,9 @@ export async function handleDashboardRoutes(request: Request, env: Env, path: st
           ...corsHeaders,
         },
       });
+
+      await caches.default.put(cacheKey, response.clone());
+      return response;
     } catch (error) {
       console.error('Dashboard aggregate error:', error);
       return new Response(JSON.stringify({

@@ -23,7 +23,7 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
   };
   
   // All wallet routes require authentication
-  const authResult = await requireAuth(request);
+  const authResult = await requireAuth(request, env);
   if (authResult instanceof Response) return authResult;
   
   const { user } = authResult;
@@ -53,19 +53,32 @@ export async function handleWalletRoutes(request: Request, env: Env, path: strin
   // GET /api/wallet/deposit-address - Get system deposit address (legacy)
   if (path === '/api/wallet/deposit-address' && request.method === 'GET') {
     try {
+      const cacheKey = new Request('https://cache.local/system/deposit-address-trc20', { method: 'GET' });
+      const cached = await caches.default.match(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
       const setting = await env.DB.prepare(
         "SELECT value FROM system_settings WHERE key = 'deposit_address_trc20'"
       ).first<{ value: string }>();
 
-      return new Response(JSON.stringify({
+      const response = new Response(JSON.stringify({
         status: 'success',
         data: {
           address: setting?.value || '',
           network: 'TRC20'
         }
       }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+          ...corsHeaders,
+        }
       });
+
+      await caches.default.put(cacheKey, response.clone());
+      return response;
     } catch (error) {
       return new Response(JSON.stringify({
         status: 'error',
