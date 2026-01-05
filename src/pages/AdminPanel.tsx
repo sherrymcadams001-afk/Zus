@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, ExternalLink, CheckCircle, Users, Wallet, Settings, 
+  X, ExternalLink, CheckCircle, Users, Settings, 
   LogOut, LayoutDashboard, TrendingUp, TrendingDown, Activity,
   AlertTriangle, Clock, DollarSign, PieChart, RefreshCw,
   Search, ChevronLeft, ChevronRight, Ban, UserCheck, XCircle,
@@ -103,7 +103,7 @@ const AdminPanel = () => {
 
   // Users State
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [usersPagination, setUsersPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [usersPagination, setUsersPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0, hasPrev: false, hasNext: false });
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
@@ -136,7 +136,12 @@ const AdminPanel = () => {
       const response = await adminApi.getUsers({ page, limit: 20, search: searchQuery, status: statusFilter });
       setUsers(response.data);
       if (response.pagination) {
-        setUsersPagination(response.pagination);
+        const pag = response.pagination;
+        setUsersPagination({
+          ...pag,
+          hasPrev: pag.page > 1,
+          hasNext: pag.page < (pag.totalPages || 1)
+        });
       }
     } catch (error) {
       console.error('Failed to fetch users', error);
@@ -261,13 +266,13 @@ const AdminPanel = () => {
 
   const formatCurrency = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-  const navItems = [
+  const navItems: Array<{ id: 'overview' | 'users' | 'deposits' | 'withdrawals' | 'settings'; label: string; icon: React.ElementType; badge?: number }> = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'deposits', label: 'Deposits', icon: TrendingUp, badge: pendingDeposits.length },
     { id: 'withdrawals', label: 'Withdrawals', icon: TrendingDown, badge: pendingWithdrawals.length },
     { id: 'settings', label: 'Settings', icon: Settings },
-  ] as const;
+  ];
 
   return (
     <div className="fixed inset-0 flex bg-[#0B1015] text-white font-sans overflow-hidden">

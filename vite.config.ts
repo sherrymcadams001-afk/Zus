@@ -11,7 +11,7 @@ export default defineConfig({
           // Core vendor chunk - React ecosystem
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // UI/Animation vendor chunk
-          'vendor-ui': ['framer-motion', 'lucide-react', 'recharts'],
+          'vendor-ui': ['framer-motion', 'lucide-react'],
           // Utility vendor chunk
           'vendor-utils': ['zustand', 'date-fns'],
         },
