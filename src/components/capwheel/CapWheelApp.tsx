@@ -22,6 +22,7 @@ import AdminPanel from '../../pages/AdminPanel';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
+import { SupportChat } from './SupportChat';
 
 // Branded loading screen
 const LoadingScreen = () => (
@@ -339,6 +340,7 @@ export const CapWheelApp = () => {
   return (
     <CapWheelProvider>
       <CapWheelRoutes />
+      <SupportChat />
     </CapWheelProvider>
   );
 };
