@@ -4,6 +4,7 @@
  * Authentication endpoints (register, login, logout).
  */
 
+import axios from 'axios';
 import { apiClient } from './client';
 
 export interface User {
@@ -32,23 +33,37 @@ export const authAPI = {
    * Register a new user
    */
   register: async (email: string, password: string, referralCode?: string): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/api/auth/register', {
-      email,
-      password,
-      referralCode,
-    });
-    return response.data;
+    try {
+      const response = await apiClient.post<AuthResponse>('/api/auth/register', {
+        email,
+        password,
+        referralCode,
+      });
+      return response.data;
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data) {
+        return err.response.data as AuthResponse;
+      }
+      return { status: 'error', error: 'Connection failed. Please try again.' };
+    }
   },
 
   /**
    * Login
    */
   login: async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/api/auth/login', {
-      email,
-      password,
-    });
-    return response.data;
+    try {
+      const response = await apiClient.post<AuthResponse>('/api/auth/login', {
+        email,
+        password,
+      });
+      return response.data;
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data) {
+        return err.response.data as AuthResponse;
+      }
+      return { status: 'error', error: 'Connection failed. Please try again.' };
+    }
   },
 
   /**
