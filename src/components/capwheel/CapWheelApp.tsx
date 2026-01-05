@@ -320,14 +320,6 @@ const CapWheelRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/security" 
-        element={
-          <ProtectedRoute>
-            <CapWheelDashboard />
-          </ProtectedRoute>
-        } 
-      />
       
       {/* Default Redirects */}
       <Route path="/" element={<Navigate to="/capwheel/login" replace />} />

@@ -397,7 +397,7 @@ export async function handleAdminRoutes(
           COALESCE(SUM(locked_balance), 0) as total_locked,
           COALESCE(SUM(pending_balance), 0) as total_pending
         FROM wallets
-      `).first();
+      `).first<{ total_available: number; total_locked: number; total_pending: number }>();
 
       return new Response(JSON.stringify({
         status: 'success',

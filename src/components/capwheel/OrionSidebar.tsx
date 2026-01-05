@@ -169,10 +169,11 @@ export const OrionSidebar = () => {
             icon={<Wallet className="w-4 h-4" />}
             label="Strategy Pools"
           />
-        </NavGroup>
-
-        {/* Governance & Audit Module */}
-        <NavGroup title="Governance & Audit" defaultOpen={false}>
+          <NavItem
+            to="/capwheel/partners"
+            icon={<Users className="w-4 h-4" />}
+            label="Partner Network"
+          />
           {user?.role === 'admin' && (
             <NavItem
               to="/capwheel/admin"
@@ -181,16 +182,6 @@ export const OrionSidebar = () => {
               badge="ADMIN"
             />
           )}
-          <NavItem
-            to="/capwheel/partners"
-            icon={<Users className="w-4 h-4" />}
-            label="Partner Network"
-          />
-          <NavItem
-            to="/capwheel/security"
-            icon={<Shield className="w-4 h-4" />}
-            label="Security Center"
-          />
         </NavGroup>
       </nav>
 

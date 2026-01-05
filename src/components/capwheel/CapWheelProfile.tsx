@@ -26,7 +26,10 @@ import {
   Globe,
   Bell,
   Lock,
-  Smartphone
+  Smartphone,
+  X,
+  History,
+  Monitor
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
@@ -47,6 +50,13 @@ interface InviteStats {
   activeCount: number;
   usedCount: number;
   expiredCount: number;
+}
+
+interface SessionHistory {
+  id: number;
+  ip_address: string;
+  user_agent: string;
+  created_at: number;
 }
 
 export const CapWheelProfile = () => {
@@ -72,6 +82,17 @@ export const CapWheelProfile = () => {
   const [inviteStats, setInviteStats] = useState<InviteStats | null>(null);
   const [isCreatingCode, setIsCreatingCode] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  
+  // Password change state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  
+  // Session history state
+  const [sessions, setSessions] = useState<SessionHistory[]>([]);
+  const [showSessions, setShowSessions] = useState(false);
 
   // Fetch profile data
   useEffect(() => {
@@ -123,6 +144,18 @@ export const CapWheelProfile = () => {
     if (user) fetchInviteCodes();
   }, [user]);
 
+  // Fetch session history
+  const fetchSessions = async () => {
+    try {
+      const res = await apiClient.get('/api/auth/sessions');
+      if (res.data.status === 'success') {
+        setSessions(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch sessions:', err);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -154,6 +187,44 @@ export const CapWheelProfile = () => {
       console.error('Failed to create invite code:', err);
     } finally {
       setIsCreatingCode(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError(null);
+    setPasswordSuccess(false);
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    try {
+      const res = await apiClient.post('/api/auth/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
+      
+      if (res.data.status === 'success') {
+        setPasswordSuccess(true);
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => {
+          setShowPasswordModal(false);
+          setPasswordSuccess(false);
+        }, 1500);
+      } else {
+        setPasswordError(res.data.error || 'Failed to change password');
+      }
+    } catch (err: any) {
+      setPasswordError(err.response?.data?.error || 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -573,28 +644,76 @@ export const CapWheelProfile = () => {
             </div>
 
             {/* Change Password */}
-            <div className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors cursor-pointer">
+            <button
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Lock className="w-4 h-4 text-slate-400" />
-                <div>
+                <div className="text-left">
                   <p className="text-sm text-white">Change Password</p>
                   <p className="text-xs text-slate-500">Update your password</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-500" />
-            </div>
+            </button>
 
-            {/* Two-Factor Auth */}
-            <div className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors cursor-pointer">
+            {/* Login History */}
+            <button
+              onClick={() => { setShowSessions(!showSessions); if (!showSessions) fetchSessions(); }}
+              className="w-full p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <History className="w-4 h-4 text-slate-400" />
+                <div className="text-left">
+                  <p className="text-sm text-white">Login History</p>
+                  <p className="text-xs text-slate-500">View recent login activity</p>
+                </div>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${showSessions ? 'rotate-90' : ''}`} />
+            </button>
+            
+            {/* Session List */}
+            <AnimatePresence>
+              {showSessions && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden bg-black/20"
+                >
+                  {sessions.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-slate-500">No login history available</div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {sessions.map((session) => (
+                        <div key={session.id} className="p-4 flex items-start gap-3">
+                          <Monitor className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-white truncate">{session.user_agent || 'Unknown device'}</p>
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              IP: {session.ip_address || 'Unknown'} • {new Date(session.created_at * 1000).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Two-Factor Auth - Coming Soon */}
+            <div className="p-4 flex items-center justify-between opacity-60">
               <div className="flex items-center gap-3">
                 <Smartphone className="w-4 h-4 text-slate-400" />
                 <div>
                   <p className="text-sm text-white">Two-Factor Authentication</p>
-                  <p className="text-xs text-slate-500">Add an extra layer of security</p>
+                  <p className="text-xs text-slate-500">Coming soon</p>
                 </div>
               </div>
-              <span className="px-2 py-1 text-[10px] font-medium rounded bg-yellow-500/10 text-yellow-500">
-                Not Set
+              <span className="px-2 py-1 text-[10px] font-medium rounded bg-slate-700 text-slate-400">
+                Soon
               </span>
             </div>
           </div>
@@ -612,6 +731,117 @@ export const CapWheelProfile = () => {
           </p>
         </motion.div>
       </div>
+      
+      {/* Password Change Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPasswordModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#0F1419] border border-white/10 rounded-xl w-full max-w-md overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#00FF9D]/10 rounded-lg">
+                    <Lock className="w-4 h-4 text-[#00FF9D]" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">Change Password</h3>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-slate-400" />
+                </button>
+              </div>
+              
+              {/* Modal Body */}
+              <div className="p-4 space-y-4">
+                {passwordSuccess ? (
+                  <div className="flex flex-col items-center gap-3 py-6">
+                    <div className="p-3 bg-[#00FF9D]/10 rounded-full">
+                      <Check className="w-8 h-8 text-[#00FF9D]" />
+                    </div>
+                    <p className="text-white font-medium">Password changed successfully!</p>
+                  </div>
+                ) : (
+                  <>
+                    {passwordError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <p className="text-sm text-red-400">{passwordError}</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 uppercase tracking-wider mb-2">
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D]/20 outline-none transition-colors"
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 uppercase tracking-wider mb-2">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D]/20 outline-none transition-colors"
+                        placeholder="Enter new password (min 8 characters)"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs text-slate-500 uppercase tracking-wider mb-2">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                        className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:border-[#00FF9D] focus:ring-1 focus:ring-[#00FF9D]/20 outline-none transition-colors"
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                    
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={isChangingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                      className="w-full py-3 bg-[#00FF9D] hover:bg-[#00E88A] disabled:bg-slate-700 disabled:text-slate-400 text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isChangingPassword ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Changing...
+                        </>
+                      ) : (
+                        'Change Password'
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

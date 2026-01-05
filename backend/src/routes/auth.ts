@@ -5,7 +5,7 @@
  */
 
 import { Env } from '../types';
-import { registerUser, loginUser } from '../services/authService';
+import { registerUser, loginUser, changePassword, logSession, getSessionHistory } from '../services/authService';
 import { requireAuth } from '../middleware/auth';
 import { sendWelcomeEmail, sendRequestReceivedEmail } from '../services/emailService';
 
@@ -93,6 +93,17 @@ export async function handleAuthRoutes(
       
       const result = await loginUser(env, body.email, body.password);
       
+      // Log session on successful login (non-blocking)
+      if (result.status === 'success' && result.data) {
+        const ip = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+        const userAgent = request.headers.get('User-Agent') || 'unknown';
+        ctx.waitUntil(
+          logSession(env, result.data.user.id, result.data.token, ip, userAgent).catch(err =>
+            console.error('Failed to log session:', err)
+          )
+        );
+      }
+      
       return new Response(JSON.stringify(result), {
         status: result.status === 'success' ? 200 : 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -146,6 +157,56 @@ export async function handleAuthRoutes(
     return new Response(JSON.stringify({
       status: 'success',
       data: user,
+    }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+  
+  // POST /api/auth/change-password - Change user password
+  if (path === '/api/auth/change-password' && request.method === 'POST') {
+    const authResult = await requireAuth(request, env);
+    if (authResult instanceof Response) return authResult;
+    
+    try {
+      const body = await request.json() as { currentPassword?: string; newPassword?: string };
+      
+      if (!body.currentPassword || !body.newPassword) {
+        return new Response(JSON.stringify({
+          status: 'error',
+          error: 'Current password and new password are required',
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+      
+      const result = await changePassword(env, authResult.user.userId, body.currentPassword, body.newPassword);
+      
+      return new Response(JSON.stringify(result), {
+        status: result.status === 'success' ? 200 : 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Invalid request body',
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+  }
+  
+  // GET /api/auth/sessions - Get user's login history
+  if (path === '/api/auth/sessions' && request.method === 'GET') {
+    const authResult = await requireAuth(request, env);
+    if (authResult instanceof Response) return authResult;
+    
+    const sessions = await getSessionHistory(env, authResult.user.userId);
+    
+    return new Response(JSON.stringify({
+      status: 'success',
+      data: sessions,
     }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });

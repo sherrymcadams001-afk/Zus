@@ -428,3 +428,103 @@ export async function loginUser(
     return { status: 'error', error: 'Login failed' };
   }
 }
+
+/**
+ * Change user password
+ */
+export async function changePassword(
+  env: Env,
+  userId: number,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ status: 'success' | 'error'; error?: string }> {
+  try {
+    // Validate new password length
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      return { status: 'error', error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` };
+    }
+    if (newPassword.length > MAX_PASSWORD_LENGTH) {
+      return { status: 'error', error: `Password must not exceed ${MAX_PASSWORD_LENGTH} characters` };
+    }
+
+    // Get current password hash
+    const user = await env.DB.prepare(
+      'SELECT password_hash FROM users WHERE id = ?'
+    ).bind(userId).first<{ password_hash: string }>();
+
+    if (!user) {
+      return { status: 'error', error: 'User not found' };
+    }
+
+    // Verify current password
+    const valid = await verifyPassword(currentPassword, user.password_hash);
+    if (!valid) {
+      return { status: 'error', error: 'Current password is incorrect' };
+    }
+
+    // Hash new password and update
+    const newHash = await hashPassword(newPassword);
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    await env.DB.prepare(
+      'UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?'
+    ).bind(newHash, timestamp, userId).run();
+
+    return { status: 'success' };
+  } catch (error) {
+    console.error('Change password error:', error instanceof Error ? error.message : 'Unknown error');
+    return { status: 'error', error: 'Failed to change password' };
+  }
+}
+
+/**
+ * Log a user session (login event)
+ */
+export async function logSession(
+  env: Env,
+  userId: number,
+  token: string,
+  ipAddress: string,
+  userAgent: string
+): Promise<void> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const expiresAt = timestamp + (7 * 24 * 60 * 60); // 7 days
+
+  // Hash the token for storage (we don't store raw tokens)
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = new Uint8Array(hashBuffer);
+  const tokenHash = Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
+
+  await env.DB.prepare(
+    `INSERT INTO user_sessions (user_id, token_hash, ip_address, user_agent, expires_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).bind(userId, tokenHash, ipAddress, userAgent, expiresAt, timestamp).run();
+
+  // Cleanup old sessions (keep last 20 per user)
+  await env.DB.prepare(
+    `DELETE FROM user_sessions 
+     WHERE user_id = ? AND id NOT IN (
+       SELECT id FROM user_sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20
+     )`
+  ).bind(userId, userId).run();
+}
+
+/**
+ * Get user's session history (login history)
+ */
+export async function getSessionHistory(
+  env: Env,
+  userId: number
+): Promise<Array<{ id: number; ip_address: string; user_agent: string; created_at: number }>> {
+  const result = await env.DB.prepare(
+    `SELECT id, ip_address, user_agent, created_at 
+     FROM user_sessions 
+     WHERE user_id = ? 
+     ORDER BY created_at DESC 
+     LIMIT 10`
+  ).bind(userId).all<{ id: number; ip_address: string; user_agent: string; created_at: number }>();
+
+  return result.results;
+}
