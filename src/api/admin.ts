@@ -136,7 +136,20 @@ export const adminApi = {
     return response.data;
   },
 
-  // Deposits
+  // Deposits - All deposits history (paginated)
+  getDeposits: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.status) searchParams.set('status', params.status);
+    
+    const query = searchParams.toString();
+    const url = `/api/admin/deposits${query ? `?${query}` : ''}`;
+    const response = await apiClient.get<PaginatedResponse<Transaction & { user_email: string }>>(url);
+    return response.data;
+  },
+
+  // Legacy - pending deposits only
   getPendingDeposits: async () => {
     const response = await apiClient.get<{ status: string; data: Transaction[] }>('/api/admin/deposits/pending');
     return response.data;

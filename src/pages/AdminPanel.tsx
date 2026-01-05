@@ -115,8 +115,15 @@ const AdminPanel = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  // Deposits & Withdrawals State
-  const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
+  // Pending Users State
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
+
+  // Deposits State (all deposits, paginated)
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [depositsPagination, setDepositsPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0, hasPrev: false, hasNext: false });
+  const [depositsStatusFilter, setDepositsStatusFilter] = useState('');
+
+  // Withdrawals State
   const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
 
   // Settings State
@@ -148,16 +155,41 @@ const AdminPanel = () => {
     }
   }, [searchQuery, statusFilter]);
 
+  const fetchDeposits = useCallback(async (page = 1) => {
+    try {
+      const response = await adminApi.getDeposits({ page, limit: 20, status: depositsStatusFilter || undefined });
+      setDeposits(response.data);
+      if (response.pagination) {
+        const pag = response.pagination;
+        setDepositsPagination({
+          ...pag,
+          hasPrev: pag.page > 1,
+          hasNext: pag.page < (pag.totalPages || 1)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch deposits', error);
+    }
+  }, [depositsStatusFilter]);
+
+  const fetchPendingUsers = useCallback(async () => {
+    try {
+      const response = await adminApi.getPendingUsers();
+      setPendingUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch pending users', error);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'overview') {
-        await fetchAnalytics();
+        await Promise.all([fetchAnalytics(), fetchPendingUsers()]);
       } else if (activeTab === 'users') {
         await fetchUsers();
       } else if (activeTab === 'deposits') {
-        const response = await adminApi.getPendingDeposits();
-        setPendingDeposits(response.data);
+        await fetchDeposits();
       } else if (activeTab === 'withdrawals') {
         const response = await adminApi.getPendingWithdrawals();
         setPendingWithdrawals(response.data);
@@ -170,7 +202,7 @@ const AdminPanel = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, fetchAnalytics, fetchUsers]);
+  }, [activeTab, fetchAnalytics, fetchUsers, fetchDeposits, fetchPendingUsers]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -189,16 +221,6 @@ const AdminPanel = () => {
       alert('Failed to save settings');
     } finally {
       setProcessing(false);
-    }
-  };
-
-  const handleApproveDeposit = async (txId: number) => {
-    if (!confirm('Approve this deposit?')) return;
-    try {
-      await adminApi.approveDeposit(txId);
-      fetchData();
-    } catch (error) {
-      alert('Failed to approve deposit');
     }
   };
 
@@ -243,6 +265,17 @@ const AdminPanel = () => {
     }
   };
 
+  const handleApproveUser = async (userId: number) => {
+    if (!confirm('Approve this user account?')) return;
+    try {
+      await adminApi.approveUser(userId);
+      fetchPendingUsers();
+      fetchAnalytics();
+    } catch (error) {
+      alert('Failed to approve user');
+    }
+  };
+
   const handleAddBalance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser || !balanceAmount) return;
@@ -267,9 +300,9 @@ const AdminPanel = () => {
   const formatCurrency = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const navItems: Array<{ id: 'overview' | 'users' | 'deposits' | 'withdrawals' | 'settings'; label: string; icon: React.ElementType; badge?: number }> = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard, badge: pendingUsers.length },
     { id: 'users', label: 'Users', icon: Users },
-    { id: 'deposits', label: 'Deposits', icon: TrendingUp, badge: pendingDeposits.length },
+    { id: 'deposits', label: 'Deposits', icon: TrendingUp },
     { id: 'withdrawals', label: 'Withdrawals', icon: TrendingDown, badge: pendingWithdrawals.length },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -343,86 +376,129 @@ const AdminPanel = () => {
           ) : (
             <>
               {/* Overview Tab */}
-              {activeTab === 'overview' && analytics && (
+              {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  {/* KPI Grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <MetricCard title="Total AUM" value={formatCurrency(analytics.platform.totalAUM)} icon={DollarSign} color="brand" change={`${formatCurrency(analytics.volume.deposits_24h)} today`} changeType="up" />
-                    <MetricCard title="Total Users" value={analytics.users.total_users.toLocaleString()} icon={Users} color="blue" change={`+${analytics.users.new_users_24h} today`} changeType="up" />
-                    <MetricCard title="Active Stakes" value={formatCurrency(analytics.staking.total_staked)} icon={PieChart} color="purple" change={`${analytics.staking.active_stakes} active`} changeType="neutral" />
-                    <MetricCard title="Pending Actions" value={analytics.transactions.pending_transactions} icon={Clock} color="yellow" />
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* Volume Stats */}
-                    <Card className="border-white/5 bg-[#0F1419] p-5 col-span-2">
-                      <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-[#00FF9D]" />
-                        Volume Statistics
+                  {/* Pending User Approvals - Priority Alert */}
+                  {pendingUsers.length > 0 && (
+                    <Card className="border-yellow-500/30 bg-yellow-500/5 p-5">
+                      <h3 className="text-sm font-semibold text-yellow-400 mb-4 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Pending User Approvals ({pendingUsers.length})
                       </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
-                          <p className="text-xs text-slate-500 uppercase">Total Deposits</p>
-                          <p className="text-xl font-bold text-green-400 mt-1">{formatCurrency(analytics.volume.total_deposits)}</p>
-                        </div>
-                        <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
-                          <p className="text-xs text-slate-500 uppercase">Total Withdrawals</p>
-                          <p className="text-xl font-bold text-red-400 mt-1">{formatCurrency(analytics.volume.total_withdrawals)}</p>
-                        </div>
-                        <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
-                          <p className="text-xs text-slate-500 uppercase">Pending Deposits</p>
-                          <p className="text-xl font-bold text-yellow-400 mt-1">{formatCurrency(analytics.volume.pending_deposits)}</p>
-                        </div>
-                        <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
-                          <p className="text-xs text-slate-500 uppercase">Pending Withdrawals</p>
-                          <p className="text-xl font-bold text-orange-400 mt-1">{formatCurrency(analytics.volume.pending_withdrawals)}</p>
-                        </div>
-                      </div>
-                    </Card>
-
-                    {/* Recent Activity */}
-                    <Card className="border-white/5 bg-[#0F1419] p-5">
-                      <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-[#00FF9D]" />
-                        Recent Activity
-                      </h3>
-                      <div className="space-y-1 max-h-64 overflow-y-auto">
-                        {analytics.recentActivity.slice(0, 8).map((tx) => (
-                          <ActivityItem key={tx.id} tx={tx} />
+                      <div className="grid gap-3">
+                        {pendingUsers.slice(0, 5).map((user) => (
+                          <div key={user.id} className="flex items-center justify-between bg-[#0B1015] rounded-lg p-4 border border-white/5">
+                            <div>
+                              <p className="text-white font-medium">{user.email}</p>
+                              <p className="text-xs text-slate-500">Registered {new Date(user.created_at * 1000).toLocaleDateString()}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" className="bg-[#00FF9D] hover:bg-[#00FF9D]/80 text-black" onClick={() => handleApproveUser(user.id)}>
+                                <UserCheck className="w-4 h-4 mr-1" /> Approve
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-slate-400" onClick={() => handleViewUser(user.id)}>View</Button>
+                            </div>
+                          </div>
                         ))}
+                        {pendingUsers.length > 5 && (
+                          <p className="text-xs text-slate-500 text-center">+{pendingUsers.length - 5} more pending approvals</p>
+                        )}
                       </div>
                     </Card>
-                  </div>
+                  )}
 
-                  {/* User Stats */}
-                  <Card className="border-white/5 bg-[#0F1419] p-5">
-                    <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#00B8D4]" />
-                      User Breakdown
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
-                        <p className="text-2xl font-bold text-white">{analytics.users.active_users}</p>
-                        <p className="text-xs text-slate-500 mt-1">Active</p>
+                  {/* KPI Grid */}
+                  {analytics && (
+                    <>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <MetricCard title="Total AUM" value={formatCurrency(analytics.platform?.totalAUM || 0)} icon={DollarSign} color="brand" change={`${formatCurrency(analytics.volume?.deposits_24h || 0)} today`} changeType="up" />
+                        <MetricCard title="Total Users" value={(analytics.users?.total_users || 0).toLocaleString()} icon={Users} color="blue" change={`+${analytics.users?.new_users_24h || 0} today`} changeType="up" />
+                        <MetricCard title="Active Stakes" value={formatCurrency(analytics.staking?.total_staked || 0)} icon={PieChart} color="purple" change={`${analytics.staking?.active_stakes || 0} active`} changeType="neutral" />
+                        <MetricCard title="Pending Actions" value={analytics.transactions?.pending_transactions || 0} icon={Clock} color="yellow" />
                       </div>
-                      <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
-                        <p className="text-2xl font-bold text-yellow-400">{analytics.users.pending_users}</p>
-                        <p className="text-xs text-slate-500 mt-1">Pending</p>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Volume Stats */}
+                        <Card className="border-white/5 bg-[#0F1419] p-5 col-span-2">
+                          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-[#00FF9D]" />
+                            Volume Statistics
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
+                              <p className="text-xs text-slate-500 uppercase">Total Deposits</p>
+                              <p className="text-xl font-bold text-[#00FF9D] mt-1">{formatCurrency(analytics.volume?.total_deposits || 0)}</p>
+                            </div>
+                            <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
+                              <p className="text-xs text-slate-500 uppercase">Total Withdrawals</p>
+                              <p className="text-xl font-bold text-red-400 mt-1">{formatCurrency(analytics.volume?.total_withdrawals || 0)}</p>
+                            </div>
+                            <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
+                              <p className="text-xs text-slate-500 uppercase">Deposits (24h)</p>
+                              <p className="text-xl font-bold text-[#00B8D4] mt-1">{formatCurrency(analytics.volume?.deposits_24h || 0)}</p>
+                            </div>
+                            <div className="bg-[#0B1015] rounded-lg p-4 border border-white/5">
+                              <p className="text-xs text-slate-500 uppercase">Withdrawals (24h)</p>
+                              <p className="text-xl font-bold text-orange-400 mt-1">{formatCurrency(analytics.volume?.withdrawals_24h || 0)}</p>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Recent Activity */}
+                        <Card className="border-white/5 bg-[#0F1419] p-5">
+                          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-[#00FF9D]" />
+                            Recent Activity
+                          </h3>
+                          <div className="space-y-1 max-h-64 overflow-y-auto">
+                            {(analytics.recentActivity || []).slice(0, 8).map((tx) => (
+                              <ActivityItem key={tx.id} tx={tx} />
+                            ))}
+                            {(!analytics.recentActivity || analytics.recentActivity.length === 0) && (
+                              <p className="text-center text-slate-500 py-4">No recent activity</p>
+                            )}
+                          </div>
+                        </Card>
                       </div>
-                      <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
-                        <p className="text-2xl font-bold text-red-400">{analytics.users.suspended_users}</p>
-                        <p className="text-xs text-slate-500 mt-1">Suspended</p>
-                      </div>
-                      <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
-                        <p className="text-2xl font-bold text-[#00FF9D]">+{analytics.users.new_users_24h}</p>
-                        <p className="text-xs text-slate-500 mt-1">New (24h)</p>
-                      </div>
-                      <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
-                        <p className="text-2xl font-bold text-[#00B8D4]">+{analytics.users.new_users_7d}</p>
-                        <p className="text-xs text-slate-500 mt-1">New (7d)</p>
-                      </div>
+
+                      {/* User Stats */}
+                      <Card className="border-white/5 bg-[#0F1419] p-5">
+                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-[#00B8D4]" />
+                          User Breakdown
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                          <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
+                            <p className="text-2xl font-bold text-white">{analytics.users?.active_users || 0}</p>
+                            <p className="text-xs text-slate-500 mt-1">Active</p>
+                          </div>
+                          <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
+                            <p className="text-2xl font-bold text-yellow-400">{analytics.users?.pending_users || 0}</p>
+                            <p className="text-xs text-slate-500 mt-1">Pending</p>
+                          </div>
+                          <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
+                            <p className="text-2xl font-bold text-red-400">{analytics.users?.suspended_users || 0}</p>
+                            <p className="text-xs text-slate-500 mt-1">Suspended</p>
+                          </div>
+                          <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
+                            <p className="text-2xl font-bold text-[#00FF9D]">+{analytics.users?.new_users_24h || 0}</p>
+                            <p className="text-xs text-slate-500 mt-1">New (24h)</p>
+                          </div>
+                          <div className="text-center p-4 bg-[#0B1015] rounded-lg border border-white/5">
+                            <p className="text-2xl font-bold text-[#00B8D4]">+{analytics.users?.new_users_7d || 0}</p>
+                            <p className="text-xs text-slate-500 mt-1">New (7d)</p>
+                          </div>
+                        </div>
+                      </Card>
+                    </>
+                  )}
+
+                  {!analytics && (
+                    <div className="text-center py-12 text-slate-500">
+                      <Activity className="w-12 h-12 mx-auto mb-4 text-slate-600" />
+                      <p>Loading analytics...</p>
                     </div>
-                  </Card>
+                  )}
                 </div>
               )}
 
@@ -517,44 +593,89 @@ const AdminPanel = () => {
                 </div>
               )}
 
-              {/* Deposits Tab */}
+              {/* Deposits Tab - Transaction History */}
               {activeTab === 'deposits' && (
-                <Card className="border-white/5 bg-[#0F1419]">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-[#0B1015] text-slate-400 uppercase text-xs font-semibold">
-                        <tr>
-                          <th className="px-5 py-3">Date</th>
-                          <th className="px-5 py-3">User</th>
-                          <th className="px-5 py-3">Amount</th>
-                          <th className="px-5 py-3">Tx Hash</th>
-                          <th className="px-5 py-3 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {pendingDeposits.length === 0 ? (
-                          <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-500"><CheckCircle className="w-8 h-8 mx-auto mb-2 text-slate-600" />No pending deposits</td></tr>
-                        ) : pendingDeposits.map((tx) => {
-                          const meta = tx.metadata ? JSON.parse(tx.metadata) : {};
-                          return (
-                            <tr key={tx.id} className="hover:bg-white/5">
-                              <td className="px-5 py-3 text-slate-400">{new Date(tx.created_at * 1000).toLocaleString()}</td>
-                              <td className="px-5 py-3 text-white">{tx.user_email}</td>
-                              <td className="px-5 py-3 font-mono text-[#00FF9D]">${tx.amount.toLocaleString()}</td>
-                              <td className="px-5 py-3">
-                                <code className="text-xs bg-black/30 px-2 py-0.5 rounded text-slate-300">{meta.txHash?.slice(0,10)}...{meta.txHash?.slice(-6)}</code>
-                                <a href={`https://tronscan.org/#/transaction/${meta.txHash}`} target="_blank" rel="noopener" className="ml-2 text-[#00B8D4]"><ExternalLink className="w-3 h-3 inline" /></a>
-                              </td>
-                              <td className="px-5 py-3 text-right">
-                                <Button size="sm" className="bg-[#00FF9D] hover:bg-[#00FF9D]/80 text-black" onClick={() => handleApproveDeposit(tx.id)}><CheckCircle className="w-4 h-4 mr-1" />Approve</Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                <div className="space-y-4">
+                  {/* Filter */}
+                  <div className="flex gap-3">
+                    <select
+                      value={depositsStatusFilter}
+                      onChange={(e) => { setDepositsStatusFilter(e.target.value); }}
+                      className="px-4 py-2 bg-[#0F1419] border border-white/10 rounded-lg text-sm text-white"
+                    >
+                      <option value="">All Deposits</option>
+                      <option value="completed">Completed</option>
+                      <option value="pending">Pending</option>
+                      <option value="failed">Failed</option>
+                    </select>
+                    <Button onClick={() => fetchDeposits()} variant="outline" size="md">Filter</Button>
                   </div>
-                </Card>
+
+                  <Card className="border-white/5 bg-[#0F1419] overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-[#0B1015] text-slate-400 uppercase text-xs font-semibold tracking-wider">
+                          <tr>
+                            <th className="px-5 py-3">Date</th>
+                            <th className="px-5 py-3">User</th>
+                            <th className="px-5 py-3">Amount</th>
+                            <th className="px-5 py-3">Status</th>
+                            <th className="px-5 py-3">Payment ID</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {deposits.length === 0 ? (
+                            <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-500"><TrendingUp className="w-8 h-8 mx-auto mb-2 text-slate-600" />No deposits found</td></tr>
+                          ) : deposits.map((tx) => {
+                            const meta = tx.metadata ? (typeof tx.metadata === 'string' ? JSON.parse(tx.metadata) : tx.metadata) : {};
+                            return (
+                              <tr key={tx.id} className="hover:bg-white/5 transition-colors">
+                                <td className="px-5 py-3 text-slate-400 text-xs">{new Date(tx.created_at * 1000).toLocaleString()}</td>
+                                <td className="px-5 py-3">
+                                  <div className="font-medium text-white">{tx.user_email}</div>
+                                </td>
+                                <td className="px-5 py-3 font-mono text-[#00FF9D] font-medium">${tx.amount.toLocaleString()}</td>
+                                <td className="px-5 py-3">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                    tx.status === 'completed' ? 'bg-[#00FF9D]/20 text-[#00FF9D]' :
+                                    tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-red-500/20 text-red-400'
+                                  }`}>
+                                    {tx.status}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3">
+                                  {meta.paymentId ? (
+                                    <code className="text-xs bg-black/30 px-2 py-0.5 rounded text-slate-300">{meta.paymentId}</code>
+                                  ) : meta.txHash ? (
+                                    <a href={`https://tronscan.org/#/transaction/${meta.txHash}`} target="_blank" rel="noopener" className="text-[#00B8D4] text-xs flex items-center gap-1">
+                                      {meta.txHash.slice(0, 8)}...{meta.txHash.slice(-6)} <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-500 text-xs">{tx.description || 'N/A'}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Pagination */}
+                    <div className="flex items-center justify-between px-5 py-3 border-t border-white/5 bg-[#0B1015]">
+                      <p className="text-xs text-slate-500">Showing {deposits.length} of {depositsPagination.total} deposits</p>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" disabled={!depositsPagination.hasPrev} onClick={() => fetchDeposits(depositsPagination.page - 1)}>
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="px-3 py-1 text-sm text-slate-400">Page {depositsPagination.page} / {depositsPagination.totalPages || 1}</span>
+                        <Button size="sm" variant="ghost" disabled={!depositsPagination.hasNext} onClick={() => fetchDeposits(depositsPagination.page + 1)}>
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
               )}
 
               {/* Withdrawals Tab */}

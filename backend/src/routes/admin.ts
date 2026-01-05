@@ -126,7 +126,7 @@ export async function handleAdminRoutes(
     }
   }
 
-  // GET /api/admin/deposits/pending - List pending deposits
+  // GET /api/admin/deposits/pending - List pending deposits (legacy, kept for compatibility)
   if (path === '/api/admin/deposits/pending' && request.method === 'GET') {
     try {
       const deposits = await env.DB.prepare(`
@@ -149,6 +149,78 @@ export async function handleAdminRoutes(
       return new Response(JSON.stringify({
         status: 'error',
         error: 'Failed to fetch pending deposits'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // GET /api/admin/deposits - List all deposits with pagination (completed via NowPayments)
+  if (path === '/api/admin/deposits' && request.method === 'GET') {
+    try {
+      const url = new URL(request.url);
+      const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+      const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)));
+      const status = url.searchParams.get('status') || ''; // completed, pending, failed
+      const offset = (page - 1) * limit;
+
+      // Build WHERE clause
+      const conditions: string[] = ["t.type = 'deposit'"];
+      const params: (string | number)[] = [];
+      
+      if (status && ['completed', 'pending', 'failed'].includes(status)) {
+        conditions.push('t.status = ?');
+        params.push(status);
+      }
+      
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+      // Get total count
+      const countResult = await env.DB.prepare(
+        `SELECT COUNT(*) as total FROM transactions t ${whereClause}`
+      ).bind(...params).first<{ total: number }>();
+      const total = countResult?.total ?? 0;
+
+      // Get paginated deposits
+      const deposits = await env.DB.prepare(`
+        SELECT 
+          t.id,
+          t.user_id,
+          t.type,
+          t.amount,
+          t.status,
+          t.description,
+          t.metadata,
+          t.created_at,
+          t.updated_at,
+          u.email as user_email
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        ${whereClause}
+        ORDER BY t.created_at DESC
+        LIMIT ? OFFSET ?
+      `).bind(...params, limit, offset).all();
+
+      return new Response(JSON.stringify({
+        status: 'success',
+        data: deposits.results,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNext: offset + limit < total,
+          hasPrev: page > 1,
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      console.error('Admin deposits list error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to fetch deposits'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
