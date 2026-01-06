@@ -54,3 +54,11 @@ database_id = "05d79612-7bfe-4c0c-8511-300ad9943042"
 # Secrets are configured via `wrangler secret put` (encrypted at rest)
 # Currently configured: JWT_SECRET, ZEPTOMAIL_API_KEY, NOWPAYMENTS_API_KEY, NOWPAYMENTS_IPN_SECRET
 # Run `npx wrangler secret list` to verify
+
+# ==============================================================================
+# CRON TRIGGERS (Scheduled Jobs)
+# ==============================================================================
+# Daily ROI Payouts - Runs every day at 00:00 UTC (midnight)
+# This processes ROI payments for all active pool stakes
+[triggers]
+crons = ["0 0 * * *"]

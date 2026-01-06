@@ -47,11 +47,13 @@ This document tracks the implementation of the complete enterprise trading platf
    - SSE (Server-Sent Events) for real-time updates
    - Trading session management in database
 
-2. **Pool System** (Medium Priority)
-   - Pool service layer
-   - Pool API endpoints (browse, stake, unstake)
-   - ROI calculation and payout scheduling
-   - Pool rebalancing
+2. **Pool System** (COMPLETED ✅)
+   - ✅ Pool service layer
+   - ✅ Pool API endpoints (browse, stake, unstake)
+   - ✅ ROI calculation and payout scheduling
+   - ✅ **Daily ROI Payout Automation via Cloudflare Cron Trigger**
+   - ✅ **Manual ROI Payout Trigger for Admins**
+   - Pool rebalancing (optional)
 
 3. **Referral System** (Medium Priority)
    - Referral service layer
@@ -59,10 +61,11 @@ This document tracks the implementation of the complete enterprise trading platf
    - Commission tracking and payouts
    - Downline management
 
-4. **Scheduled Workers** (Medium Priority)
-   - Cron jobs for daily ROI payouts
-   - Referral commission processing
-   - Pool rebalancing tasks
+4. **Scheduled Workers** (COMPLETED ✅)
+   - ✅ **Cron job for daily ROI payouts (runs at 00:00 UTC)**
+   - ✅ **Scheduled handler in index.ts**
+   - Referral commission processing (TODO)
+   - Pool rebalancing tasks (optional)
 
 5. **Admin Features** (Low Priority)
    - Admin routes for user management

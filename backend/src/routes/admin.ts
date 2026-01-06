@@ -774,6 +774,100 @@ export async function handleAdminRoutes(
     }
   }
 
+  // POST /api/admin/roi/process - Manually trigger ROI payout processing
+  if (path === '/api/admin/roi/process' && request.method === 'POST') {
+    try {
+      console.log('Admin triggered ROI payout processing');
+      
+      // Get all active stakes
+      const stakes = await env.DB.prepare(`
+        SELECT ps.*, p.roi_min, p.roi_max, p.name as pool_name
+        FROM pool_stakes ps
+        JOIN pools p ON ps.pool_id = p.id
+        WHERE ps.status = 'active'
+      `).all<{
+        id: number;
+        user_id: number;
+        pool_id: number;
+        amount: number;
+        roi_min: number;
+        roi_max: number;
+        pool_name: string;
+      }>();
+      
+      if (!stakes.results || stakes.results.length === 0) {
+        return new Response(JSON.stringify({
+          status: 'success',
+          message: 'No active stakes found for ROI payout',
+          data: { processed: 0, succeeded: 0, failed: 0 }
+        }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      
+      const timestamp = Math.floor(Date.now() / 1000);
+      let successCount = 0;
+      let errorCount = 0;
+      const results: Array<{ user_id: number; amount: number; status: string; error?: string }> = [];
+      
+      // Process each stake
+      for (const stake of stakes.results) {
+        try {
+          // Calculate daily ROI (average of min/max)
+          const dailyRoi = (stake.roi_min + stake.roi_max) / 2;
+          const payout = stake.amount * dailyRoi;
+          
+          // Update stake's total earned
+          await env.DB.prepare(
+            `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
+          ).bind(payout, stake.id).run();
+          
+          // Credit to user's wallet
+          await env.DB.prepare(
+            `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
+          ).bind(payout, timestamp, stake.user_id).run();
+          
+          // Create transaction record
+          await env.DB.prepare(
+            `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
+             VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
+          ).bind(stake.user_id, payout, `Daily ROI from ${stake.pool_name}`, timestamp, timestamp).run();
+          
+          successCount++;
+          results.push({ user_id: stake.user_id, amount: payout, status: 'success' });
+          console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${payout.toFixed(2)}`);
+        } catch (error) {
+          errorCount++;
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: errorMsg });
+          console.error(`Error processing stake ${stake.id}:`, error);
+        }
+      }
+      
+      return new Response(JSON.stringify({
+        status: 'success',
+        message: `ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`,
+        data: {
+          processed: stakes.results.length,
+          succeeded: successCount,
+          failed: errorCount,
+          results
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      console.error('Manual ROI processing error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to process ROI payouts'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
   return new Response(JSON.stringify({
     status: 'error',
     error: 'Not found'
