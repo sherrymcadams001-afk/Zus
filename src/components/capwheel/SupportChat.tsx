@@ -314,11 +314,6 @@ export const SupportChat = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { currentTier } = usePortfolioStore();
 
-  // Hide chat widget for unauthenticated users
-  if (!isAuthenticated) {
-    return null;
-  }
-
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -494,6 +489,11 @@ export const SupportChat = () => {
       handleSend();
     }
   }, [handleSend]);
+
+  // Hide chat widget for unauthenticated users (must be after all hooks)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <>
