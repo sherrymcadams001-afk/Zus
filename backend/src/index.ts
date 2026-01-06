@@ -142,20 +142,24 @@ async function processDailyROIPayouts(env: Env): Promise<void> {
   try {
     console.log('Starting daily ROI payout processing...');
     
-    // Get all active stakes
+    // Dynamic import to avoid circular dependencies
+    const { processRoiPayout } = await import('./services/poolService');
+    
+    // Get all active stakes with pool info
     const stakes = await env.DB.prepare(`
-      SELECT ps.*, p.roi_min, p.roi_max, p.name as pool_name
+      SELECT ps.* 
       FROM pool_stakes ps
-      JOIN pools p ON ps.pool_id = p.id
       WHERE ps.status = 'active'
     `).all<{
       id: number;
       user_id: number;
       pool_id: number;
       amount: number;
-      roi_min: number;
-      roi_max: number;
-      pool_name: string;
+      status: string;
+      staked_at: number;
+      unstake_available_at: number;
+      unstaked_at: number | null;
+      total_earned: number;
     }>();
     
     if (!stakes.results || stakes.results.length === 0) {
@@ -165,35 +169,21 @@ async function processDailyROIPayouts(env: Env): Promise<void> {
     
     console.log(`Processing ROI for ${stakes.results.length} active stakes`);
     
-    const timestamp = Math.floor(Date.now() / 1000);
     let successCount = 0;
     let errorCount = 0;
     
-    // Process each stake
+    // Process each stake using the poolService function
     for (const stake of stakes.results) {
       try {
-        // Calculate daily ROI (average of min/max)
-        const dailyRoi = (stake.roi_min + stake.roi_max) / 2;
-        const payout = stake.amount * dailyRoi;
+        const result = await processRoiPayout(env, stake);
         
-        // Update stake's total earned
-        await env.DB.prepare(
-          `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
-        ).bind(payout, stake.id).run();
-        
-        // Credit to user's wallet
-        await env.DB.prepare(
-          `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
-        ).bind(payout, timestamp, stake.user_id).run();
-        
-        // Create transaction record
-        await env.DB.prepare(
-          `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
-           VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
-        ).bind(stake.user_id, payout, `Daily ROI from ${stake.pool_name}`, timestamp, timestamp).run();
-        
-        successCount++;
-        console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${payout.toFixed(2)}`);
+        if (result.status === 'success') {
+          successCount++;
+          console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${result.data?.payout.toFixed(2)}`);
+        } else {
+          errorCount++;
+          console.error(`Failed to process stake ${stake.id}: ${result.error}`);
+        }
       } catch (error) {
         errorCount++;
         console.error(`Error processing stake ${stake.id}:`, error);

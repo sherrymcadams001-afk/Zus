@@ -35,6 +35,9 @@ export interface PoolStake {
   total_earned: number;
 }
 
+// Type for raw database queries that may have looser typing
+export type PoolStakeRow = Omit<PoolStake, 'status'> & { status: string };
+
 /**
  * Get all active pools
  */
@@ -139,11 +142,14 @@ export async function createStake(
 }
 
 /**
- * Calculate and credit ROI payout for a stake
+ * Calculate and credit ROI payout for a stake (ATOMIC)
+ * Uses D1 batch for atomic updates across multiple tables
+ * 
+ * @param stake - Can accept PoolStake or PoolStakeRow (from raw queries)
  */
 export async function processRoiPayout(
   env: Env,
-  stake: PoolStake
+  stake: PoolStake | PoolStakeRow
 ): Promise<ApiResponse<{ payout: number }>> {
   try {
     // Get pool to determine ROI rate
@@ -155,27 +161,35 @@ export async function processRoiPayout(
       return { status: 'error', error: 'Pool not found' };
     }
     
+    // Validate ROI rates
+    if (pool.roi_min < 0 || pool.roi_max < 0 || pool.roi_min > pool.roi_max) {
+      return { status: 'error', error: 'Invalid pool ROI configuration' };
+    }
+    
     // Calculate daily ROI (average of min/max)
     const dailyRoi = (pool.roi_min + pool.roi_max) / 2;
     const payout = stake.amount * dailyRoi;
     
     const timestamp = Math.floor(Date.now() / 1000);
     
-    // Update stake's total earned
-    await env.DB.prepare(
-      `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
-    ).bind(payout, stake.id).run();
-    
-    // Credit to user's wallet
-    await env.DB.prepare(
-      `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
-    ).bind(payout, timestamp, stake.user_id).run();
-    
-    // Create transaction record
-    await env.DB.prepare(
-      `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
-       VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
-    ).bind(stake.user_id, payout, `ROI payout from ${pool.name}`, timestamp, timestamp).run();
+    // ATOMIC batch update for data consistency
+    await env.DB.batch([
+      // Update stake's total earned
+      env.DB.prepare(
+        `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
+      ).bind(payout, stake.id),
+      
+      // Credit to user's wallet
+      env.DB.prepare(
+        `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
+      ).bind(payout, timestamp, stake.user_id),
+      
+      // Create transaction record
+      env.DB.prepare(
+        `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
+         VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
+      ).bind(stake.user_id, payout, `ROI payout from ${pool.name}`, timestamp, timestamp),
+    ]);
     
     return {
       status: 'success',
