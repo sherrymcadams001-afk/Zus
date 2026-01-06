@@ -8,7 +8,7 @@ import { Env } from '../types';
 import { requireAdmin } from '../middleware/admin';
 import { processDeposit, approveDeposit } from '../services/walletService';
 import { sendApprovalEmail } from '../services/emailService';
-import { processRoiPayout } from '../services/poolService';
+import { processRoiPayout, getActiveStakesForPayout } from '../services/poolService';
 
 /**
  * Handle admin routes
@@ -780,24 +780,10 @@ export async function handleAdminRoutes(
     try {
       console.log('Admin triggered ROI payout processing');
       
-      // Get all active stakes
-      const stakes = await env.DB.prepare(`
-        SELECT ps.* 
-        FROM pool_stakes ps
-        WHERE ps.status = 'active'
-      `).all<{
-        id: number;
-        user_id: number;
-        pool_id: number;
-        amount: number;
-        status: string;
-        staked_at: number;
-        unstake_available_at: number;
-        unstaked_at: number | null;
-        total_earned: number;
-      }>();
+      // Get all active stakes using shared function
+      const stakes = await getActiveStakesForPayout(env);
       
-      if (!stakes.results || stakes.results.length === 0) {
+      if (!stakes || stakes.length === 0) {
         return new Response(JSON.stringify({
           status: 'success',
           message: 'No active stakes found for ROI payout',
@@ -812,7 +798,7 @@ export async function handleAdminRoutes(
       const results: Array<{ user_id: number; amount: number; status: string; error?: string }> = [];
       
       // Process each stake using the shared poolService function
-      for (const stake of stakes.results) {
+      for (const stake of stakes) {
         try {
           const result = await processRoiPayout(env, stake);
           
@@ -837,7 +823,7 @@ export async function handleAdminRoutes(
         status: 'success',
         message: `ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`,
         data: {
-          processed: stakes.results.length,
+          processed: stakes.length,
           succeeded: successCount,
           failed: errorCount,
           results

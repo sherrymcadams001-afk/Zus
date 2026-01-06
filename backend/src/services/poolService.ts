@@ -222,3 +222,17 @@ export async function getTotalEarned(env: Env, userId: number): Promise<number> 
   
   return result?.total ?? 0;
 }
+
+/**
+ * Get all active stakes for ROI processing
+ * Shared function used by cron and admin endpoints
+ */
+export async function getActiveStakesForPayout(env: Env): Promise<PoolStakeRow[]> {
+  const stakes = await env.DB.prepare(`
+    SELECT ps.* 
+    FROM pool_stakes ps
+    WHERE ps.status = 'active'
+  `).all<PoolStakeRow>();
+  
+  return stakes.results || [];
+}
