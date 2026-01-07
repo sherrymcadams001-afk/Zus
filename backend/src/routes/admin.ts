@@ -8,7 +8,7 @@ import { Env } from '../types';
 import { requireAdmin } from '../middleware/admin';
 import { processDeposit, approveDeposit } from '../services/walletService';
 import { sendApprovalEmail } from '../services/emailService';
-import { processRoiPayout, getActiveStakesForPayout } from '../services/poolService';
+import { processAllActiveStakePayouts } from '../services/poolService';
 
 /**
  * Handle admin routes
@@ -780,10 +780,10 @@ export async function handleAdminRoutes(
     try {
       console.log('Admin triggered ROI payout processing');
       
-      // Get all active stakes using shared function
-      const stakes = await getActiveStakesForPayout(env);
+      // Delegate full payout processing to shared service logic
+      const { successCount, errorCount, results } = await processAllActiveStakePayouts(env);
       
-      if (!stakes || stakes.length === 0) {
+      if (successCount === 0 && errorCount === 0) {
         return new Response(JSON.stringify({
           status: 'success',
           message: 'No active stakes found for ROI payout',
@@ -793,37 +793,11 @@ export async function handleAdminRoutes(
         });
       }
       
-      let successCount = 0;
-      let errorCount = 0;
-      const results: Array<{ user_id: number; amount: number; status: string; error?: string }> = [];
-      
-      // Process each stake using the shared poolService function
-      for (const stake of stakes) {
-        try {
-          const result = await processRoiPayout(env, stake);
-          
-          if (result.status === 'success') {
-            successCount++;
-            results.push({ user_id: stake.user_id, amount: result.data?.payout || 0, status: 'success' });
-            console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${result.data?.payout.toFixed(2)}`);
-          } else {
-            errorCount++;
-            results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: result.error });
-            console.error(`Failed to process stake ${stake.id}: ${result.error}`);
-          }
-        } catch (error) {
-          errorCount++;
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-          results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: errorMsg });
-          console.error(`Error processing stake ${stake.id}:`, error);
-        }
-      }
-      
       return new Response(JSON.stringify({
         status: 'success',
         message: `ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`,
         data: {
-          processed: stakes.length,
+          processed: successCount + errorCount,
           succeeded: successCount,
           failed: errorCount,
           results

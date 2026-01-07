@@ -188,7 +188,7 @@ export async function processRoiPayout(
       env.DB.prepare(
         `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
          VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
-      ).bind(stake.user_id, payout, `ROI payout from ${pool.name}`, timestamp, timestamp),
+      ).bind(stake.user_id, payout, `Daily ROI from ${pool.name}`, timestamp, timestamp),
     ]);
     
     return {
@@ -235,4 +235,72 @@ export async function getActiveStakesForPayout(env: Env): Promise<PoolStakeRow[]
   `).all<PoolStakeRow>();
   
   return stakes.results || [];
+}
+
+/**
+ * Process all active stake payouts with concurrent execution
+ * Shared function used by both cron handler and admin endpoint
+ * 
+ * @returns Object with successCount and errorCount
+ */
+export async function processAllActiveStakePayouts(
+  env: Env
+): Promise<{ 
+  successCount: number; 
+  errorCount: number;
+  results: Array<{ user_id: number; amount: number; status: string; error?: string }>;
+}> {
+  console.log('Starting ROI payout processing...');
+  
+  // Get all active stakes
+  const stakes = await getActiveStakesForPayout(env);
+  
+  if (!stakes || stakes.length === 0) {
+    console.log('No active stakes found for ROI payout');
+    return { successCount: 0, errorCount: 0, results: [] };
+  }
+  
+  console.log(`Processing ROI for ${stakes.length} active stakes`);
+  
+  // Process all stakes concurrently using Promise.allSettled
+  // This significantly improves performance for large numbers of stakes
+  const settledResults = await Promise.allSettled(
+    stakes.map(async (stake) => {
+      const result = await processRoiPayout(env, stake);
+      return { stake, result };
+    })
+  );
+  
+  let successCount = 0;
+  let errorCount = 0;
+  const results: Array<{ user_id: number; amount: number; status: string; error?: string }> = [];
+  
+  // Process results
+  for (const settled of settledResults) {
+    if (settled.status === 'fulfilled') {
+      const { stake, result } = settled.value;
+      
+      if (result.status === 'success') {
+        successCount++;
+        const payout = result.data?.payout ?? 0;
+        results.push({ user_id: stake.user_id, amount: payout, status: 'success' });
+        console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${payout.toFixed(2)}`);
+      } else {
+        errorCount++;
+        results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: result.error });
+        console.error(`Failed to process stake ${stake.id}: ${result.error}`);
+      }
+    } else {
+      // settled.reason contains the error thrown during processing
+      errorCount++;
+      console.error('Error processing stake during ROI payout:', settled.reason);
+      // Try to extract user_id if available from the error context
+      const errorMsg = settled.reason instanceof Error ? settled.reason.message : 'Unknown error';
+      results.push({ user_id: 0, amount: 0, status: 'failed', error: errorMsg });
+    }
+  }
+  
+  console.log(`ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`);
+  
+  return { successCount, errorCount, results };
 }

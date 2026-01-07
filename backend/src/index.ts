@@ -140,43 +140,11 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
  */
 async function processDailyROIPayouts(env: Env): Promise<void> {
   try {
-    console.log('Starting daily ROI payout processing...');
+    // Import shared processing function
+    const { processAllActiveStakePayouts } = await import('./services/poolService');
     
-    // Dynamic import to avoid circular dependencies
-    const { processRoiPayout, getActiveStakesForPayout } = await import('./services/poolService');
-    
-    // Get all active stakes using shared function
-    const stakes = await getActiveStakesForPayout(env);
-    
-    if (!stakes || stakes.length === 0) {
-      console.log('No active stakes found for ROI payout');
-      return;
-    }
-    
-    console.log(`Processing ROI for ${stakes.length} active stakes`);
-    
-    let successCount = 0;
-    let errorCount = 0;
-    
-    // Process each stake using the poolService function
-    for (const stake of stakes) {
-      try {
-        const result = await processRoiPayout(env, stake);
-        
-        if (result.status === 'success') {
-          successCount++;
-          console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${result.data?.payout.toFixed(2)}`);
-        } else {
-          errorCount++;
-          console.error(`Failed to process stake ${stake.id}: ${result.error}`);
-        }
-      } catch (error) {
-        errorCount++;
-        console.error(`Error processing stake ${stake.id}:`, error);
-      }
-    }
-    
-    console.log(`ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`);
+    // Delegate full payout processing to shared service logic
+    await processAllActiveStakePayouts(env);
   } catch (error) {
     console.error('Fatal error in ROI payout processing:', error);
     throw error;
