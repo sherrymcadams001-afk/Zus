@@ -266,8 +266,19 @@ export async function processAllActiveStakePayouts(
   // This significantly improves performance for large numbers of stakes
   const settledResults = await Promise.allSettled(
     stakes.map(async (stake) => {
-      const result = await processRoiPayout(env, stake);
-      return { stake, result };
+      try {
+        const result = await processRoiPayout(env, stake);
+        return { stake, result };
+      } catch (error) {
+        // Catch and wrap errors to preserve stake context
+        return { 
+          stake, 
+          result: { 
+            status: 'error' as const, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          } 
+        };
+      }
     })
   );
   
@@ -288,15 +299,14 @@ export async function processAllActiveStakePayouts(
       } else {
         errorCount++;
         results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: result.error });
-        console.error(`Failed to process stake ${stake.id}: ${result.error}`);
+        console.error(`Failed to process stake ${stake.id} for user ${stake.user_id}: ${result.error}`);
       }
     } else {
-      // settled.reason contains the error thrown during processing
+      // This should rarely happen now since we catch errors inside the map
       errorCount++;
-      console.error('Error processing stake during ROI payout:', settled.reason);
-      // Try to extract user_id if available from the error context
       const errorMsg = settled.reason instanceof Error ? settled.reason.message : 'Unknown error';
-      results.push({ user_id: 0, amount: 0, status: 'failed', error: errorMsg });
+      console.error('Unexpected error processing stake during ROI payout:', settled.reason);
+      results.push({ user_id: 0, amount: 0, status: 'failed', error: `Unexpected error: ${errorMsg}` });
     }
   }
   

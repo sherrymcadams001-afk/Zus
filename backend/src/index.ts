@@ -144,7 +144,10 @@ async function processDailyROIPayouts(env: Env): Promise<void> {
     const { processAllActiveStakePayouts } = await import('./services/poolService');
     
     // Delegate full payout processing to shared service logic
-    await processAllActiveStakePayouts(env);
+    const { successCount, errorCount } = await processAllActiveStakePayouts(env);
+    
+    // Log summary for monitoring scheduled execution
+    console.log(`Scheduled ROI payout complete: ${successCount} succeeded, ${errorCount} failed`);
   } catch (error) {
     console.error('Fatal error in ROI payout processing:', error);
     throw error;
