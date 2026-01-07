@@ -35,6 +35,9 @@ export interface PoolStake {
   total_earned: number;
 }
 
+// Type for raw database queries that may have looser typing
+export type PoolStakeRow = Omit<PoolStake, 'status'> & { status: string };
+
 /**
  * Get all active pools
  */
@@ -139,11 +142,14 @@ export async function createStake(
 }
 
 /**
- * Calculate and credit ROI payout for a stake
+ * Calculate and credit ROI payout for a stake (ATOMIC)
+ * Uses D1 batch for atomic updates across multiple tables
+ * 
+ * @param stake - Can accept PoolStake or PoolStakeRow (from raw queries)
  */
 export async function processRoiPayout(
   env: Env,
-  stake: PoolStake
+  stake: PoolStake | PoolStakeRow
 ): Promise<ApiResponse<{ payout: number }>> {
   try {
     // Get pool to determine ROI rate
@@ -155,27 +161,35 @@ export async function processRoiPayout(
       return { status: 'error', error: 'Pool not found' };
     }
     
+    // Validate ROI rates
+    if (pool.roi_min < 0 || pool.roi_max < 0 || pool.roi_min > pool.roi_max) {
+      return { status: 'error', error: 'Invalid pool ROI configuration' };
+    }
+    
     // Calculate daily ROI (average of min/max)
     const dailyRoi = (pool.roi_min + pool.roi_max) / 2;
     const payout = stake.amount * dailyRoi;
     
     const timestamp = Math.floor(Date.now() / 1000);
     
-    // Update stake's total earned
-    await env.DB.prepare(
-      `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
-    ).bind(payout, stake.id).run();
-    
-    // Credit to user's wallet
-    await env.DB.prepare(
-      `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
-    ).bind(payout, timestamp, stake.user_id).run();
-    
-    // Create transaction record
-    await env.DB.prepare(
-      `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
-       VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
-    ).bind(stake.user_id, payout, `ROI payout from ${pool.name}`, timestamp, timestamp).run();
+    // ATOMIC batch update for data consistency
+    await env.DB.batch([
+      // Update stake's total earned
+      env.DB.prepare(
+        `UPDATE pool_stakes SET total_earned = total_earned + ? WHERE id = ?`
+      ).bind(payout, stake.id),
+      
+      // Credit to user's wallet
+      env.DB.prepare(
+        `UPDATE wallets SET available_balance = available_balance + ?, updated_at = ? WHERE user_id = ?`
+      ).bind(payout, timestamp, stake.user_id),
+      
+      // Create transaction record
+      env.DB.prepare(
+        `INSERT INTO transactions (user_id, type, amount, status, description, created_at, completed_at)
+         VALUES (?, 'roi_payout', ?, 'completed', ?, ?, ?)`
+      ).bind(stake.user_id, payout, `Daily ROI from ${pool.name}`, timestamp, timestamp),
+    ]);
     
     return {
       status: 'success',
@@ -207,4 +221,96 @@ export async function getTotalEarned(env: Env, userId: number): Promise<number> 
   ).bind(userId).first<{ total: number }>();
   
   return result?.total ?? 0;
+}
+
+/**
+ * Get all active stakes for ROI processing
+ * Shared function used by cron and admin endpoints
+ */
+export async function getActiveStakesForPayout(env: Env): Promise<PoolStakeRow[]> {
+  const stakes = await env.DB.prepare(`
+    SELECT ps.* 
+    FROM pool_stakes ps
+    WHERE ps.status = 'active'
+  `).all<PoolStakeRow>();
+  
+  return stakes.results || [];
+}
+
+/**
+ * Process all active stake payouts with concurrent execution
+ * Shared function used by both cron handler and admin endpoint
+ * 
+ * @returns Object with successCount and errorCount
+ */
+export async function processAllActiveStakePayouts(
+  env: Env
+): Promise<{ 
+  successCount: number; 
+  errorCount: number;
+  results: Array<{ user_id: number; amount: number; status: string; error?: string }>;
+}> {
+  console.log('Starting ROI payout processing...');
+  
+  // Get all active stakes
+  const stakes = await getActiveStakesForPayout(env);
+  
+  if (!stakes || stakes.length === 0) {
+    console.log('No active stakes found for ROI payout');
+    return { successCount: 0, errorCount: 0, results: [] };
+  }
+  
+  console.log(`Processing ROI for ${stakes.length} active stakes`);
+  
+  // Process all stakes concurrently using Promise.allSettled
+  // This significantly improves performance for large numbers of stakes
+  const settledResults = await Promise.allSettled(
+    stakes.map(async (stake) => {
+      try {
+        const result = await processRoiPayout(env, stake);
+        return { stake, result };
+      } catch (error) {
+        // Catch and wrap errors to preserve stake context
+        return { 
+          stake, 
+          result: { 
+            status: 'error' as const, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          } 
+        };
+      }
+    })
+  );
+  
+  let successCount = 0;
+  let errorCount = 0;
+  const results: Array<{ user_id: number; amount: number; status: string; error?: string }> = [];
+  
+  // Process results
+  for (const settled of settledResults) {
+    if (settled.status === 'fulfilled') {
+      const { stake, result } = settled.value;
+      
+      if (result.status === 'success') {
+        successCount++;
+        const payout = result.data?.payout ?? 0;
+        results.push({ user_id: stake.user_id, amount: payout, status: 'success' });
+        console.log(`Processed ROI payout: User ${stake.user_id}, Amount: $${payout.toFixed(2)}`);
+      } else {
+        errorCount++;
+        results.push({ user_id: stake.user_id, amount: 0, status: 'failed', error: result.error });
+        console.error(`Failed to process stake ${stake.id} for user ${stake.user_id}: ${result.error}`);
+      }
+    } else {
+      // This should rarely happen now since we catch errors inside the map
+      errorCount++;
+      const errorMsg = settled.reason instanceof Error ? settled.reason.message : 'Unknown error';
+      console.error('Unexpected error processing stake during ROI payout:', settled.reason);
+      results.push({ user_id: 0, amount: 0, status: 'failed', error: `Unexpected error: ${errorMsg}` });
+    }
+  }
+  
+  console.log(`ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`);
+  
+  return { successCount, errorCount, results };
 }

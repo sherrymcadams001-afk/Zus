@@ -8,6 +8,7 @@ import { Env } from '../types';
 import { requireAdmin } from '../middleware/admin';
 import { processDeposit, approveDeposit } from '../services/walletService';
 import { sendApprovalEmail } from '../services/emailService';
+import { processAllActiveStakePayouts } from '../services/poolService';
 
 /**
  * Handle admin routes
@@ -767,6 +768,48 @@ export async function handleAdminRoutes(
       return new Response(JSON.stringify({
         status: 'error',
         error: 'Failed to update balance'
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  // POST /api/admin/roi/process - Manually trigger ROI payout processing
+  if (path === '/api/admin/roi/process' && request.method === 'POST') {
+    try {
+      console.log('Admin triggered ROI payout processing');
+      
+      // Delegate full payout processing to shared service logic
+      const { successCount, errorCount, results } = await processAllActiveStakePayouts(env);
+      
+      if (successCount === 0 && errorCount === 0) {
+        return new Response(JSON.stringify({
+          status: 'success',
+          message: 'No active stakes found for ROI payout',
+          data: { processed: 0, succeeded: 0, failed: 0 }
+        }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      
+      return new Response(JSON.stringify({
+        status: 'success',
+        message: `ROI payout processing complete: ${successCount} succeeded, ${errorCount} failed`,
+        data: {
+          processed: successCount + errorCount,
+          succeeded: successCount,
+          failed: errorCount,
+          results
+        }
+      }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      console.error('Manual ROI processing error:', error);
+      return new Response(JSON.stringify({
+        status: 'error',
+        error: 'Failed to process ROI payouts'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }

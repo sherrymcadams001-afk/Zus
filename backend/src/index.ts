@@ -135,11 +135,48 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
   });
 }
 
+/**
+ * Process daily ROI payouts for all active stakes
+ */
+async function processDailyROIPayouts(env: Env): Promise<void> {
+  try {
+    // Import shared processing function
+    const { processAllActiveStakePayouts } = await import('./services/poolService');
+    
+    // Delegate full payout processing to shared service logic
+    const { successCount, errorCount } = await processAllActiveStakePayouts(env);
+    
+    // Log summary for monitoring scheduled execution
+    console.log(`Scheduled ROI payout complete: ${successCount} succeeded, ${errorCount} failed`);
+  } catch (error) {
+    console.error('Fatal error in ROI payout processing:', error);
+    throw error;
+  }
+}
+
 export default {
   /**
    * Handle HTTP fetch requests
    */
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     return handleRequest(request, env, ctx);
+  },
+
+  /**
+   * Handle scheduled events (Cron Triggers)
+   * 
+   * @param event - Scheduled event with cron timing info
+   * @param env - Environment bindings
+   * @param ctx - Execution context for background tasks
+   */
+  async scheduled(event: { cron: string }, env: Env, ctx: ExecutionContext): Promise<void> {
+    console.log('Scheduled event triggered:', event.cron);
+    
+    // Execute daily ROI payouts
+    ctx.waitUntil(
+      processDailyROIPayouts(env).catch(err => {
+        console.error('Scheduled ROI payout failed:', err);
+      })
+    );
   },
 };

@@ -124,15 +124,33 @@ export const BOT_TIERS: Record<BotTier, {
 
 // ========== Core Orchestrator ==========
 
+export interface ROIData {
+  currentRatePercent: number;       // Current instantaneous rate as %
+  actualDailyRatePercent: number;   // What 24h cumulative will be
+  currentHourlyEarning: number;     // Current hourly earnings
+  projectedDailyEarning: number;    // If current rate continued
+  actualDailyEarning: number;       // Actual 24h earnings
+  rateMultiplier: number;           // How much above/below base (1.0 = normal)
+  marketSentiment: 'bullish' | 'bearish' | 'neutral';
+  volatility: 'high' | 'medium' | 'low';
+  displayRate: string;              // Formatted display rate
+  tier: BotTier;
+  history?: Array<{                 // Optional 24h history
+    timestamp: number;
+    hourlyRate: number;
+    ratePercent: number;
+  }>;
+}
+
 export interface DashboardData {
   // Metric Cards
   aum: number;                    // From wallet.available_balance + pool_stakes.amount
-  netYieldPercent: number;        // Daily ROI % - from bot tier rate (actual earnings shown elsewhere)
+  netYieldPercent: number;        // Dynamic ROI % - from backend's real-time calculation
   partnerVolume: number;          // Sum of referral downstream investments
   vestingRunway: number;          // Days until capital withdrawal available
   
-  // Dynamic Data Matrix (Cash Flow)
-  dailyEarnings: number;          // AUM × dailyRoiMax
+  // Dynamic Data Matrix (Cash Flow) - Uses DYNAMIC ROI from backend
+  dailyEarnings: number;          // From backend's actualDailyEarning
   weeklyEarnings: number;         // dailyEarnings × tradingDaysPerWeek
   monthlyEarnings: number;        // weeklyEarnings × 4.33 (avg weeks/month)
   
@@ -150,6 +168,9 @@ export interface DashboardData {
   // Bot Tier
   currentTier: BotTier;
   tierConfig: typeof BOT_TIERS[BotTier];
+  
+  // Dynamic ROI Data (from backend)
+  roi: ROIData | null;
   
   // Timestamps
   lastUpdated: number;
@@ -262,6 +283,7 @@ export async function fetchDashboardAggregate(): Promise<{
   transactions: TransactionData[];
   staking: { activeStakes: PoolStakeData[]; totalStaked: number; totalEarned: number };
   referrals: { partnerVolume: number };
+  roi: ROIData;
 } | null> {
   try {
     const response = await apiClient.get('/api/dashboard');
@@ -359,11 +381,13 @@ export async function fetchPartnerVolume(): Promise<number> {
 /**
  * Fetch all dashboard data in ONE API call
  * OPTIMIZED: 6 calls → 1 call for free-tier efficiency
+ * 
+ * Now uses DYNAMIC ROI from backend instead of static tier averages
  */
 export async function orchestrateDashboardData(): Promise<DashboardData> {
   const startTime = Date.now();
   
-  // Single API call fetches everything
+  // Single API call fetches everything (including dynamic ROI)
   const aggregateData = await fetchDashboardAggregate();
   
   if (!aggregateData) {
@@ -371,20 +395,20 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     return getDefaultDashboardData();
   }
   
-  const { wallet, portfolio, trades, transactions, staking, referrals } = aggregateData;
+  const { wallet, portfolio, trades, transactions, staking, referrals, roi } = aggregateData;
   const { activeStakes, totalStaked } = staking;
   const { partnerVolume } = referrals;
   
   // Calculate AUM = available balance + active stakes
   const aum = (wallet?.available_balance ?? 0) + totalStaked;
   
-  // Determine bot tier based on total investment
-  const currentTier = getBotTierForAmount(aum);
+  // Use backend's dynamic tier determination (based on actual stake amount)
+  const currentTier = roi?.tier ?? getBotTierForAmount(aum);
   const tierConfig = BOT_TIERS[currentTier];
   
-  // Calculate ROI % - show the tier's daily rate
-  // This is the user's current daily ROI based on their tier
-  const netYieldPercent = tierConfig.dailyRoiMax * 100;
+  // Use DYNAMIC ROI from backend instead of static tier max
+  // The backend calculates this using the sophisticated wave-based algorithm
+  const netYieldPercent = roi?.actualDailyRatePercent ?? (tierConfig.dailyRoiMax * 100);
   
   // Calculate vesting runway from earliest active stake
   const earliestStake = activeStakes.length > 0 
@@ -392,8 +416,11 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     : Math.floor(Date.now() / 1000);
   const vestingRunway = calculateVestingRunway(earliestStake, currentTier);
   
-  // Calculate earnings projections
-  const earnings = calculateEarningsProjections(aum, currentTier);
+  // Use DYNAMIC earnings from backend instead of static calculations
+  // This reflects the real-time fluctuating ROI, not just tier averages
+  const dailyEarnings = roi?.actualDailyEarning ?? (aum * tierConfig.dailyRoiMax);
+  const weeklyEarnings = dailyEarnings * tierConfig.tradingDaysPerWeek;
+  const monthlyEarnings = weeklyEarnings * 4.33; // Average weeks per month
   
   // Calculate strategy metrics from trade history
   const sharpeRatio = calculateSharpeRatio(trades);
@@ -409,14 +436,14 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   return {
     // Metric Cards
     aum,
-    netYieldPercent,
+    netYieldPercent,  // Now uses dynamic ROI from backend
     partnerVolume,
     vestingRunway,
     
-    // Dynamic Data Matrix
-    dailyEarnings: earnings.daily,
-    weeklyEarnings: earnings.weekly,
-    monthlyEarnings: earnings.monthly,
+    // Dynamic Data Matrix - Now uses real-time ROI from backend
+    dailyEarnings,
+    weeklyEarnings,
+    monthlyEarnings,
     
     // Strategy Performance
     sharpeRatio,
@@ -430,6 +457,9 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
     // Bot Tier
     currentTier,
     tierConfig,
+    
+    // Dynamic ROI Data (pass through from backend)
+    roi: roi ?? null,
     
     // Timestamps
     lastUpdated: Date.now(),
@@ -466,6 +496,8 @@ export function getDefaultDashboardData(): DashboardData {
     
     currentTier: tier,
     tierConfig: config,
+    
+    roi: null, // No ROI data when not authenticated
     
     lastUpdated: Date.now(),
     dataFreshness: 'error',
