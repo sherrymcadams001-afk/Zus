@@ -167,6 +167,7 @@ export const OrionWealthChart = () => {
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: chartHeight,
+      autoSize: false,
       layout: {
         background: { color: 'transparent' },
         textColor: '#64748b',
@@ -200,6 +201,8 @@ export const OrionWealthChart = () => {
           labelBackgroundColor: '#00FF9D',
         },
       },
+      handleScale: false,
+      handleScroll: false,
     });
 
     // Create AUM series (primary - Area for emphasis)
@@ -352,39 +355,51 @@ export const OrionWealthChart = () => {
   }, [initChart]);
 
   // Real-time updates - simulates live platform activity across all metrics
+  // Use requestAnimationFrame for smoother rendering
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Math.floor(Date.now() / 1000) as Time;
-      
-      // Update each series with correlated micro-fluctuations
-      const baseFlux = (Math.random() - 0.5) * 0.001;
-      
-      if (seriesRefs.current.aum && latestValues.aum > 0) {
-        const newAum = latestValues.aum * (1 + baseFlux + (Math.random() - 0.5) * 0.0005);
-        seriesRefs.current.aum.update({ time: now, value: newAum });
-        setLatestValues(prev => ({ ...prev, aum: newAum }));
+    let animationId: number;
+    let lastUpdate = 0;
+    const updateInterval = 3000; // Update every 3 seconds instead of 2.5
+    
+    const updateChart = (timestamp: number) => {
+      if (timestamp - lastUpdate >= updateInterval) {
+        lastUpdate = timestamp;
+        const now = Math.floor(Date.now() / 1000) as Time;
+        
+        // Update each series with correlated micro-fluctuations
+        const baseFlux = (Math.random() - 0.5) * 0.0008; // Reduced fluctuation
+        
+        if (seriesRefs.current.aum && latestValues.aum > 0) {
+          const newAum = latestValues.aum * (1 + baseFlux + (Math.random() - 0.5) * 0.0004);
+          seriesRefs.current.aum.update({ time: now, value: newAum });
+          setLatestValues(prev => ({ ...prev, aum: newAum }));
+        }
+        
+        if (seriesRefs.current.stakingPool && latestValues.stakingPool > 0) {
+          const newStaking = latestValues.stakingPool * (1 + baseFlux * 0.6 + (Math.random() - 0.5) * 0.0002);
+          seriesRefs.current.stakingPool.update({ time: now, value: newStaking });
+          setLatestValues(prev => ({ ...prev, stakingPool: newStaking }));
+        }
+        
+        if (seriesRefs.current.tradingVolume && latestValues.tradingVolume > 0) {
+          const newVolume = latestValues.tradingVolume * (1 + (Math.random() - 0.5) * 0.002);
+          seriesRefs.current.tradingVolume.update({ time: now, value: newVolume });
+          setLatestValues(prev => ({ ...prev, tradingVolume: newVolume }));
+        }
+        
+        if (seriesRefs.current.netInflows && latestValues.netInflows > 0) {
+          const newInflows = latestValues.netInflows * (1 + (Math.random() - 0.45) * 0.003);
+          seriesRefs.current.netInflows.update({ time: now, value: Math.max(newInflows, 0) });
+          setLatestValues(prev => ({ ...prev, netInflows: Math.max(newInflows, 0) }));
+        }
       }
       
-      if (seriesRefs.current.stakingPool && latestValues.stakingPool > 0) {
-        const newStaking = latestValues.stakingPool * (1 + baseFlux * 0.7 + (Math.random() - 0.5) * 0.0003);
-        seriesRefs.current.stakingPool.update({ time: now, value: newStaking });
-        setLatestValues(prev => ({ ...prev, stakingPool: newStaking }));
-      }
-      
-      if (seriesRefs.current.tradingVolume && latestValues.tradingVolume > 0) {
-        const newVolume = latestValues.tradingVolume * (1 + (Math.random() - 0.5) * 0.003);
-        seriesRefs.current.tradingVolume.update({ time: now, value: newVolume });
-        setLatestValues(prev => ({ ...prev, tradingVolume: newVolume }));
-      }
-      
-      if (seriesRefs.current.netInflows && latestValues.netInflows > 0) {
-        const newInflows = latestValues.netInflows * (1 + (Math.random() - 0.45) * 0.004);
-        seriesRefs.current.netInflows.update({ time: now, value: Math.max(newInflows, 0) });
-        setLatestValues(prev => ({ ...prev, netInflows: Math.max(newInflows, 0) }));
-      }
-    }, 2500);
+      animationId = requestAnimationFrame(updateChart);
+    };
+    
+    animationId = requestAnimationFrame(updateChart);
 
-    return () => clearInterval(interval);
+    return () => cancelAnimationFrame(animationId);
   }, [latestValues]);
 
   const formatCurrency = (val: number) => {

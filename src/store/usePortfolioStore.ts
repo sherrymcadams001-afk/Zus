@@ -27,6 +27,9 @@ interface PortfolioState {
   startOfDayEquity: number;
   startOfDayWalletBalance: number;
   
+  // Cashflow (ROI from trades)
+  dailyCashflow: number;
+  
   // Strategy Tier
   currentTier: string | null;
   
@@ -43,7 +46,7 @@ interface PortfolioState {
   
   // Actions
   initFromBackend: () => Promise<void>;
-  addTrade: (trade: Omit<Trade, 'id' | 'timestamp'>) => void;
+  addTrade: (trade: Omit<Trade, 'id' | 'timestamp'> & { timestamp?: number }) => void;
   addLog: (message: string, type: LogEntry['type']) => void;
   updateBalances: (walletDelta: number, poolDelta: number) => void;
   setEquity: (equity: number) => void;
@@ -61,6 +64,9 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   sessionPnL: 0,
   startOfDayEquity: 0,
   startOfDayWalletBalance: 0,
+  
+  // Cashflow tracking
+  dailyCashflow: 0,
   
   currentTier: null,
   isLoading: false,
@@ -130,6 +136,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     startOfDayEquity: walletBalance + state.poolBalance,
     startOfDayWalletBalance: walletBalance,
     sessionPnL: 0,
+    dailyCashflow: 0,
   })),
 
   addTrade: (tradeData) => {
@@ -137,13 +144,14 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     const pnl = Number(tradeData.pnl);
     const newTrade: Trade = {
       ...tradeData,
-      id: Date.now(),
-      timestamp: Date.now(),
+      id: tradeData.timestamp ?? Date.now(),
+      timestamp: tradeData.timestamp ?? Date.now(),
       pnl,
     };
     
     // Update PnL based on trade result
     const newPnL = state.sessionPnL + pnl;
+    const newCashflow = state.dailyCashflow + pnl;
     
     // Track sell timestamp for flash effect
     const isSell = tradeData.side === 'SELL';
@@ -152,6 +160,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     set((state) => ({
       trades: [newTrade, ...state.trades].slice(0, 50),
       sessionPnL: newPnL,
+      dailyCashflow: newCashflow,
       walletBalance: state.walletBalance + pnl,
       poolBalance: state.poolBalance - pnl,
       totalEquity: state.totalEquity + pnl,

@@ -289,10 +289,8 @@ export const CapWheelDashboard = () => {
                 </div>
               </CollapsibleCard>
 
-              <CollapsibleCard title="Projections">
-                <div className="h-[300px]">
-                  <OrionWealthProjection />
-                </div>
+              <CollapsibleCard title="Projections" defaultOpen={true}>
+                <OrionWealthProjection />
               </CollapsibleCard>
             </motion.div>
           ) : (

@@ -56,7 +56,7 @@ export const OrionWealthProjection = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
-      className="bg-[#0F1419] border border-white/5 rounded-lg overflow-hidden h-full flex flex-col"
+      className="bg-[#0F1419] border border-white/5 rounded-lg overflow-hidden flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">

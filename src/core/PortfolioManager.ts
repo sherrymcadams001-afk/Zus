@@ -117,9 +117,12 @@ export const getBotTierForStake = getStrategyTierForStake;
 class PortfolioManager {
   private static instance: PortfolioManager | null = null;
   private isRunning = false;
-  private payoutTimeout: ReturnType<typeof setTimeout> | null = null;
   private tradeTimeout: ReturnType<typeof setTimeout> | null = null;
   private activityTimeout: ReturnType<typeof setTimeout> | null = null;
+  
+  // Cashflow tracking - accumulated from trades
+  private sessionStartTime: number = Date.now();
+  private dailyCashflow: number = 0;
 
   // Current strategy tier - defaults to auto-selection based on balance
   private currentStrategyTier: StrategyTier | null = null;
@@ -128,7 +131,6 @@ class PortfolioManager {
   private startTime: number = Date.now();
   private recentPnL: number[] = [];
   private readonly MAX_RECENT_TRADES = 18;
-  private readonly MIN_LOSS_RATIO = 0.35;
   private lastDayIndex: number = 0;
 
   // Market context tracking
@@ -317,37 +319,22 @@ class PortfolioManager {
   /** @deprecated Use setStrategyTier instead */
   public setBotTier = this.setStrategyTier;
 
-  /**
-   * Get daily target min for current tier
-   */
-  private getTargetDailyMin(): number {
-    return this.getActiveTierConfig().dailyRoiMin;
-  }
-
-  /**
-   * Get daily target max for current tier
-   */
-  private getTargetDailyMax(): number {
-    return this.getActiveTierConfig().dailyRoiMax;
-  }
-
   public start() {
     if (this.isRunning) return;
     this.isRunning = true;
 
-    // Start the "Treasury Reactor" payout cycle
-    this.startPayoutCycle();
+    // Pre-populate historical trades so log is never empty on page load
+    this.generateHistoricalTrades();
 
     // Start the "Bot Execution" cycle (Slow Ledger)
     this.startTradeCycle();
 
-    // Start the "Agent Activity" cycle (Fast Logs)
+    // Start the "Agent Activity" cycle (Moderate Logs - 5-15s intervals)
     this.startActivityCycle();
   }
 
   public stop() {
     this.isRunning = false;
-    if (this.payoutTimeout) clearTimeout(this.payoutTimeout);
     if (this.tradeTimeout) clearTimeout(this.tradeTimeout);
     if (this.activityTimeout) clearTimeout(this.activityTimeout);
   }
@@ -423,28 +410,107 @@ class PortfolioManager {
   }
 
   /**
-   * Simulates constant payouts from Pool to Wallet
-   * Keeps Wallet balance smaller than Pool but growing
+   * Pre-populate historical trades on start
+   * Generates 20-30 realistic past trades spanning the last 30-60 minutes
+   * Users see an active log immediately, not an empty one
    */
-  private startPayoutCycle() {
-    const runPayout = () => {
-      if (!this.isRunning) return;
-
-      // Scale payout based on wallet balance to maintain realistic proportions
-      const { walletBalance } = usePortfolioStore.getState();
-      const baseAmount = Math.max(20, walletBalance * 0.001); // 0.1% of wallet or minimum $20
-      const amount = Math.random() * baseAmount * 2 + baseAmount * 0.5;
+  private generateHistoricalTrades(): void {
+    const store = usePortfolioStore.getState();
+    const { walletBalance, startOfDayWalletBalance } = store;
+    const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+    
+    // Get tier config for realistic amounts
+    const tierConfig = this.getActiveTierConfig();
+    const hourlyTarget = baseBalance * ((tierConfig.hourlyRoiMin + tierConfig.hourlyRoiMax) / 2);
+    
+    // Generate 20-30 historical trades over last 30-60 mins
+    const tradeCount = 20 + Math.floor(Math.random() * 11);
+    const timeSpan = (30 + Math.random() * 30) * 60 * 1000; // 30-60 mins in ms
+    const now = Date.now();
+    
+    // Common crypto symbols for variety
+    const symbols = ['BTC', 'ETH', 'SOL', 'XRP', 'DOGE', 'ADA', 'AVAX', 'LINK', 'DOT', 'MATIC'];
+    
+    // Calculate micro-gain per trade to hit hourly target
+    // ~50% wins, ~50% losses, but net positive
+    const tradesPerHour = tradeCount * (60 / ((timeSpan / 1000) / 60));
+    const avgGainPerTrade = hourlyTarget / tradesPerHour;
+    
+    let accumulatedPnL = 0;
+    const historicalTrades: Array<{
+      symbol: string;
+      side: 'BUY' | 'SELL';
+      price: number;
+      quantity: number;
+      pnl: number;
+      timestamp: number;
+    }> = [];
+    
+    for (let i = 0; i < tradeCount; i++) {
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const timestamp = now - timeSpan + (i / tradeCount) * timeSpan;
       
-      // Update store - Mathematically accurate transfer
-      // Wallet increases (+), Pool decreases (-)
-      usePortfolioStore.getState().updateBalances(amount, -amount);
+      // ~50% win rate, varied amounts
+      const isWin = Math.random() < 0.52; // Slight bias toward wins
+      let pnl: number;
       
-      // Schedule next payout
-      const nextDelay = 800 + Math.random() * 1700;
-      this.payoutTimeout = setTimeout(runPayout, nextDelay);
-    };
-
-    runPayout();
+      if (isWin) {
+        // Wins: 0.5x to 2.5x of average gain
+        pnl = avgGainPerTrade * (0.5 + Math.random() * 2);
+      } else {
+        // Losses: 0.3x to 1.5x of average gain (smaller on average)
+        pnl = -avgGainPerTrade * (0.3 + Math.random() * 1.2);
+      }
+      
+      pnl = Number(pnl.toFixed(2));
+      accumulatedPnL += pnl;
+      
+      // Approximate price based on symbol
+      const basePrices: Record<string, number> = {
+        BTC: 95000, ETH: 3400, SOL: 190, XRP: 2.3, DOGE: 0.35,
+        ADA: 1.05, AVAX: 38, LINK: 23, DOT: 7.2, MATIC: 0.48
+      };
+      const price = basePrices[symbol] * (0.98 + Math.random() * 0.04);
+      const quantity = Math.abs(pnl) / (price * 0.001) * (0.5 + Math.random());
+      
+      historicalTrades.push({
+        symbol,
+        side: pnl >= 0 ? 'BUY' : 'SELL',
+        price,
+        quantity,
+        pnl,
+        timestamp
+      });
+    }
+    
+    // Add trades to store in chronological order (oldest first, so newest shows at top)
+    historicalTrades.forEach(trade => {
+      store.addTrade(trade);
+    });
+    
+    // Also add some historical activity logs
+    const activityMessages = [
+      '🎯 Pattern confidence high, proceeding with plan...',
+      'Scanning market structure...',
+      'Analyzing order book depth...',
+      '🎯 Risk/reward favorable, position entered...',
+      'Volume profile analysis complete...',
+      'Cross-exchange spread detected...',
+      '🎯 Multi-timeframe confluence achieved...',
+      'Monitoring liquidity pools...',
+      'Optimizing execution path...',
+      'Sentiment analysis running...',
+    ];
+    
+    // Add 8-12 historical log entries
+    const logCount = 8 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < logCount; i++) {
+      const msg = activityMessages[Math.floor(Math.random() * activityMessages.length)];
+      store.addLog(msg, 'system');
+    }
+    
+    // Update daily cashflow
+    this.dailyCashflow = accumulatedPnL;
   }
 
   /**
@@ -459,6 +525,10 @@ class PortfolioManager {
         'Low volatility detected, tightening spreads...',
         'Consolidation pattern forming...',
         'Range-bound conditions, setting grid...',
+        'Accumulation phase detected, patience mode...',
+        'Volume declining, awaiting catalyst...',
+        'Support level holding, watching closely...',
+        'Sideways trend confirmed, range strategy active...',
       ],
       medium: [
         'Scanning market structure...',
@@ -473,6 +543,22 @@ class PortfolioManager {
         'Detecting arbitrage opportunity...',
         'Filtering noise...',
         'Backtesting pattern match...',
+        'Sentiment analysis running...',
+        'Cross-exchange spread detected...',
+        'Funding rate analysis complete...',
+        'Order flow imbalance noted...',
+        'VWAP deviation tracking...',
+        'Ichimoku cloud alignment check...',
+        'RSI divergence scanning...',
+        'Fibonacci retracement levels mapped...',
+        'OBV trend confirmation...',
+        'Bollinger band squeeze detected...',
+        'MACD crossover pending...',
+        'Volume profile analysis...',
+        'Liquidation heatmap loaded...',
+        'Whale wallet tracking active...',
+        'DEX/CEX arbitrage scanning...',
+        'Mempool analysis in progress...',
       ],
       high: [
         'High volatility alert! Adjusting position size...',
@@ -480,6 +566,12 @@ class PortfolioManager {
         'Volatility spike, pausing new entries...',
         'Emergency risk assessment in progress...',
         'Large order detected, analyzing impact...',
+        'Cascade liquidation risk elevated...',
+        'Flash crash protocol activated...',
+        'Stop-loss clusters identified, caution...',
+        'Whale movement detected on-chain...',
+        'Exchange outflow spike, monitoring...',
+        'Fear & Greed index extreme reading...',
       ],
     };
 
@@ -491,6 +583,11 @@ class PortfolioManager {
         '🎯 Risk/reward favorable, increasing position...',
         '🎯 Market conditions ideal for strategy...',
         '🎯 Precision mode: tight stop-losses set...',
+        '🎯 Alpha signal detected, capitalizing...',
+        '🎯 Momentum confirmed, scaling in...',
+        '🎯 Multi-timeframe confluence achieved...',
+        '🎯 Smart money footprint identified...',
+        '🎯 Optimal entry zone reached, executing...',
       ],
       dumb: [
         '⚠️ Signal unclear, taking speculative position...',
@@ -499,6 +596,10 @@ class PortfolioManager {
         '⚠️ Market noise elevated, signals degraded...',
         '⚠️ Strategy deviation detected, recalibrating...',
         '⚠️ Unexpected price action, adjusting model...',
+        '⚠️ Choppy conditions, reduced position sizing...',
+        '⚠️ False breakout detected, reassessing...',
+        '⚠️ Whipsaw risk high, defensive mode...',
+        '⚠️ Correlation breakdown, hedges adjusted...',
       ],
       recovering: [
         '🔄 Recovery mode: targeting previous loss levels...',
@@ -506,6 +607,11 @@ class PortfolioManager {
         '🔄 Profit target locked, executing recovery...',
         '🔄 Drawdown recovery in progress...',
         '🔄 Strategy confidence restored, accelerating...',
+        '🔄 Compound gains accumulating...',
+        '🔄 Loss recovery: 65% complete...',
+        '🔄 Momentum shift favorable, pressing advantage...',
+        '🔄 Risk budget replenished, resuming normal ops...',
+        '🔄 P&L trajectory improving steadily...',
       ],
     };
 
@@ -548,18 +654,18 @@ class PortfolioManager {
 
       usePortfolioStore.getState().addLog(action, 'system');
 
-      // Adjust interval based on volatility and bot mode
-      // Dumb mode = faster, more chaotic logging to increase tension
+      // Activity log interval: 5-15 seconds for realistic pacing
+      // Slightly faster during high volatility or dumb mode for tension
       let baseDelay: number;
       if (botMode === 'dumb') {
-        baseDelay = volatility === 'high' ? 50 : volatility === 'low' ? 120 : 70;
+        baseDelay = volatility === 'high' ? 4000 : volatility === 'low' ? 8000 : 5000;
       } else if (botMode === 'recovering') {
-        baseDelay = volatility === 'high' ? 70 : volatility === 'low' ? 150 : 90;
+        baseDelay = volatility === 'high' ? 5000 : volatility === 'low' ? 10000 : 6000;
       } else {
-        baseDelay = volatility === 'high' ? 80 : volatility === 'low' ? 200 : 100;
+        baseDelay = volatility === 'high' ? 6000 : volatility === 'low' ? 12000 : 8000;
       }
       
-      const nextDelay = baseDelay + Math.random() * (baseDelay * 4);
+      const nextDelay = baseDelay + Math.random() * (baseDelay * 0.8);
       this.activityTimeout = setTimeout(runActivity, nextDelay);
     };
 
@@ -568,10 +674,9 @@ class PortfolioManager {
 
   /**
    * Simulates trading activity based on current market prices
-   * "Ledger should be the averagely moving like a balance sheet"
-   * Enforces tier-based daily profit target based on user wallet balance
-   * Now includes market context for more realistic outcomes
-   * Includes smart/dumb bot mode cycles to create variance and tension
+   * Uses tier-based micro-gains: daily target distributed across many trades
+   * ~50% wins, ~50% losses, but net positive adhering to tier ROI
+   * Includes market context for realistic price-based outcomes
    */
   private startTradeCycle() {
     const executeTrade = () => {
@@ -591,6 +696,7 @@ class PortfolioManager {
       if (currentDayIndex !== this.lastDayIndex) {
         this.recentPnL = [];
         this.lastDayIndex = currentDayIndex;
+        this.dailyCashflow = 0;
         // Reset start of day equity for new day
         const { walletBalance } = usePortfolioStore.getState();
         usePortfolioStore.getState().resetDailyEquity(walletBalance);
@@ -614,66 +720,78 @@ class PortfolioManager {
         return;
       }
 
-      // --- Market Context ---
-      const volatility = this.calculateMarketVolatility();
-      const trend = this.getMarketTrend(symbol);
-
-      // --- Target Logic based on wallet balance and tier ---
+      // --- Tier-Based Micro-Gain Calculation ---
       const { walletBalance, startOfDayWalletBalance, sessionPnL } = usePortfolioStore.getState();
-      const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : walletBalance;
+      const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+      
+      // Get tier config for this user's stake
+      const tierConfig = this.getActiveTierConfig();
+      const hourlyRoiMid = (tierConfig.hourlyRoiMin + tierConfig.hourlyRoiMax) / 2;
+      const hourlyTarget = baseBalance * hourlyRoiMid;
+      
+      // Estimate ~30-50 trades per hour, so each trade's net contribution
+      const tradesPerHour = 40;
+      const avgNetGainPerTrade = hourlyTarget / tradesPerHour;
+      
+      // Calculate current progress toward target
       const currentReturn = baseBalance > 0 ? sessionPnL / baseBalance : 0;
-      
-      // Get tier-specific targets
-      const targetDailyMin = this.getTargetDailyMin();
-      const targetDailyMax = this.getTargetDailyMax();
-      
-      // Calculate where we should be right now
       const elapsedTime = Date.now() - this.startTime;
       const dayProgress = (elapsedTime % this.MS_PER_DAY) / this.MS_PER_DAY;
+      const targetReturnNow = tierConfig.dailyRoiMin * dayProgress;
       
-      // Target return for this specific moment in the day
-      const targetReturnNow = targetDailyMin * dayProgress;
+      // Determine win/loss for this trade (~50% each, but biased to hit target)
+      const behindSchedule = currentReturn < targetReturnNow * 0.9;
+      const aheadOfSchedule = currentReturn > tierConfig.dailyRoiMax * dayProgress * 1.1;
       
-      // Scale PnL based on user balance - larger balance = larger trades
-      const scaleFactor = Math.max(1, baseBalance / 10000); // Normalize to $10k base
+      // Base win probability ~52% to ensure net positive
+      let winProbability = 0.52;
       
-      let pnl = 0;
-
-      // Get base market modifiers
-      const marketModifier = this.getMarketContextModifier(volatility, trend);
+      // Adjust based on schedule
+      if (behindSchedule) winProbability = 0.65; // Catch up
+      if (aheadOfSchedule) winProbability = 0.40; // Slow down
       
-      // Apply bot mode modifiers for variance
+      // Apply bot mode adjustments
       const botModeModifier = this.getBotModeModifier();
-
-      // Calculate PnL based on bot mode
-      pnl = this.calculateTradeOutcome(
-        currentReturn,
-        targetReturnNow,
-        targetDailyMax,
-        dayProgress,
-        scaleFactor,
-        marketModifier,
-        botModeModifier
-      );
-
-      // Apply PnL guards to ensure we stay on track for daily target
-      pnl = this.applyPnLGuards(pnl, currentReturn, dayProgress);
+      winProbability *= botModeModifier.winRateMultiplier;
+      winProbability = Math.min(0.85, Math.max(0.25, winProbability)); // Clamp
       
-      // Apply variance to trade amount (dumb mode = larger risky trades, smart mode = calculated)
-      const amountVariance = this.getAmountVariance();
-      pnl = pnl * amountVariance;
+      const isWin = Math.random() < winProbability;
+      
+      // Calculate PnL as micro-gain/loss
+      let pnl: number;
+      const volatility = this.calculateMarketVolatility();
+      const volMultiplier = volatility === 'high' ? 1.4 : volatility === 'low' ? 0.7 : 1.0;
+      
+      if (isWin) {
+        // Wins: 0.8x to 2.2x of average net gain
+        pnl = avgNetGainPerTrade * (0.8 + Math.random() * 1.4) * volMultiplier;
+        pnl *= botModeModifier.profitMultiplier;
+      } else {
+        // Losses: 0.5x to 1.5x of average net gain (smaller than wins on average)
+        pnl = -avgNetGainPerTrade * (0.5 + Math.random() * 1.0) * volMultiplier;
+        pnl *= botModeModifier.lossMultiplier;
+      }
+      
+      // Track accumulated losses in dumb mode for recovery
+      if (this.currentBotMode === 'dumb' && pnl < 0) {
+        this.dumbModeAccumulatedLoss += Math.abs(pnl);
+      }
+      
+      // In recovery mode, boost wins to reclaim losses
+      if (this.currentBotMode === 'recovering' && this.dumbModeAccumulatedLoss > 0 && isWin) {
+        const recoverBonus = Math.min(this.dumbModeAccumulatedLoss * 0.15, avgNetGainPerTrade * 2);
+        pnl += recoverBonus;
+        this.dumbModeAccumulatedLoss -= recoverBonus;
+      }
       
       const normalizedPnL = Number(pnl.toFixed(2));
       const side: 'BUY' | 'SELL' = normalizedPnL >= 0 ? 'BUY' : 'SELL';
       
-      // Quantity also varies based on bot mode
-      const baseQuantity = (Math.random() * 500 * scaleFactor) / price;
-      const quantity = baseQuantity * amountVariance;
-
-      // Track accumulated losses in dumb mode for recovery calculation
-      if (this.currentBotMode === 'dumb' && normalizedPnL < 0) {
-        this.dumbModeAccumulatedLoss += Math.abs(normalizedPnL);
-      }
+      // Calculate quantity based on price and PnL
+      const quantity = Math.abs(normalizedPnL) / (price * 0.001) * (0.5 + Math.random());
+      
+      // Update daily cashflow
+      this.dailyCashflow += normalizedPnL;
 
       // Execute trade (Ledger update)
       usePortfolioStore.getState().addTrade({
@@ -685,14 +803,14 @@ class PortfolioManager {
       });
 
       // Log the trade execution with bot mode context
-      const pnlText = normalizedPnL >= 0 ? `+${normalizedPnL.toFixed(2)}` : normalizedPnL.toFixed(2);
+      const pnlText = normalizedPnL >= 0 ? `+$${normalizedPnL.toFixed(2)}` : `-$${Math.abs(normalizedPnL).toFixed(2)}`;
       const modeIndicator = this.getBotModeIndicator();
       const volIndicator = volatility === 'high' ? '⚡' : volatility === 'low' ? '💤' : '';
       const msg = `EXECUTED: ${side === 'BUY' ? 'Long' : 'Short'} ${symbol.replace('USDT', '')} | PnL: ${pnlText} ${modeIndicator}${volIndicator}`;
       usePortfolioStore.getState().addLog(msg, 'trade');
       this.recordPnL(normalizedPnL);
 
-      // Schedule next trade with variance based on bot mode
+      // Schedule next trade (5-15 seconds for micro-gains)
       this.scheduleNextTrade();
     };
 
@@ -700,31 +818,30 @@ class PortfolioManager {
   }
 
   /**
-   * Schedule next trade with timing variance based on bot mode
-   * Smart mode: slower, more calculated (6-12s)
-   * Dumb mode: faster, more chaotic (2-5s) 
-   * Recovering mode: moderate pace (4-8s)
+   * Schedule next trade with timing for micro-gains
+   * Trades every 5-15 seconds to distribute daily target
    */
   private scheduleNextTrade(): void {
     let baseDelay: number;
     let variance: number;
     
+    // Micro-gain pacing: 5-15 second intervals
     switch (this.currentBotMode) {
       case 'smart':
-        baseDelay = 6000;
-        variance = 6000;
+        baseDelay = 8000;  // 8-15s in smart mode
+        variance = 7000;
         break;
       case 'dumb':
-        baseDelay = 2000;
-        variance = 3000;
+        baseDelay = 5000;  // 5-10s in dumb mode (faster, more chaotic)
+        variance = 5000;
         break;
       case 'recovering':
-        baseDelay = 4000;
-        variance = 4000;
+        baseDelay = 6000;  // 6-12s in recovery mode
+        variance = 6000;
         break;
       default:
-        baseDelay = 5000;
-        variance = 8000;
+        baseDelay = 7000;
+        variance = 6000;
     }
     
     const nextDelay = baseDelay + Math.random() * variance;
@@ -776,84 +893,6 @@ class PortfolioManager {
   }
 
   /**
-   * Calculate trade outcome based on all modifiers
-   */
-  private calculateTradeOutcome(
-    currentReturn: number,
-    targetReturnNow: number,
-    targetDailyMax: number,
-    dayProgress: number,
-    scaleFactor: number,
-    marketModifier: { winRateMultiplier: number; profitMultiplier: number; lossMultiplier: number },
-    botModeModifier: { winRateMultiplier: number; profitMultiplier: number; lossMultiplier: number }
-  ): number {
-    let pnl = 0;
-    const combinedWinRate = 0.55 * marketModifier.winRateMultiplier * botModeModifier.winRateMultiplier;
-    const combinedProfitMult = marketModifier.profitMultiplier * botModeModifier.profitMultiplier;
-    const combinedLossMult = marketModifier.lossMultiplier * botModeModifier.lossMultiplier;
-
-    // In recovery mode with accumulated losses, ensure we're winning
-    if (this.currentBotMode === 'recovering' && this.dumbModeAccumulatedLoss > 0) {
-      // 90% chance to win in recovery with accumulated losses
-      if (Math.random() < 0.9) {
-        // Win back a portion of accumulated losses
-        const recoverAmount = Math.min(
-          this.dumbModeAccumulatedLoss * 0.3,
-          (Math.random() * 60 + 30) * scaleFactor
-        );
-        pnl = recoverAmount * combinedProfitMult;
-        this.dumbModeAccumulatedLoss -= recoverAmount;
-      } else {
-        pnl = (Math.random() * -15 - 5) * scaleFactor * combinedLossMult;
-      }
-    }
-    // If we are BEHIND schedule, we generally want to win (unless in dumb mode)
-    else if (currentReturn < targetReturnNow) {
-      if (Math.random() < combinedWinRate) {
-        pnl = (Math.random() * 40 + 10) * scaleFactor * combinedProfitMult;
-      } else {
-        pnl = (Math.random() * -20 - 5) * scaleFactor * combinedLossMult;
-      }
-    }
-    // If we are AHEAD of schedule, force a correction (use this as a "dumb mode" opportunity)
-    else if (currentReturn > targetDailyMax * dayProgress * 1.2) {
-      pnl = (Math.random() * -30 - 5) * scaleFactor * combinedLossMult;
-    }
-    // Otherwise, mixed outcome based on bot mode
-    else {
-      const basePnL = (Math.random() - 0.45) * 60;
-      if (Math.random() < combinedWinRate) {
-        pnl = (Math.abs(basePnL) + 5) * scaleFactor * combinedProfitMult;
-      } else {
-        pnl = -Math.abs(basePnL) * scaleFactor * combinedLossMult;
-      }
-    }
-
-    return pnl;
-  }
-
-  /**
-   * Get amount variance multiplier based on bot mode
-   * Dumb mode: larger, riskier position sizes
-   * Smart mode: calculated, optimal position sizes
-   */
-  private getAmountVariance(): number {
-    switch (this.currentBotMode) {
-      case 'smart':
-        // Consistent, calculated trades (0.8 - 1.2x)
-        return 0.8 + Math.random() * 0.4;
-      case 'dumb':
-        // Wild variance - sometimes too big, sometimes too small (0.5 - 2.5x)
-        return 0.5 + Math.random() * 2.0;
-      case 'recovering':
-        // Slightly larger to recover faster (1.0 - 1.5x)
-        return 1.0 + Math.random() * 0.5;
-      default:
-        return 1.0;
-    }
-  }
-
-  /**
    * Get visual indicator for current bot mode
    */
   private getBotModeIndicator(): string {
@@ -869,71 +908,6 @@ class PortfolioManager {
     }
   }
 
-  /**
-   * Get market context modifiers for trade outcomes
-   */
-  private getMarketContextModifier(volatility: MarketVolatility, trend: 'bullish' | 'bearish' | 'neutral') {
-    const modifiers = {
-      winRateMultiplier: 1,
-      profitMultiplier: 1,
-      lossMultiplier: 1,
-    };
-
-    // Volatility adjustments
-    switch (volatility) {
-      case 'high':
-        modifiers.profitMultiplier = 1.5;  // Higher potential profits
-        modifiers.lossMultiplier = 1.3;    // But also higher losses
-        modifiers.winRateMultiplier = 0.9; // Slightly lower win rate
-        break;
-      case 'low':
-        modifiers.profitMultiplier = 0.7;  // Smaller moves
-        modifiers.lossMultiplier = 0.7;
-        modifiers.winRateMultiplier = 1.1; // More predictable
-        break;
-    }
-
-    // Trend adjustments for long positions
-    switch (trend) {
-      case 'bullish':
-        modifiers.winRateMultiplier *= 1.15; // Better chance in uptrend
-        modifiers.profitMultiplier *= 1.2;
-        break;
-      case 'bearish':
-        modifiers.winRateMultiplier *= 0.85; // Harder in downtrend
-        modifiers.lossMultiplier *= 1.15;
-        break;
-    }
-
-    return modifiers;
-  }
-
-  private applyPnLGuards(pnl: number, currentReturn: number, dayProgress: number): number {
-    const lossRatio = this.getLossRatio();
-    const insufficientLosses = this.recentPnL.length >= 6 && lossRatio < this.MIN_LOSS_RATIO;
-    
-    // Use tier-specific targets
-    const targetDailyMin = this.getTargetDailyMin();
-    const targetDailyMax = this.getTargetDailyMax();
-    
-    const aheadOfSchedule = currentReturn > targetDailyMax * dayProgress;
-    const behindSchedule = currentReturn < targetDailyMin * dayProgress;
-
-    // Scale guards based on wallet balance
-    const { walletBalance } = usePortfolioStore.getState();
-    const scaleFactor = Math.max(1, walletBalance / 10000);
-
-    if ((aheadOfSchedule || insufficientLosses) && pnl > 0) {
-      return -Math.abs(Math.random() * 30 + 5) * scaleFactor;
-    }
-
-    if (behindSchedule && pnl < 0) {
-      return Math.abs(Math.random() * 45 + 10) * scaleFactor;
-    }
-
-    return pnl;
-  }
-
   private recordPnL(pnl: number): void {
     this.recentPnL.push(pnl);
     if (this.recentPnL.length > this.MAX_RECENT_TRADES) {
@@ -941,14 +915,47 @@ class PortfolioManager {
     }
   }
 
-  private getLossRatio(): number {
-    if (this.recentPnL.length === 0) return 0;
-    const losses = this.recentPnL.filter((value) => value < 0).length;
-    return losses / this.recentPnL.length;
-  }
-
   private getCurrentDayIndex(): number {
     return Math.floor((Date.now() - this.startTime) / this.MS_PER_DAY);
+  }
+
+  /**
+   * Get current cashflow data (ROI derived from trades)
+   */
+  public getCashflowData(): {
+    dailyCashflow: number;
+    sessionDuration: number;
+    projectedDaily: number;
+    projectedWeekly: number;
+    projectedMonthly: number;
+    tierName: string;
+    tierRoiRange: string;
+  } {
+    const tierConfig = this.getActiveTierConfig();
+    const { walletBalance, startOfDayWalletBalance } = usePortfolioStore.getState();
+    const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+    
+    const sessionDuration = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+    
+    // Calculate projected earnings based on tier rates
+    const dailyRoiMid = (tierConfig.dailyRoiMin + tierConfig.dailyRoiMax) / 2;
+    const projectedDaily = baseBalance * dailyRoiMid;
+    const projectedWeekly = projectedDaily * tierConfig.tradingDaysPerWeek;
+    const projectedMonthly = projectedDaily * tierConfig.tradingDaysPerWeek * 4;
+    
+    const roiMin = (tierConfig.hourlyRoiMin * 100).toFixed(2);
+    const roiMax = (tierConfig.hourlyRoiMax * 100).toFixed(2);
+    const tierRoiRange = roiMin === roiMax ? `${roiMin}%/hr` : `${roiMin}%-${roiMax}%/hr`;
+    
+    return {
+      dailyCashflow: this.dailyCashflow,
+      sessionDuration,
+      projectedDaily,
+      projectedWeekly,
+      projectedMonthly,
+      tierName: tierConfig.name,
+      tierRoiRange,
+    };
   }
 
   /**

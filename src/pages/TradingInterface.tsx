@@ -14,6 +14,7 @@ import { MainChart } from '../components/MainChart';
 import { OrderBook } from '../components/OrderBook';
 import { BotActivityLog } from '../components/BotActivityLog';
 import { LiveTrades } from '../components/LiveTrades';
+import { TierCashflowPanel } from '../components/TierCashflowPanel';
 import { OrionSidebar } from '../components/capwheel/OrionSidebar';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../components/mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
@@ -36,7 +37,7 @@ function useSessionTimer() {
   return `${hours}:${minutes}:${seconds}`;
 }
 
-type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER';
+type MobileTab = 'WATCH' | 'BOOK' | 'LOGS' | 'LEDGER' | 'CASHFLOW';
 
 export default function TradingInterface() {
   const [region, setRegion] = useState<'Global' | 'US'>('Global');
@@ -147,10 +148,11 @@ export default function TradingInterface() {
                 <MainChart />
               </div>
 
-              {/* Bottom Panels - Execution Logic */}
-              <div className="h-[200px] flex-shrink-0 grid grid-cols-[2fr_1fr] gap-3">
+              {/* Bottom Panels - Execution Logic + Cashflow */}
+              <div className="h-[200px] flex-shrink-0 grid grid-cols-[2fr_1fr_1fr] gap-3">
                 <BotActivityLog />
                 <LiveTrades />
+                <TierCashflowPanel />
               </div>
             </div>
 
@@ -173,8 +175,9 @@ export default function TradingInterface() {
             {([
               { key: 'WATCH', label: 'Markets' },
               { key: 'BOOK', label: 'Book' },
-              { key: 'LOGS', label: 'Agent Logs' },
-              { key: 'LEDGER', label: 'Trades' }
+              { key: 'LOGS', label: 'Logs' },
+              { key: 'LEDGER', label: 'Trades' },
+              { key: 'CASHFLOW', label: 'Cashflow' }
             ] as const).map(({ key, label }) => (
               <button
                 key={key}
@@ -196,6 +199,7 @@ export default function TradingInterface() {
             {mobileTab === 'BOOK' && <OrderBook />}
             {mobileTab === 'LOGS' && <BotActivityLog />}
             {mobileTab === 'LEDGER' && <LiveTrades />}
+            {mobileTab === 'CASHFLOW' && <TierCashflowPanel />}
           </div>
         </div>
 

@@ -2,15 +2,16 @@
  * ORION Transaction Ledger
  * 
  * SYSTEM-WIDE platform activity feed showing all CapWheel transactions
- * - Synthetic platform-wide transactions (not user-specific)
- * - Always populated with activity, never empty
- * - New entries animate in every 3-5 seconds
+ * - Uses 400+ contextual transactions from pool with tier-aligned amounts
+ * - Weighted random selection favors high-frequency anchor tier activity
+ * - Varied pacing (1.5s - 18s) simulates natural platform activity patterns
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Filter, ChevronDown, Activity } from 'lucide-react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { selectRandomTransaction, generateUserHash, getTransactionPacing } from '../../data/transactionPool';
 
 type FilterType = 'all' | 'deposits' | 'withdrawals' | 'roi';
 
@@ -49,52 +50,16 @@ const TYPE_COUNTERPARTY: Record<string, string> = {
   referral_commission: 'Partner Network',
 };
 
-// Generate random user hash for anonymized display
-const generateUserHash = () => {
-  const chars = 'ABCDEF0123456789';
-  let hash = '0x';
-  for (let i = 0; i < 8; i++) {
-    hash += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return hash + '...';
-};
-
-// Generate a single synthetic transaction
+// Generate a transaction from the pool
 const generateTransaction = (id: number): SystemTransaction => {
-  const types = ['deposit', 'trade_profit', 'roi_payout', 'pool_stake', 'referral_commission', 'withdraw'];
-  const weights = [0.25, 0.30, 0.20, 0.10, 0.10, 0.05]; // Mostly positive activity
-  
-  let random = Math.random();
-  let typeIndex = 0;
-  for (let i = 0; i < weights.length; i++) {
-    random -= weights[i];
-    if (random <= 0) {
-      typeIndex = i;
-      break;
-    }
-  }
-  
-  const type = types[typeIndex];
-  
-  // Amount ranges by type
-  const amountRanges: Record<string, [number, number]> = {
-    deposit: [500, 50000],
-    trade_profit: [10, 2000],
-    roi_payout: [50, 5000],
-    pool_stake: [1000, 100000],
-    referral_commission: [25, 500],
-    withdraw: [100, 10000],
-  };
-  
-  const [min, max] = amountRanges[type];
-  const amount = Math.random() * (max - min) + min;
+  const pooledTx = selectRandomTransaction();
   
   return {
     id,
-    type,
-    amount,
+    type: pooledTx.type,
+    amount: pooledTx.amount,
     status: 'completed',
-    description: TYPE_LABELS[type],
+    description: TYPE_LABELS[pooledTx.type],
     created_at: Math.floor(Date.now() / 1000),
     user_hash: generateUserHash(),
   };
@@ -121,20 +86,29 @@ export const OrionTransactionLedger = () => {
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [transactions, setTransactions] = useState<SystemTransaction[]>(() => generateInitialTransactions(15));
   const nextIdRef = useRef(16);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Add new transactions periodically (3-5 seconds)
-  useEffect(() => {
-    const addTransaction = () => {
+  // Add transaction with varied pacing
+  const scheduleNextTransaction = useCallback(() => {
+    const pacing = getTransactionPacing();
+    
+    timeoutRef.current = setTimeout(() => {
       const newTx = generateTransaction(nextIdRef.current++);
       setTransactions(prev => [newTx, ...prev.slice(0, 14)]); // Keep max 15 transactions
-    };
-
-    const interval = setInterval(() => {
-      addTransaction();
-    }, 3000 + Math.random() * 2000); // 3-5 seconds
-
-    return () => clearInterval(interval);
+      scheduleNextTransaction(); // Schedule next with new varied pacing
+    }, pacing);
   }, []);
+
+  // Add new transactions with varied pacing (1.5s - 18s)
+  useEffect(() => {
+    scheduleNextTransaction();
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [scheduleNextTransaction]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((txn) => {
@@ -261,7 +235,7 @@ export const OrionTransactionLedger = () => {
                         <span className="text-[10px] text-[#00B8D4] font-mono">{txn.user_hash}</span>
                         <span className="text-xs font-medium text-slate-200">{TYPE_LABELS[txn.type] ?? txn.type}</span>
                       </div>
-                      <span className={`text-xs font-mono font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
+                      <span className={`text-xs font-mono font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-red-400'}`}>
                         {formatAmount(txn.amount, txn.type)}
                       </span>
                     </div>
@@ -301,7 +275,7 @@ export const OrionTransactionLedger = () => {
                       <td className="px-3 py-1.5 font-mono text-[#00B8D4]">{txn.user_hash}</td>
                       <td className="px-3 py-1.5 text-slate-300 truncate max-w-[150px]">{TYPE_COUNTERPARTY[txn.type] ?? 'System'}</td>
                       <td className="px-3 py-1.5 text-slate-400 truncate max-w-[120px]">{TYPE_LABELS[txn.type] ?? txn.type}</td>
-                      <td className={`px-3 py-1.5 font-mono text-right font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-white'}`}>
+                      <td className={`px-3 py-1.5 font-mono text-right font-medium ${isPositive ? 'text-[#00FF9D]' : 'text-red-400'}`}>
                         {formatAmount(txn.amount, txn.type)}
                       </td>
                     </motion.tr>
