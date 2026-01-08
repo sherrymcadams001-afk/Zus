@@ -435,8 +435,11 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const vestingRunway = calculateVestingRunway(earliestStake, currentTier);
   
   // Use DYNAMIC earnings from backend, fallback to tier-based calculation
-  // This ensures we always show realistic earnings based on AUM
-  const dailyEarnings = roi?.actualDailyEarning ?? (aum * avgDailyRoi);
+  // If backend returns 0 or null, calculate from AUM × daily ROI rate
+  // This ensures we always show realistic earnings based on actual AUM
+  const backendEarnings = roi?.actualDailyEarning;
+  const tierBasedEarnings = aum * avgDailyRoi;
+  const dailyEarnings = (backendEarnings && backendEarnings > 0) ? backendEarnings : tierBasedEarnings;
   const weeklyEarnings = dailyEarnings * tierConfig.tradingDaysPerWeek;
   const monthlyEarnings = weeklyEarnings * 4.33; // Average weeks per month
   
