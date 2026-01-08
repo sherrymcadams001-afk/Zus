@@ -4,10 +4,12 @@
  * Connects all dashboard figures to REAL backend data:
  * - Wallet balance from D1 database via API
  * - Portfolio metrics from trading history
- * - Bot tier ROI calculations from BotTiers.ts logic
+ * - Strategy tier ROI calculations (Anchor, Vector, Kinetic, Horizon)
  * - Transaction ledger from transactions table
  * 
  * NO SIMULATED DATA. Every figure derives from DB state.
+ * 
+ * Note: Frontend uses "StrategyTier" terminology. Backend API uses "bot_tier" for DB compatibility.
  */
 
 import { apiClient } from '../api/client';
@@ -28,7 +30,7 @@ export interface PortfolioData {
   total_trades: number;
   winning_trades: number;
   losing_trades: number;
-  current_bot_tier: BotTier | null;
+  current_bot_tier: StrategyTier | null; // Maps to backend 'bot_tier' column
   updated_at: number;
 }
 
@@ -62,10 +64,17 @@ export interface TradeData {
   created_at: number;
 }
 
-export type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
+/**
+ * Strategy Tier - Frontend naming for trading strategy levels
+ * Maps to backend 'BotTier' type and 'bot_tier' database columns
+ */
+export type StrategyTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 
-// Bot tier configurations (mirrored from backend/src/engine/BotTiers.ts)
-export const BOT_TIERS: Record<BotTier, {
+/** @deprecated Use StrategyTier instead */
+export type BotTier = StrategyTier;
+
+// Strategy tier configurations (mirrored from backend/src/engine/BotTiers.ts)
+export const STRATEGY_TIERS: Record<StrategyTier, {
   name: string;
   hourlyRoiMin: number;
   hourlyRoiMax: number;
@@ -122,6 +131,9 @@ export const BOT_TIERS: Record<BotTier, {
   },
 };
 
+/** @deprecated Use STRATEGY_TIERS instead */
+export const BOT_TIERS = STRATEGY_TIERS;
+
 // ========== Core Orchestrator ==========
 
 export interface ROIData {
@@ -134,7 +146,7 @@ export interface ROIData {
   marketSentiment: 'bullish' | 'bearish' | 'neutral';
   volatility: 'high' | 'medium' | 'low';
   displayRate: string;              // Formatted display rate
-  tier: BotTier;
+  tier: StrategyTier;
   history?: Array<{                 // Optional 24h history
     timestamp: number;
     hourlyRate: number;
@@ -165,9 +177,9 @@ export interface DashboardData {
   // Trade History
   trades: TradeData[];
   
-  // Bot Tier
-  currentTier: BotTier;
-  tierConfig: typeof BOT_TIERS[BotTier];
+  // Strategy Tier
+  currentTier: StrategyTier;
+  tierConfig: typeof STRATEGY_TIERS[StrategyTier];
   
   // Dynamic ROI Data (from backend)
   roi: ROIData | null;
@@ -178,23 +190,26 @@ export interface DashboardData {
 }
 
 /**
- * Determine bot tier based on total staked amount
+ * Determine strategy tier based on total staked amount
  */
-export function getBotTierForAmount(amount: number): BotTier {
-  if (amount >= BOT_TIERS.horizon.minimumStake) return 'horizon';
-  if (amount >= BOT_TIERS.kinetic.minimumStake) return 'kinetic';
-  if (amount >= BOT_TIERS.vector.minimumStake) return 'vector';
+export function getStrategyTierForAmount(amount: number): StrategyTier {
+  if (amount >= STRATEGY_TIERS.horizon.minimumStake) return 'horizon';
+  if (amount >= STRATEGY_TIERS.kinetic.minimumStake) return 'kinetic';
+  if (amount >= STRATEGY_TIERS.vector.minimumStake) return 'vector';
   return 'anchor';
 }
+
+/** @deprecated Use getStrategyTierForAmount instead */
+export const getBotTierForAmount = getStrategyTierForAmount;
 
 /**
  * Calculate vesting runway (days until capital withdrawal)
  */
 export function calculateVestingRunway(
   stakedAt: number,
-  tier: BotTier
+  tier: StrategyTier
 ): number {
-  const config = BOT_TIERS[tier];
+  const config = STRATEGY_TIERS[tier];
   const now = Math.floor(Date.now() / 1000);
   const vestingEnd = stakedAt + (config.capitalWithdrawalDays * 24 * 60 * 60);
   const remainingSeconds = Math.max(0, vestingEnd - now);
@@ -206,9 +221,9 @@ export function calculateVestingRunway(
  */
 export function calculateEarningsProjections(
   stakedAmount: number,
-  tier: BotTier
+  tier: StrategyTier
 ): { daily: number; weekly: number; monthly: number } {
-  const config = BOT_TIERS[tier];
+  const config = STRATEGY_TIERS[tier];
   
   // Use average of min/max for projection
   const avgDailyRoi = (config.dailyRoiMin + config.dailyRoiMax) / 2;
@@ -403,8 +418,8 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const aum = (wallet?.available_balance ?? 0) + totalStaked;
   
   // Use backend's dynamic tier determination (based on actual stake amount)
-  const currentTier = roi?.tier ?? getBotTierForAmount(aum);
-  const tierConfig = BOT_TIERS[currentTier];
+  const currentTier = roi?.tier ?? getStrategyTierForAmount(aum);
+  const tierConfig = STRATEGY_TIERS[currentTier];
   
   // Use DYNAMIC ROI from backend instead of static tier max
   // The backend calculates this using the sophisticated wave-based algorithm
@@ -474,8 +489,8 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
  * Uses minimum tier values for projections
  */
 export function getDefaultDashboardData(): DashboardData {
-  const tier: BotTier = 'anchor';
-  const config = BOT_TIERS[tier];
+  const tier: StrategyTier = 'anchor';
+  const config = STRATEGY_TIERS[tier];
   
   return {
     aum: 0,

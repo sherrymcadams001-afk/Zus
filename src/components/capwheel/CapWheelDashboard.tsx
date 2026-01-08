@@ -264,9 +264,15 @@ export const CapWheelDashboard = () => {
           animate="visible"
         >
           {/* Row 1: Metrics */}
-          <motion.div variants={staggerItem} className="flex-shrink-0">
-            <OrionMetricsGrid />
-          </motion.div>
+          {isMobile ? (
+            <motion.div variants={staggerItem} className="flex-shrink-0">
+                 <OrionMetricsGrid />
+            </motion.div>
+          ) : (
+             <motion.div variants={staggerItem} className="flex-shrink-0">
+                 <OrionMetricsGrid />
+             </motion.div>
+          )}
 
           {/* Row 2: Chart + Projection */}
           {isMobile ? (

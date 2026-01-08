@@ -56,6 +56,7 @@ export const SwipeEdgeDetector = ({ onSwipeOpen }: SwipeEdgeDetectorProps) => {
 export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
   const user = useAuthStore((state) => state.user);
 
+  // Single Overview group - matches OrionSidebar exactly
   const menuItems = [
     {
       title: 'Overview',
@@ -65,14 +66,8 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
         { to: '/capwheel/protocol', icon: <FileCode size={20} />, label: 'Asset Protocol' },
         { to: '/capwheel/trading', icon: <Zap size={20} />, label: 'Trading Agent', badge: 'LIVE' },
         { to: '/capwheel/strategy-pools', icon: <Wallet size={20} />, label: 'Strategy Pools' },
-      ]
-    },
-    {
-      title: 'Governance & Audit',
-      items: [
-        ...(user?.role === 'admin' ? [{ to: '/capwheel/admin', icon: <Shield size={20} />, label: 'Admin Panel', badge: 'ADMIN' }] : []),
         { to: '/capwheel/partners', icon: <Users size={20} />, label: 'Partner Network' },
-        { to: '/capwheel/security', icon: <Shield size={20} />, label: 'Security Center' },
+        ...(user?.role === 'admin' ? [{ to: '/capwheel/admin', icon: <Shield size={20} />, label: 'Admin Panel', badge: 'ADMIN' }] : []),
       ]
     }
   ];

@@ -8,21 +8,26 @@ import { useMarketStore } from '../store/useMarketStore';
  * - Generates consistent payouts (Treasury Reactor)
  * - Executes simulated trades based on market movements
  * - Ensures mathematical consistency across the dashboard
- * - Supports multi-tier bot system with different ROI rates
+ * - Supports multi-tier strategy system with different ROI rates
  * - Integrates market context for more realistic trade outcomes
+ * 
+ * Note: Frontend uses "StrategyTier". Backend API uses "bot_tier" for DB compatibility.
  */
 
 /** Market volatility levels for contextual trading */
 type MarketVolatility = 'low' | 'medium' | 'high';
 
-/** Bot mode types for smart/dumb trading simulation */
+/** Agent mode types for smart/dumb trading simulation */
 type BotMode = 'smart' | 'dumb' | 'recovering';
 
-/** Bot tier types for multi-tier trading system */
-export type BotTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
+/** Strategy tier types for multi-tier trading system */
+export type StrategyTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
 
-/** Bot tier configuration */
-export interface BotTierConfig {
+/** @deprecated Use StrategyTier instead */
+export type BotTier = StrategyTier;
+
+/** Strategy tier configuration */
+export interface StrategyTierConfig {
   name: string;
   hourlyRoiMin: number;
   hourlyRoiMax: number;
@@ -36,8 +41,11 @@ export interface BotTierConfig {
   investmentDurationDays: number;
 }
 
-/** Bot tier configurations - mirroring backend */
-export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
+/** @deprecated Use StrategyTierConfig instead */
+export type BotTierConfig = StrategyTierConfig;
+
+/** Strategy tier configurations - mirroring backend */
+export const STRATEGY_TIERS: Record<StrategyTier, StrategyTierConfig> = {
   anchor: {
     name: 'Anchor',
     hourlyRoiMin: 0.001,
@@ -92,13 +100,19 @@ export const BOT_TIERS: Record<BotTier, BotTierConfig> = {
   },
 };
 
-/** Get bot tier based on stake amount */
-export function getBotTierForStake(stakeAmount: number): BotTier {
-  if (stakeAmount >= BOT_TIERS.horizon.minimumStake) return 'horizon';
-  if (stakeAmount >= BOT_TIERS.kinetic.minimumStake) return 'kinetic';
-  if (stakeAmount >= BOT_TIERS.vector.minimumStake) return 'vector';
+/** @deprecated Use STRATEGY_TIERS instead */
+export const BOT_TIERS = STRATEGY_TIERS;
+
+/** Get strategy tier based on stake amount */
+export function getStrategyTierForStake(stakeAmount: number): StrategyTier {
+  if (stakeAmount >= STRATEGY_TIERS.horizon.minimumStake) return 'horizon';
+  if (stakeAmount >= STRATEGY_TIERS.kinetic.minimumStake) return 'kinetic';
+  if (stakeAmount >= STRATEGY_TIERS.vector.minimumStake) return 'vector';
   return 'anchor';
 }
+
+/** @deprecated Use getStrategyTierForStake instead */
+export const getBotTierForStake = getStrategyTierForStake;
 
 class PortfolioManager {
   private static instance: PortfolioManager | null = null;
@@ -107,8 +121,8 @@ class PortfolioManager {
   private tradeTimeout: ReturnType<typeof setTimeout> | null = null;
   private activityTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Current bot tier - defaults to auto-selection based on balance
-  private currentBotTier: BotTier | null = null;
+  // Current strategy tier - defaults to auto-selection based on balance
+  private currentStrategyTier: StrategyTier | null = null;
   
   private readonly MS_PER_DAY = 24 * 60 * 60 * 1000;
   private startTime: number = Date.now();
@@ -265,37 +279,43 @@ class PortfolioManager {
   }
 
   /**
-   * Get the current active bot tier
+   * Get the current active strategy tier
    * Returns explicitly set tier or auto-selects based on wallet balance
    */
-  public getActiveBotTier(): BotTier {
-    if (this.currentBotTier) {
-      return this.currentBotTier;
+  public getActiveStrategyTier(): StrategyTier {
+    if (this.currentStrategyTier) {
+      return this.currentStrategyTier;
     }
     const { walletBalance } = usePortfolioStore.getState();
-    return getBotTierForStake(walletBalance);
+    return getStrategyTierForStake(walletBalance);
   }
+
+  /** @deprecated Use getActiveStrategyTier instead */
+  public getActiveBotTier = this.getActiveStrategyTier;
 
   /**
    * Get the config for the current active tier
    */
-  public getActiveTierConfig(): BotTierConfig {
-    return BOT_TIERS[this.getActiveBotTier()];
+  public getActiveTierConfig(): StrategyTierConfig {
+    return STRATEGY_TIERS[this.getActiveStrategyTier()];
   }
 
   /**
-   * Set the bot tier explicitly
+   * Set the strategy tier explicitly
    */
-  public setBotTier(tier: BotTier): void {
+  public setStrategyTier(tier: StrategyTier): void {
     const { walletBalance } = usePortfolioStore.getState();
-    const tierConfig = BOT_TIERS[tier];
+    const tierConfig = STRATEGY_TIERS[tier];
     
     if (walletBalance < tierConfig.minimumStake) {
       throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
     }
     
-    this.currentBotTier = tier;
+    this.currentStrategyTier = tier;
   }
+
+  /** @deprecated Use setStrategyTier instead */
+  public setBotTier = this.setStrategyTier;
 
   /**
    * Get daily target min for current tier
@@ -938,8 +958,8 @@ class PortfolioManager {
   public getPortfolioStateAPI() {
     const state = usePortfolioStore.getState();
     const volatility = this.calculateMarketVolatility();
-    const activeTier = this.getActiveBotTier();
-    const tierConfig = BOT_TIERS[activeTier];
+    const activeTier = this.getActiveStrategyTier();
+    const tierConfig = STRATEGY_TIERS[activeTier];
     const cryptoTickers = this.getCryptoTickers();
     
     return {
@@ -950,10 +970,13 @@ class PortfolioManager {
         pool_balance: state.poolBalance,
         total_equity: state.totalEquity,
         session_pnl: state.sessionPnL,
+        strategy_tier: activeTier,
+        strategy_tier_config: tierConfig,
+        // Backward compatibility: keep bot_tier in API response
         bot_tier: activeTier,
         bot_tier_config: tierConfig,
-        bot_mode: this.currentBotMode,
-        bot_mode_description: this.getBotModeDescription(),
+        agent_mode: this.currentBotMode,
+        agent_mode_description: this.getBotModeDescription(),
         daily_target_pct: {
           min: tierConfig.dailyRoiMin,
           max: tierConfig.dailyRoiMax
@@ -993,13 +1016,13 @@ class PortfolioManager {
    * Set user balance from external API
    * This allows integration with broader platforms
    * @param balance - The new balance to set
-   * @param botTier - Optional bot tier to use (auto-selected if not provided)
+   * @param strategyTier - Optional strategy tier to use (auto-selected if not provided)
    */
-  public setUserBalance(balance: number, botTier?: BotTier): { 
+  public setUserBalance(balance: number, strategyTier?: StrategyTier): { 
     status: string; 
     walletBalance: number; 
-    botTier: BotTier;
-    botTierConfig: BotTierConfig;
+    strategyTier: StrategyTier;
+    strategyTierConfig: StrategyTierConfig;
     projectedDailyProfit: { min: number; max: number } 
   } {
     if (typeof balance !== 'number' || isNaN(balance) || balance < 0) {
@@ -1007,27 +1030,27 @@ class PortfolioManager {
     }
     
     // Set or auto-select tier
-    if (botTier) {
-      const tierConfig = BOT_TIERS[botTier];
+    if (strategyTier) {
+      const tierConfig = STRATEGY_TIERS[strategyTier];
       if (balance < tierConfig.minimumStake) {
         throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
       }
-      this.currentBotTier = botTier;
+      this.currentStrategyTier = strategyTier;
     } else {
-      this.currentBotTier = getBotTierForStake(balance);
+      this.currentStrategyTier = getStrategyTierForStake(balance);
     }
     
     usePortfolioStore.getState().setWalletBalance(balance);
     usePortfolioStore.getState().resetDailyEquity(balance);
     
-    const effectiveTier = this.getActiveBotTier();
-    const tierConfig = BOT_TIERS[effectiveTier];
+    const effectiveTier = this.getActiveStrategyTier();
+    const tierConfig = STRATEGY_TIERS[effectiveTier];
     
     return {
       status: 'success',
       walletBalance: balance,
-      botTier: effectiveTier,
-      botTierConfig: tierConfig,
+      strategyTier: effectiveTier,
+      strategyTierConfig: tierConfig,
       projectedDailyProfit: {
         min: balance * tierConfig.dailyRoiMin,
         max: balance * tierConfig.dailyRoiMax,
@@ -1039,35 +1062,49 @@ class PortfolioManager {
 // Expose API globally for frontend/platform integration
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).getTradingAgentStatus = () => PortfolioManager.getInstance().getPortfolioStateAPI();
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).setTradingAgentBalance = (amount: number, botTier?: BotTier) => {
+(window as any).setTradingAgentBalance = (amount: number, strategyTier?: StrategyTier) => {
   try {
-    const result = PortfolioManager.getInstance().setUserBalance(amount, botTier);
+    const result = PortfolioManager.getInstance().setUserBalance(amount, strategyTier);
     return { 
       status: 'success', 
       new_balance: result.walletBalance,
-      bot_tier: result.botTier,
-      bot_tier_config: result.botTierConfig,
+      strategy_tier: result.strategyTier,
+      strategy_tier_config: result.strategyTierConfig,
+      // Backward compatibility
+      bot_tier: result.strategyTier,
+      bot_tier_config: result.strategyTierConfig,
       projected_daily_profit: result.projectedDailyProfit
     };
   } catch (error) {
     return { status: 'error', message: error instanceof Error ? error.message : 'Invalid amount' };
   }
 };
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).setBotTier = (tier: BotTier) => {
+(window as any).setStrategyTier = (tier: StrategyTier) => {
   try {
-    PortfolioManager.getInstance().setBotTier(tier);
+    PortfolioManager.getInstance().setStrategyTier(tier);
     return { 
       status: 'success', 
-      bot_tier: tier,
-      bot_tier_config: BOT_TIERS[tier]
+      strategy_tier: tier,
+      strategy_tier_config: STRATEGY_TIERS[tier]
     };
   } catch (error) {
     return { status: 'error', message: error instanceof Error ? error.message : 'Invalid tier' };
   }
 };
+
+/** @deprecated Use setStrategyTier instead */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).getBotTiers = () => BOT_TIERS;
+(window as any).setBotTier = (window as any).setStrategyTier;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).getStrategyTiers = () => STRATEGY_TIERS;
+
+/** @deprecated Use getStrategyTiers instead */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).getBotTiers = (window as any).getStrategyTiers;
 
 export const portfolioManager = PortfolioManager.getInstance();
