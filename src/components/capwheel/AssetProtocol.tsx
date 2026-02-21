@@ -405,9 +405,13 @@ const AssetCard = ({ title, yieldValue, icon, delay }: AssetCardProps) => (
 // DOCUMENT ROW
 // ============================================
 
-const DocumentRow = ({ name, hash }: { name: string; hash: string }) => (
-  <motion.div 
-    className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0 cursor-pointer"
+const DocumentRow = ({ name, hash, href }: { name: string; hash: string; href: string }) => (
+  <motion.a
+    href={href}
+    download
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0 cursor-pointer no-underline"
     whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.02)' }}
   >
     <div className="flex items-center gap-2">
@@ -418,7 +422,7 @@ const DocumentRow = ({ name, hash }: { name: string; hash: string }) => (
       <code className="text-[10px] text-slate-600 font-mono">{hash}</code>
       <Download className="w-3.5 h-3.5 text-slate-500 hover:text-white transition-colors" />
     </div>
-  </motion.div>
+  </motion.a>
 );
 
 // ============================================
@@ -472,9 +476,9 @@ export const AssetProtocol = () => {
   ];
 
   const documents = [
-    { name: "GMT_Architecture_v9.2.pdf", hash: "0x7a3f...1d4b" },
-    { name: "Bonding_Mechanics.pdf", hash: "0x2b4c...0f1a" },
-    { name: "RWA_Attestation.pdf", hash: "0x9f8e...5b4a" },
+    { name: "SGX Confidential HFT Architecture Specification.pdf", hash: "0x7a3f...1d4b", href: "/SGX Confidential HFT Architecture Specification.pdf" },
+    { name: "Thermodynamic Limits of AMM Liquidity.pdf", hash: "0x2b4c...0f1a", href: "/Thermodynamic Limits of AMM Liquidity.pdf" },
+    { name: "Crypto-RWA Hedging Framework Whitepaper.pdf", hash: "0x9f8e...5b4a", href: "/Crypto-RWA Hedging Framework Whitepaper.pdf" },
   ];
 
   return (
