@@ -246,7 +246,7 @@ const StrategyCard = ({
         <div className="bg-black/30 rounded-lg p-3 mb-4">
           <div className="text-[10px] text-gray-500 uppercase mb-1">Minimum Capital</div>
           <div className="text-lg font-bold text-white font-mono">
-            ${strategy.minimumStake.toLocaleString()}
+            ${strategy.minimumStake.toLocaleString('en-US')}
           </div>
           {!isEligible && !strategy.isRestricted && (
             <p className="text-[10px] text-red-400 mt-1">Insufficient balance</p>
@@ -470,7 +470,7 @@ const YieldProjectionEngine = () => {
                   </span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <p className="text-[10px] text-gray-500">Net profit from ${capital.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-500">Net profit from ${capital.toLocaleString('en-US')}</p>
                   <p className="text-xs text-[#00FF9D]/80 font-mono">
                     +{formatCurrency(projections.annual)}
                   </p>
@@ -538,7 +538,7 @@ export const StrategyPools = () => {
   };
 
   return (
-    <div className="min-h-full p-4 lg:p-6 space-y-6 overflow-y-auto">
+    <div className="min-h-full p-4 lg:p-6 space-y-6 overflow-y-auto overflow-x-hidden">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

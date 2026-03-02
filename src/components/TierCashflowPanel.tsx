@@ -113,7 +113,7 @@ export function TierCashflowPanel() {
             <Target className="h-3 w-3 text-slate-500" />
             <span className="text-[8px] text-slate-500">Balance: {formatCurrency(walletBalance)}</span>
           </div>
-          <span className="text-[8px] text-slate-500">Min: ${tierConfig.minimumStake.toLocaleString()}</span>
+          <span className="text-[8px] text-slate-500">Min: ${tierConfig.minimumStake.toLocaleString('en-US')}</span>
         </div>
       </div>
     </div>

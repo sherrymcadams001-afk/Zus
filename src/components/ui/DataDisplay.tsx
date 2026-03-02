@@ -57,7 +57,7 @@ export function DataDisplay({
 
   // Format number values
   const formattedValue = typeof value === 'number'
-    ? value.toLocaleString(undefined, {
+    ? value.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })

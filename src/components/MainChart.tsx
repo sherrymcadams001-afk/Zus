@@ -177,6 +177,9 @@ export function MainChart() {
         minBarSpacing: 4,
         fixLeftEdge: true,
       },
+      localization: {
+        locale: 'en-US',
+      },
     });
 
     // 1. Volume (Bottom)

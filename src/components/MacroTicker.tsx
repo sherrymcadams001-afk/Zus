@@ -111,7 +111,7 @@ export function MacroTicker() {
           <div key={`${item.symbol}-${idx}`} className="flex items-center gap-2 px-4 border-r border-[rgba(255,255,255,0.05)]">
             <span className="text-[10px] font-bold text-orion-slate">{item.displayName}</span>
             <span className="text-[10px] font-mono tabular-nums text-white">
-              ${item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <div className={`flex items-center gap-0.5 text-[9px] font-medium transition-colors duration-150 ${
               sellFlashActive ? 'text-orion-danger' : (item.change >= 0 ? 'text-orion-success' : 'text-orion-danger')

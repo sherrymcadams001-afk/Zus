@@ -84,9 +84,9 @@ const ActivityItem = ({ tx }: { tx: { type: string; amount: number; user_email?:
     </div>
     <div className="text-right">
       <p className={`text-sm font-mono font-medium ${tx.type === 'deposit' ? 'text-[#00FF9D]' : 'text-red-400'}`}>
-        {tx.type === 'deposit' ? '+' : '-'}${tx.amount.toLocaleString()}
+        {tx.type === 'deposit' ? '+' : '-'}${tx.amount.toLocaleString('en-US')}
       </p>
-      <p className="text-xs text-slate-500">{new Date(tx.created_at * 1000).toLocaleTimeString()}</p>
+      <p className="text-xs text-slate-500">{new Date(tx.created_at * 1000).toLocaleTimeString('en-US')}</p>
     </div>
   </div>
 );
@@ -412,7 +412,7 @@ const AdminPanel = () => {
                     <>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <MetricCard title="Total AUM" value={formatCurrency(analytics.platform?.totalAUM || 0)} icon={DollarSign} color="brand" change={`${formatCurrency(analytics.volume?.deposits_24h || 0)} today`} changeType="up" />
-                        <MetricCard title="Total Users" value={(analytics.users?.total_users || 0).toLocaleString()} icon={Users} color="blue" change={`+${analytics.users?.new_users_24h || 0} today`} changeType="up" />
+                        <MetricCard title="Total Users" value={(analytics.users?.total_users || 0).toLocaleString('en-US')} icon={Users} color="blue" change={`+${analytics.users?.new_users_24h || 0} today`} changeType="up" />
                         <MetricCard title="Active Stakes" value={formatCurrency(analytics.staking?.total_staked || 0)} icon={PieChart} color="purple" change={`${analytics.staking?.active_stakes || 0} active`} changeType="neutral" />
                         <MetricCard title="Pending Actions" value={analytics.transactions?.pending_transactions || 0} icon={Clock} color="yellow" />
                       </div>
@@ -565,7 +565,7 @@ const AdminPanel = () => {
                                   {u.account_status || 'active'}
                                 </span>
                               </td>
-                              <td className="px-5 py-3 text-right font-mono text-white">${u.balance.toLocaleString()}</td>
+                              <td className="px-5 py-3 text-right font-mono text-white">${u.balance.toLocaleString('en-US')}</td>
                               <td className="px-5 py-3 text-right text-slate-500 text-xs">{new Date(u.created_at * 1000).toLocaleDateString()}</td>
                               <td className="px-5 py-3 text-right space-x-1">
                                 <Button size="sm" variant="ghost" className="text-[#00B8D4] hover:bg-[#00B8D4]/10" onClick={() => handleViewUser(u.id)}>View</Button>
@@ -630,11 +630,11 @@ const AdminPanel = () => {
                             const meta = tx.metadata ? (typeof tx.metadata === 'string' ? JSON.parse(tx.metadata) : tx.metadata) : {};
                             return (
                               <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                                <td className="px-5 py-3 text-slate-400 text-xs">{new Date(tx.created_at * 1000).toLocaleString()}</td>
+                                <td className="px-5 py-3 text-slate-400 text-xs">{new Date(tx.created_at * 1000).toLocaleString('en-US')}</td>
                                 <td className="px-5 py-3">
                                   <div className="font-medium text-white">{tx.user_email}</div>
                                 </td>
-                                <td className="px-5 py-3 font-mono text-[#00FF9D] font-medium">${tx.amount.toLocaleString()}</td>
+                                <td className="px-5 py-3 font-mono text-[#00FF9D] font-medium">${tx.amount.toLocaleString('en-US')}</td>
                                 <td className="px-5 py-3">
                                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                                     tx.status === 'completed' ? 'bg-[#00FF9D]/20 text-[#00FF9D]' :
@@ -697,10 +697,10 @@ const AdminPanel = () => {
                           <tr><td colSpan={5} className="px-5 py-12 text-center text-slate-500"><CheckCircle className="w-8 h-8 mx-auto mb-2 text-slate-600" />No pending withdrawals</td></tr>
                         ) : pendingWithdrawals.map((tx) => (
                           <tr key={tx.id} className="hover:bg-white/5">
-                            <td className="px-5 py-3 text-slate-400">{new Date(tx.created_at * 1000).toLocaleString()}</td>
+                            <td className="px-5 py-3 text-slate-400">{new Date(tx.created_at * 1000).toLocaleString('en-US')}</td>
                             <td className="px-5 py-3 text-white">{tx.user_email}</td>
-                            <td className="px-5 py-3 font-mono text-red-400">${tx.amount.toLocaleString()}</td>
-                            <td className="px-5 py-3 font-mono text-slate-400">${tx.user_balance?.toLocaleString() ?? 'N/A'}</td>
+                            <td className="px-5 py-3 font-mono text-red-400">${tx.amount.toLocaleString('en-US')}</td>
+                            <td className="px-5 py-3 font-mono text-slate-400">${tx.user_balance?.toLocaleString('en-US') ?? 'N/A'}</td>
                             <td className="px-5 py-3 text-right space-x-2">
                               <Button size="sm" className="bg-[#00FF9D] hover:bg-[#00FF9D]/80 text-black" onClick={() => handleApproveWithdrawal(tx.id)}><CheckCircle className="w-4 h-4 mr-1" />Approve</Button>
                               <Button size="sm" variant="danger" onClick={() => handleRejectWithdrawal(tx.id)}><XCircle className="w-4 h-4 mr-1" />Reject</Button>
@@ -755,9 +755,9 @@ const AdminPanel = () => {
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Available</div><div className="text-2xl font-mono text-[#00FF9D] mt-1">${viewUser.wallet.available_balance.toLocaleString()}</div></div>
-                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Locked</div><div className="text-2xl font-mono text-yellow-400 mt-1">${viewUser.wallet.locked_balance.toLocaleString()}</div></div>
-                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Pending</div><div className="text-2xl font-mono text-orange-400 mt-1">${viewUser.wallet.pending_balance.toLocaleString()}</div></div>
+                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Available</div><div className="text-2xl font-mono text-[#00FF9D] mt-1">${viewUser.wallet.available_balance.toLocaleString('en-US')}</div></div>
+                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Locked</div><div className="text-2xl font-mono text-yellow-400 mt-1">${viewUser.wallet.locked_balance.toLocaleString('en-US')}</div></div>
+                  <div className="bg-[#0B1015] p-4 rounded-lg border border-white/10"><div className="text-xs text-slate-500 uppercase">Pending</div><div className="text-2xl font-mono text-orange-400 mt-1">${viewUser.wallet.pending_balance.toLocaleString('en-US')}</div></div>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Transactions</h4>
@@ -771,10 +771,10 @@ const AdminPanel = () => {
                           <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No transactions</td></tr>
                         ) : viewUser.transactions.map((tx) => (
                           <tr key={tx.id} className="hover:bg-white/5">
-                            <td className="px-4 py-2 text-slate-400 text-xs">{new Date(tx.created_at * 1000).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-slate-400 text-xs">{new Date(tx.created_at * 1000).toLocaleString('en-US')}</td>
                             <td className="px-4 py-2"><span className={`uppercase text-xs font-bold ${tx.type === 'deposit' ? 'text-[#00FF9D]' : tx.type === 'withdraw' ? 'text-red-400' : 'text-[#00B8D4]'}`}>{tx.type}</span></td>
                             <td className="px-4 py-2 text-white text-xs">{tx.description}</td>
-                            <td className="px-4 py-2 text-right font-mono text-xs">{tx.type === 'withdraw' ? '-' : '+'}${tx.amount.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-right font-mono text-xs">{tx.type === 'withdraw' ? '-' : '+'}${tx.amount.toLocaleString('en-US')}</td>
                             <td className="px-4 py-2 text-right"><span className={`px-2 py-0.5 rounded text-xs ${tx.status === 'completed' ? 'bg-[#00FF9D]/20 text-[#00FF9D]' : tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>{tx.status}</span></td>
                           </tr>
                         ))}

@@ -255,7 +255,7 @@ const ChatBubble = ({ message }: { message: ChatMessage }) => {
           {message.content}
         </p>
         <p className={`text-[10px] mt-1 ${isUser ? 'text-black/50' : 'text-slate-500'}`}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {message.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </motion.div>
@@ -507,11 +507,11 @@ export const SupportChat = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-20 right-6 sm:bottom-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] shadow-lg shadow-[#00FF9D]/25 flex items-center justify-center group"
+            className="fixed bottom-20 right-6 sm:bottom-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#00FF9D] to-[#00B8D4] shadow-lg shadow-[#00FF9D]/25 flex items-center justify-center group overflow-hidden"
             aria-label="Open support chat"
           >
-            {/* Pulse ring */}
-            <span className="absolute inset-0 rounded-full bg-[#00FF9D] animate-ping opacity-25" />
+            {/* Pulse ring - contained to prevent overflow on mobile */}
+            <span className="absolute inset-[-2px] rounded-full bg-[#00FF9D] animate-ping opacity-25 pointer-events-none" style={{ contain: 'strict' }} />
             
             {/* Icon */}
             <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-black transition-transform group-hover:scale-110" />

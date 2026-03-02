@@ -692,7 +692,7 @@ export const CapWheelProfile = () => {
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-white truncate">{session.user_agent || 'Unknown device'}</p>
                             <p className="text-[10px] text-slate-500 mt-1">
-                              IP: {session.ip_address || 'Unknown'} • {new Date(session.created_at * 1000).toLocaleString()}
+                              IP: {session.ip_address || 'Unknown'} • {new Date(session.created_at * 1000).toLocaleString('en-US')}
                             </p>
                           </div>
                         </div>

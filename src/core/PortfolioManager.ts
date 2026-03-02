@@ -310,7 +310,7 @@ class PortfolioManager {
     const tierConfig = STRATEGY_TIERS[tier];
     
     if (walletBalance < tierConfig.minimumStake) {
-      throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
+      throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString('en-US')}`);
     }
     
     this.currentStrategyTier = tier;
@@ -1040,7 +1040,7 @@ class PortfolioManager {
     if (strategyTier) {
       const tierConfig = STRATEGY_TIERS[strategyTier];
       if (balance < tierConfig.minimumStake) {
-        throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString()}`);
+        throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString('en-US')}`);
       }
       this.currentStrategyTier = strategyTier;
     } else {
