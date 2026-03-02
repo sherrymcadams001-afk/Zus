@@ -61,7 +61,6 @@
 
 html {
   /* Lock the viewport */
-  position: fixed;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -72,11 +71,6 @@ html {
 
 body {
   margin: 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -85,8 +79,6 @@ body {
   overscroll-behavior-x: none;
   /* Only allow vertical pan and pinch zoom */
   touch-action: pan-y pinch-zoom;
-  /* iOS safe area support */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 #root {
@@ -98,8 +90,20 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /* Contain all children */
-  contain: layout style;
+  box-sizing: border-box;
+  /*
+   * contain: paint makes #root the containing block for ALL fixed-position
+   * descendants. This means every "fixed inset-0" child and "fixed bottom-0"
+   * nav is positioned relative to #root's content box (inside safe-area padding),
+   * NOT the raw viewport edge. Headers stay below the notch, bottom navs stay
+   * above the home indicator — on every page, automatically.
+   */
+  contain: layout style paint;
+  /* Safe-area insets applied HERE where they actually affect fixed children */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
 }
 
 /* Scrollable content areas - use this class for any scrollable container */

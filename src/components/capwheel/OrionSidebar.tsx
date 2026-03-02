@@ -125,7 +125,7 @@ export const OrionSidebar = () => {
   const strategy = getStrategyById(currentTier || 'anchor');
 
   return (
-    <aside className="w-64 h-screen bg-[#0B1015] border-r border-white/5 flex flex-col">
+    <aside className="w-64 h-full bg-[#0B1015] border-r border-white/5 flex flex-col">
       {/* Logo Header */}
       <div className="h-16 flex items-center gap-3 px-4 border-b border-white/5">
         <CapWheelLogo size={40} animate={false} />
