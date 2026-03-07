@@ -57,6 +57,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Don't precache PDF documents (they're large, let browser handle them)
         globIgnores: ['**/*.pdf'],
+        // SPA fallback: serve index.html for all navigation requests
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/sw\.js$/],
         runtimeCaching: [
           {
             // Cache Google Fonts
