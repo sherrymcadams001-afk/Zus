@@ -100,10 +100,11 @@ class StreamEngine {
   private activeSymbol: string | null = null;
   private activeInterval: string = '5m';
 
-  private readonly BASE_URL_GLOBAL = 'wss://stream.binance.com:9443/ws';
-  private readonly BASE_URL_US = 'wss://stream.binance.us:9443/ws';
+  private readonly BASE_URL_GLOBAL = 'wss://stream.binance.com:443/ws';
+  private readonly BASE_URL_US = 'wss://stream.binance.us:443/ws';
   private readonly API_BASE_URL_GLOBAL = 'https://api.binance.com/api/v3';
   private readonly API_BASE_URL_US = 'https://api.binance.us/api/v3';
+  private readonly API_BASE_URL_DATA = 'https://data-api.binance.vision/api/v3';
 
   private reconnectTimeouts: { ticker?: ReturnType<typeof setTimeout>; kline?: ReturnType<typeof setTimeout> } = {};
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -290,12 +291,22 @@ class StreamEngine {
     const poll = async () => {
       if (!this.isRunning) return;
       
+      // Try primary, then data-api fallback
+      const urls = [
+        `${this.apiBaseUrl}/ticker/24hr`,
+        `${this.API_BASE_URL_DATA}/ticker/24hr`,
+      ];
+      
+      let data: unknown = null;
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) { data = await response.json(); break; }
+        } catch { /* try next */ }
+      }
+      if (!data) return;
+
       try {
-        const url = `${this.apiBaseUrl}/ticker/24hr`;
-        const response = await fetch(url);
-        if (!response.ok) return;
-        
-        const data = await response.json();
         // Map REST data to Ticker format
         const tickers = new Map<string, Ticker>();
         
@@ -571,22 +582,33 @@ class StreamEngine {
       return response.json();
     };
 
+    // Build ordered list of endpoints to try:
+    // 1. Current config primary  2. Global data API (no geo-restrictions)  3. Other region
+    const endpoints: string[] = [this.apiBaseUrl];
+    if (!endpoints.includes(this.API_BASE_URL_DATA)) endpoints.push(this.API_BASE_URL_DATA);
+    const alt = this.config.useUSEndpoint ? this.API_BASE_URL_GLOBAL : this.API_BASE_URL_US;
+    if (!endpoints.includes(alt)) endpoints.push(alt);
+
     try {
-      let data: BinanceKlineArray[];
-      
-      try {
-        // Try primary endpoint
-        data = await fetchFromUrl(this.apiBaseUrl);
-      } catch (primaryError) {
-        if (signal.aborted) throw primaryError;
-        
-        this.log('Primary endpoint failed, attempting failover for REST API...');
-        
-        // Try secondary endpoint
-        const fallbackUrl = this.config.useUSEndpoint ? this.API_BASE_URL_GLOBAL : this.API_BASE_URL_US;
-        data = await fetchFromUrl(fallbackUrl);
-        
-        this.log('Failover REST fetch successful');
+      let data: BinanceKlineArray[] | undefined;
+
+      for (const ep of endpoints) {
+        if (signal.aborted) break;
+        try {
+          data = await fetchFromUrl(ep);
+          break; // success
+        } catch (err) {
+          if (signal.aborted) throw err;
+          this.log(`Endpoint ${ep} failed, trying next...`);
+        }
+      }
+
+      if (!data || signal.aborted) {
+        if (!signal.aborted) {
+          this.log('All endpoints failed for historical candles');
+          useMarketStore.getState().setChartError('Unable to load market data. Please check your connection and try again.');
+        }
+        return;
       }
 
       // Check if request was aborted during parsing
@@ -616,8 +638,9 @@ class StreamEngine {
         this.log(`Fetch aborted for ${symbol}`);
         return;
       }
-      // CORS or network error - log warning but keep socket open
+      // All endpoints failed
       this.log(`Warning: Failed to fetch historical candles:`, error);
+      useMarketStore.getState().setChartError('Unable to load market data. Please check your connection and try again.');
     } finally {
       this.currentFetchController = null;
     }

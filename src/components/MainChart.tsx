@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, type HistogramData, type LineData, type Time, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { useMarketStore, type Candle } from '../store/useMarketStore';
 import { streamEngine } from '../core/StreamEngine';
-import { BarChart3, Settings2, ChevronDown } from 'lucide-react';
+import { BarChart3, Settings2, ChevronDown, AlertTriangle, RefreshCw } from 'lucide-react';
 
 // Professional Trading Colors - High Contrast
 const CHART_UP_COLOR = '#22C55E';     // Vivid Green
@@ -131,6 +131,7 @@ export function MainChart() {
   const activeCandle = useMarketStore((state) => state.activeCandle);
   const historicalCandles = useMarketStore((state) => state.historicalCandles);
   const klineConnected = useMarketStore((state) => state.klineConnected);
+  const chartError = useMarketStore((state) => state.chartError);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -378,7 +379,26 @@ export function MainChart() {
       <div className="flex-1 relative bg-[#0C0F14]">
         <div ref={containerRef} className="absolute inset-0" />
         
-        {historicalCandles.length === 0 && (
+        {chartError && historicalCandles.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0B1015]/80 backdrop-blur-sm z-10">
+            <div className="flex flex-col items-center gap-4 px-6 text-center max-w-xs">
+              <AlertTriangle className="h-6 w-6 text-amber-400" />
+              <span className="text-xs font-medium text-slate-300">{chartError}</span>
+              <button
+                onClick={() => {
+                  useMarketStore.getState().setChartError(null);
+                  streamEngine.subscribeToChart(activeSymbol);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[#00FF9D]/10 text-[#00FF9D] hover:bg-[#00FF9D]/20 transition-colors"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!chartError && historicalCandles.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#0B1015]/80 backdrop-blur-sm z-10">
             <div className="flex flex-col items-center gap-3">
               <div className="h-5 w-5 border-2 border-[#00FF9D] border-t-transparent rounded-full animate-spin" />
