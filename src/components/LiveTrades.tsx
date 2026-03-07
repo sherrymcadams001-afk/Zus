@@ -75,7 +75,7 @@ export function LiveTrades() {
               >
                 <div className="flex items-center gap-1 min-w-0">
                   <span className="font-bold text-slate-300 truncate">{trade.symbol}</span>
-                  <span className={`text-[7px] px-1 rounded font-bold flex-shrink-0 ${trade.side === 'BUY' ? 'bg-[#00FF9D]/15 text-[#00FF9D]' : 'bg-slate-500/15 text-slate-400'}`}>
+                  <span className={`text-[7px] px-1 rounded font-bold flex-shrink-0 ${trade.side === 'BUY' ? 'bg-[#00FF9D]/15 text-[#00FF9D]' : 'bg-red-500/15 text-red-400'}`}>
                     {trade.side}
                   </span>
                 </div>
@@ -85,7 +85,7 @@ export function LiveTrades() {
                 <div className="text-right tabular-nums text-slate-500 font-mono">
                   {trade.quantity.toFixed(trade.symbol === 'BTC' ? 4 : 2)}
                 </div>
-                <div className={`flex items-center justify-end gap-0.5 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-[#00FF9D]' : 'text-slate-400'}`}>
+                <div className={`flex items-center justify-end gap-0.5 tabular-nums font-bold font-mono ${trade.pnl >= 0 ? 'text-[#00FF9D]' : 'text-red-400 blink-red'}`}>
                   {isSell && (
                     <TrendingDown className="h-2.5 w-2.5" />
                   )}

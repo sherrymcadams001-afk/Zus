@@ -77,7 +77,7 @@ const WatchlistRow = memo(function WatchlistRow({ symbol, ticker, isActive, onSe
       </div>
       
       <div className={`text-right font-medium font-mono w-12 truncate ${
-        change === null ? 'text-slate-500' : change >= 0 ? 'text-[#00FF9D]' : 'text-slate-400'
+        change === null ? 'text-slate-500' : change >= 0 ? 'text-[#00FF9D]' : 'text-red-400 blink-red'
       }`}>
         {change === null ? '---' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`}
       </div>

@@ -10,7 +10,7 @@ function highlightMessage(message: string): React.ReactNode {
     const isNegative = part.includes('-') && part.match(/-\d/);
     const isKeyword = keywords.some(kw => part.toUpperCase().includes(kw.toUpperCase()));
     if (isPositive) return <span key={idx} className="text-emerald-400">{part}</span>;
-    if (isNegative) return <span key={idx} className="text-slate-400">{part}</span>;
+    if (isNegative) return <span key={idx} className="text-red-400 blink-red">{part}</span>;
     if (isKeyword) return <span key={idx} className="text-cyan-400">{part}</span>;
     return <span key={idx}>{part}</span>;
   });
