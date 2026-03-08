@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PieChart, Zap, User, Plus } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -6,6 +6,17 @@ interface MobileBottomNavProps {
 }
 
 export const MobileBottomNav = ({ onDepositClick }: MobileBottomNavProps) => {
+  const navigate = useNavigate();
+
+  const handleDepositClick = () => {
+    if (onDepositClick) {
+      onDepositClick();
+      return;
+    }
+
+    navigate('/capwheel/dashboard?modal=deposit');
+  };
+
   const items = [
     { to: '/capwheel/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
     { to: '/capwheel/strategy-pools', icon: <PieChart size={20} />, label: 'Pools' },
@@ -23,7 +34,8 @@ export const MobileBottomNav = ({ onDepositClick }: MobileBottomNavProps) => {
             return (
               <button
                 key="deposit"
-                onClick={onDepositClick}
+                type="button"
+                onClick={handleDepositClick}
                 className="flex flex-col items-center justify-center w-full h-full gap-1 text-[#00FF9D] relative"
               >
                 <div className="w-10 h-10 bg-[#00FF9D] rounded-full flex items-center justify-center -mt-4 shadow-lg shadow-[#00FF9D]/30">

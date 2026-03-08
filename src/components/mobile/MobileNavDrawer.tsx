@@ -45,7 +45,7 @@ export const SwipeEdgeDetector = ({ onSwipeOpen }: SwipeEdgeDetectorProps) => {
 
   return (
     <div
-      className="fixed left-0 top-0 bottom-0 w-6 z-40 lg:hidden"
+      className="fixed left-0 top-14 bottom-0 w-6 z-40 lg:hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -82,7 +82,7 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
           />
           
           {/* Drawer */}
@@ -91,7 +91,7 @@ export const MobileNavDrawer = ({ isOpen, onClose }: MobileNavDrawerProps) => {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 bottom-0 w-[280px] bg-[#0B1015] border-r border-white/10 z-50 lg:hidden flex flex-col"
+            className="fixed top-0 left-0 bottom-0 w-[280px] bg-[#0B1015] border-r border-white/10 z-[60] lg:hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-white/5">

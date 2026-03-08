@@ -270,7 +270,7 @@ export const CapWheelProfile = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto mobile-scroll bg-[#0B1015]">
+    <div className="h-full overflow-y-auto mobile-scroll bg-[#0B1015] content-with-bottom-nav lg:pb-0">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         
         {/* Header */}

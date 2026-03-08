@@ -330,7 +330,7 @@ const PartnerNetworkContent = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto overflow-x-hidden mobile-scroll bg-[#0B1015] relative">
+    <div className="h-full overflow-y-auto overflow-x-hidden mobile-scroll bg-[#0B1015] relative content-with-bottom-nav lg:pb-0">
       {/* Atmospheric background */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0B1015] via-[#0D1318] to-[#0A0E12] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,157,0.04),transparent_60%)] pointer-events-none" />
@@ -681,7 +681,7 @@ export const PartnerNetwork = () => {
       </div>
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+        <header className="safe-header-x lg:hidden flex items-center justify-between h-14 border-b border-white/5 bg-[#0B1015] flex-shrink-0 relative z-20">
           <button
             onClick={() => navigate('/capwheel/dashboard')}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"

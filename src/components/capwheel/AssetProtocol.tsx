@@ -482,7 +482,7 @@ export const AssetProtocol = () => {
   ];
 
   return (
-    <div className="h-full overflow-y-auto overflow-x-hidden bg-[#0B1015] p-4 md:p-6">
+    <div className="h-full overflow-y-auto overflow-x-hidden bg-[#0B1015] p-4 md:p-6 content-with-bottom-nav lg:pb-6">
       <div className="max-w-5xl mx-auto" ref={ref}>
         
         {/* Header */}

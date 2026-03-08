@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
@@ -20,6 +20,7 @@ import {
   Shield,
   Zap,
   FileCode,
+  Plus,
 } from 'lucide-react';
 import { CapWheelLogo } from '../../assets/capwheel-logo';
 
@@ -123,6 +124,7 @@ export const OrionSidebar = () => {
   const user = useAuthStore((state) => state.user);
   const { currentTier } = usePortfolioStore();
   const strategy = getStrategyById(currentTier || 'anchor');
+  const navigate = useNavigate();
 
   return (
     <aside className="w-64 h-full bg-[#0B1015] border-r border-white/5 flex flex-col">
@@ -187,6 +189,15 @@ export const OrionSidebar = () => {
 
       {/* Status Footer */}
       <div className="border-t border-white/5 p-4 space-y-3">
+        <button
+          type="button"
+          onClick={() => navigate('/capwheel/dashboard?modal=deposit')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00FF9D] to-[#00E88A] px-4 py-3 text-sm font-bold text-black shadow-lg shadow-[#00FF9D]/20 hover:brightness-105 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Quick Deposit
+        </button>
+
         {/* System Latency */}
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">

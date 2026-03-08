@@ -134,6 +134,20 @@ body {
   padding-top: env(safe-area-inset-top, 0);
 }
 
+.safe-header-x {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+.safe-header-x-wide {
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+}
+
+.content-with-bottom-nav {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* ==============================================================================
    TYPOGRAPHY UTILITIES
    ============================================================================== */

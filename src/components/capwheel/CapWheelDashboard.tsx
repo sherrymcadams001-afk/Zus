@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { OrionSidebar } from './OrionSidebar';
 import { OrionMetricsGrid } from './OrionMetricsGrid';
@@ -93,7 +93,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springPhysics.gentle}
-      className="h-14 flex items-center justify-between px-5 border-b border-white/[0.06] bg-gradient-to-r from-[#0B1015] via-[#0D1318] to-[#0B1015] flex-shrink-0 relative"
+      className="safe-header-x-wide h-14 flex items-center justify-between border-b border-white/[0.06] bg-gradient-to-r from-[#0B1015] via-[#0D1318] to-[#0B1015] flex-shrink-0 relative z-20"
       style={{ boxShadow: `${lumeElevation.lume1.shadow}, ${lumeElevation.lume1.glow}` }}
     >
       {/* Subtle rim light on bottom edge */}
@@ -101,11 +101,12 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
       
       <div className="flex items-center gap-3">
         <motion.button 
+          type="button"
           onClick={onMenuClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           transition={hoverSpring}
-          className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
+          className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
         >
           <Menu size={20} />
         </motion.button>
@@ -116,6 +117,7 @@ const DashboardHeader = ({ onMenuClick, onDepositClick }: { onMenuClick: () => v
       <div className="flex items-center gap-4">
         {/* Deposit CTA with accent glow */}
         <motion.button 
+          type="button"
           onClick={onDepositClick}
           whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(0,255,157,0.3)' }}
           whileTap={{ scale: 0.98 }}
@@ -217,6 +219,8 @@ export const CapWheelDashboard = () => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const isMobile = useMediaQuery('(max-width: 1023px)');
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Initialize portfolio data from backend when user is authenticated
   useEffect(() => {
@@ -224,6 +228,18 @@ export const CapWheelDashboard = () => {
       initFromBackend();
     }
   }, [initFromBackend, user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('modal') !== 'deposit') {
+      return;
+    }
+
+    setIsDepositModalOpen(true);
+    params.delete('modal');
+    const search = params.toString();
+    navigate(`${location.pathname}${search ? `?${search}` : ''}`, { replace: true });
+  }, [location.pathname, location.search, navigate]);
 
   return (
     <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">

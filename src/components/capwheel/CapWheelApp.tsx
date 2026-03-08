@@ -95,7 +95,7 @@ const ProfileWrapper = () => {
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Mobile Header with back button */}
-        <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+        <header className="safe-header-x lg:hidden flex items-center justify-between h-14 border-b border-white/5 bg-[#0B1015] flex-shrink-0 relative z-20">
           <button
             onClick={() => navigate('/capwheel/dashboard')}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
@@ -144,7 +144,7 @@ const StrategyPoolsWrapper = () => {
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Mobile Header with back button */}
-        <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+        <header className="safe-header-x lg:hidden flex items-center justify-between h-14 border-b border-white/5 bg-[#0B1015] flex-shrink-0 relative z-20">
           <button
             onClick={() => navigate('/capwheel/dashboard')}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
@@ -195,7 +195,7 @@ const AssetProtocolWrapper = () => {
       
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Mobile Header with back button */}
-        <header className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+        <header className="safe-header-x lg:hidden flex items-center justify-between h-14 border-b border-white/5 bg-[#0B1015] flex-shrink-0 relative z-20">
           <button
             onClick={() => navigate('/capwheel/dashboard')}
             className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"

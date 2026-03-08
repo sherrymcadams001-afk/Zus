@@ -538,7 +538,7 @@ export const StrategyPools = () => {
   };
 
   return (
-    <div className="min-h-full p-4 lg:p-6 space-y-6 overflow-y-auto overflow-x-hidden">
+    <div className="min-h-full p-4 lg:p-6 space-y-6 overflow-y-auto overflow-x-hidden content-with-bottom-nav lg:pb-6">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

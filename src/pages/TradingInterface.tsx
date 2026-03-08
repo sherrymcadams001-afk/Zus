@@ -98,11 +98,12 @@ export default function TradingInterface() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
         {/* Header Bar - Unified with Dashboard */}
-        <header className="h-12 flex items-center justify-between px-4 border-b border-white/5 bg-[#0B1015] flex-shrink-0">
+        <header className="safe-header-x h-12 flex items-center justify-between border-b border-white/5 bg-[#0B1015] flex-shrink-0 relative z-20">
           <div className="flex items-center gap-2">
             <button 
+              type="button"
               onClick={() => setIsMobileNavOpen(true)}
-              className="lg:hidden p-1.5 -ml-1.5 text-slate-400 hover:text-white"
+              className="lg:hidden p-1.5 text-slate-400 hover:text-white"
             >
               <Menu size={20} />
             </button>
