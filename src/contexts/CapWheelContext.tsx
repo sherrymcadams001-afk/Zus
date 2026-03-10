@@ -9,6 +9,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { apiClient } from '../api/client';
+import { calculateTierEarnings, getAverageDailyRoi, getStrategyTierForStake } from '../core/strategy-tiers';
 
 // ========== Type Definitions ==========
 
@@ -150,8 +151,8 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
         const totalEarned = staking?.totalEarned ?? 0;
         
         // Calculate daily earnings based on tier
-        const dailyRoi = aum >= 50000 ? 0.018 : aum >= 25000 ? 0.012 : aum >= 4000 ? 0.01 : 0.008;
-        const dailyEarnings = aum * dailyRoi;
+        const activeTier = portfolio?.current_bot_tier ?? getStrategyTierForStake(aum);
+        const dailyEarnings = calculateTierEarnings(aum, activeTier).daily;
         
         // Update portfolio metrics with REAL data
         setPortfolioMetrics({
@@ -176,7 +177,7 @@ export const CapWheelProvider = ({ children }: { children: ReactNode }) => {
             type: 'Private Credit',
             allocation: 100,
             value: totalStaked,
-            yield: dailyRoi * 365 * 100,
+            yield: getAverageDailyRoi(activeTier) * 365 * 100,
           }]);
           
           setHedgeMetrics(prev => ({

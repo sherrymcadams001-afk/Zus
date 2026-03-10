@@ -5,11 +5,13 @@
  * Includes Trading Agent integration
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Menu, ArrowLeft } from 'lucide-react';
 import { CapWheelProvider } from '../../contexts/CapWheelContext';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePortfolioStore } from '../../store/usePortfolioStore';
+import { useMarketStore } from '../../store/useMarketStore';
 import { CapWheelLogin } from './CapWheelLogin';
 import { OrionSidebar } from './OrionSidebar';
 import { CapWheelDashboard } from './CapWheelDashboard';
@@ -23,6 +25,55 @@ import { CapWheelLogo } from '../../assets/capwheel-logo';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../mobile/MobileBottomNav';
 import { SupportChat } from './SupportChat';
+import { streamEngine } from '../../core/StreamEngine';
+import { portfolioManager } from '../../core/PortfolioManager';
+
+const LiveSimulationBootstrap = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
+  const initFromBackend = usePortfolioStore((state) => state.initFromBackend);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      streamEngine.stop();
+      portfolioManager.stop();
+      return;
+    }
+
+    let disposed = false;
+
+    const bootstrap = async () => {
+      const [streamResult] = await Promise.allSettled([
+        streamEngine.start(),
+        initFromBackend(),
+      ]);
+
+      if (disposed) {
+        return;
+      }
+
+      if (streamResult.status === 'fulfilled') {
+        streamEngine.subscribeToChart(useMarketStore.getState().activeSymbol);
+      }
+
+      portfolioManager.start();
+    };
+
+    void bootstrap();
+
+    return () => {
+      disposed = true;
+      streamEngine.stop();
+      portfolioManager.stop();
+    };
+  }, [initFromBackend, isAuthenticated, isAuthLoading]);
+
+  return null;
+};
 
 // Branded loading screen
 const LoadingScreen = () => (
@@ -331,6 +382,7 @@ const CapWheelRoutes = () => {
 export const CapWheelApp = () => {
   return (
     <CapWheelProvider>
+      <LiveSimulationBootstrap />
       <CapWheelRoutes />
       <SupportChat />
     </CapWheelProvider>

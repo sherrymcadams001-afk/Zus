@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiClient } from '../api/client';
+import { getStrategyTierForStake, normalizeStrategyTier } from '../core/strategy-tiers';
 
 export interface Trade {
   id: number;
@@ -52,8 +53,17 @@ interface PortfolioState {
   setEquity: (equity: number) => void;
   setWalletBalance: (balance: number) => void;
   setCurrentTier: (tier: string) => void;
-  resetDailyEquity: (walletBalance: number) => void;
+  resetDailyEquity: (equity: number, walletBalance?: number) => void;
   clearSellFlash: () => void;
+}
+
+function parseTimestamp(input: number | string): number {
+  if (typeof input === 'number') {
+    return input > 1_000_000_000_000 ? input : input * 1000;
+  }
+
+  const parsed = new Date(input).getTime();
+  return Number.isFinite(parsed) ? parsed : Date.now();
 }
 
 export const usePortfolioStore = create<PortfolioState>((set, get) => ({
@@ -85,30 +95,36 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
       // Fetch dashboard data and strategy in parallel
       const [dashboardResponse, strategyResponse] = await Promise.all([
         apiClient.get('/api/dashboard'),
-        apiClient.get('/api/profile/strategy').catch(() => ({ data: { tier: 'anchor' } }))
+        apiClient.get('/api/profile/strategy').catch(() => ({ data: { data: { tier: 'anchor' } } }))
       ]);
       
-      const { wallet, staking, transactions } = dashboardResponse.data;
+      const dashboardData = dashboardResponse.data?.data;
+      const wallet = dashboardData?.wallet;
+      const staking = dashboardData?.staking;
+      const transactions = dashboardData?.transactions;
       
       const walletBalance = wallet?.available_balance ?? 0;
       const stakedBalance = staking?.totalStaked ?? 0;
       const totalEquity = walletBalance + stakedBalance;
-      const currentTier = strategyResponse.data?.tier || 'anchor';
+      const currentTier =
+        normalizeStrategyTier(strategyResponse.data?.data?.tier)
+        ?? normalizeStrategyTier(dashboardData?.portfolio?.current_bot_tier)
+        ?? getStrategyTierForStake(totalEquity > 0 ? totalEquity : walletBalance);
       
       // Convert recent transactions to trades format
       const recentTrades: Trade[] = (transactions || []).slice(0, 20).map((tx: {
         id: number;
         type: string;
         amount: number;
-        created_at: string;
+        created_at: number | string;
       }) => ({
         id: tx.id,
         symbol: 'USDT',
-        side: tx.type === 'deposit' ? 'BUY' : 'SELL',
+        side: ['deposit', 'trade_profit', 'roi_payout', 'referral_commission', 'pool_unstake'].includes(tx.type) ? 'BUY' : 'SELL',
         price: 1,
         quantity: tx.amount,
-        pnl: tx.type === 'profit' ? tx.amount : 0,
-        timestamp: new Date(tx.created_at).getTime(),
+        pnl: tx.type === 'trade_loss' || tx.type === 'withdraw' ? -Math.abs(tx.amount) : Math.max(tx.amount, 0),
+        timestamp: parseTimestamp(tx.created_at),
       }));
       
       set({
@@ -132,8 +148,8 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
     totalEquity: balance + state.poolBalance,
   })),
 
-  resetDailyEquity: (walletBalance) => set((state) => ({
-    startOfDayEquity: walletBalance + state.poolBalance,
+  resetDailyEquity: (equity, walletBalance = equity) => set(() => ({
+    startOfDayEquity: equity,
     startOfDayWalletBalance: walletBalance,
     sessionPnL: 0,
     dailyCashflow: 0,

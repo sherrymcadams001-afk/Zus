@@ -5,12 +5,19 @@
  * Handles polling, caching, and error states.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { DashboardData } from '../core/DataOrchestrator';
 import {
   orchestrateDashboardData,
   getDefaultDashboardData,
 } from '../core/DataOrchestrator';
+import { usePortfolioStore } from '../store/usePortfolioStore';
+import {
+  STRATEGY_TIERS,
+  calculateTierEarnings,
+  getAverageDailyRoi,
+  normalizeStrategyTier,
+} from '../core/strategy-tiers';
 
 interface UseDashboardDataOptions {
   /** Polling interval in milliseconds. Default 60000 (60s) - optimized for free tier */
@@ -47,6 +54,9 @@ export function useDashboardData(
   const [isError, setIsError] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastFetch, setLastFetch] = useState<number | null>(null);
+  const liveEquity = usePortfolioStore((state) => state.totalEquity);
+  const liveCurrentTier = usePortfolioStore((state) => state.currentTier);
+  const isPortfolioInitialized = usePortfolioStore((state) => state.isInitialized);
   
   const isMounted = useRef(true);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -104,8 +114,38 @@ export function useDashboardData(
     };
   }, []);
 
+  const effectiveData = useMemo<DashboardData>(() => {
+    if (!isPortfolioInitialized || liveEquity <= 0) {
+      return data;
+    }
+
+    const currentTier = normalizeStrategyTier(liveCurrentTier) ?? data.currentTier;
+    const tierConfig = STRATEGY_TIERS[currentTier];
+    const effectiveDailyRate = (data.roi?.actualDailyRatePercent ?? (getAverageDailyRoi(tierConfig) * 100)) / 100;
+    const earnings = calculateTierEarnings(liveEquity, tierConfig, effectiveDailyRate);
+
+    return {
+      ...data,
+      aum: liveEquity,
+      currentTier,
+      tierConfig,
+      netYieldPercent: effectiveDailyRate * 100,
+      dailyEarnings: earnings.daily,
+      weeklyEarnings: earnings.weekly,
+      monthlyEarnings: earnings.monthly,
+      roi: data.roi
+        ? {
+            ...data.roi,
+            tier: currentTier,
+            projectedDailyEarning: earnings.daily,
+            actualDailyEarning: earnings.daily,
+          }
+        : null,
+    };
+  }, [data, isPortfolioInitialized, liveCurrentTier, liveEquity]);
+
   return {
-    data,
+    data: effectiveData,
     isLoading,
     isError,
     error,

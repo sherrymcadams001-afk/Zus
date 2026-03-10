@@ -1,5 +1,19 @@
 import { usePortfolioStore } from '../store/usePortfolioStore';
 import { useMarketStore } from '../store/useMarketStore';
+import {
+  BOT_TIERS,
+  STRATEGY_TIERS,
+  calculateTierEarnings,
+  formatTierRoiRange,
+  getAverageDailyRoi,
+  getAverageHourlyRoi,
+  getSimulationBaseBalance,
+  getStrategyTierForStake,
+  getTargetTradesPerHour,
+  normalizeStrategyTier,
+  type StrategyTier,
+  type StrategyTierConfig,
+} from './strategy-tiers';
 
 /**
  * PortfolioManager
@@ -20,96 +34,16 @@ type MarketVolatility = 'low' | 'medium' | 'high';
 /** Agent mode types for smart/dumb trading simulation */
 type BotMode = 'smart' | 'dumb' | 'recovering';
 
-/** Strategy tier types for multi-tier trading system */
-export type StrategyTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
-
 /** @deprecated Use StrategyTier instead */
 export type BotTier = StrategyTier;
-
-/** Strategy tier configuration */
-export interface StrategyTierConfig {
-  name: string;
-  hourlyRoiMin: number;
-  hourlyRoiMax: number;
-  dailyRoiMin: number;
-  dailyRoiMax: number;
-  minimumStake: number;
-  tradingHoursPerDay: number;
-  tradingDaysPerWeek: number;
-  roiWithdrawalHours: number;
-  capitalWithdrawalDays: number;
-  investmentDurationDays: number;
-}
-
 /** @deprecated Use StrategyTierConfig instead */
 export type BotTierConfig = StrategyTierConfig;
 
-/** Strategy tier configurations - mirroring backend */
-export const STRATEGY_TIERS: Record<StrategyTier, StrategyTierConfig> = {
-  anchor: {
-    name: 'Anchor',
-    hourlyRoiMin: 0.001,
-    hourlyRoiMax: 0.0012,
-    dailyRoiMin: 0.008,
-    dailyRoiMax: 0.0096,
-    minimumStake: 100,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 40,
-    investmentDurationDays: 365,
-  },
-  vector: {
-    name: 'Vector',
-    hourlyRoiMin: 0.0012,
-    hourlyRoiMax: 0.0014,
-    dailyRoiMin: 0.0096,
-    dailyRoiMax: 0.0112,
-    minimumStake: 4000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 45,
-    investmentDurationDays: 365,
-  },
-  kinetic: {
-    name: 'Kinetic',
-    hourlyRoiMin: 0.0014,
-    hourlyRoiMax: 0.0016,
-    dailyRoiMin: 0.0112,
-    dailyRoiMax: 0.0128,
-    minimumStake: 25000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 65,
-    investmentDurationDays: 365,
-  },
-  horizon: {
-    name: 'Horizon',
-    hourlyRoiMin: 0.00225,
-    hourlyRoiMax: 0.00225,
-    dailyRoiMin: 0.018,
-    dailyRoiMax: 0.018,
-    minimumStake: 50000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    roiWithdrawalHours: 24,
-    capitalWithdrawalDays: 85,
-    investmentDurationDays: 365,
-  },
+export {
+  BOT_TIERS,
+  STRATEGY_TIERS,
+  getStrategyTierForStake,
 };
-
-/** @deprecated Use STRATEGY_TIERS instead */
-export const BOT_TIERS = STRATEGY_TIERS;
-
-/** Get strategy tier based on stake amount */
-export function getStrategyTierForStake(stakeAmount: number): StrategyTier {
-  if (stakeAmount >= STRATEGY_TIERS.horizon.minimumStake) return 'horizon';
-  if (stakeAmount >= STRATEGY_TIERS.kinetic.minimumStake) return 'kinetic';
-  if (stakeAmount >= STRATEGY_TIERS.vector.minimumStake) return 'vector';
-  return 'anchor';
-}
 
 /** @deprecated Use getStrategyTierForStake instead */
 export const getBotTierForStake = getStrategyTierForStake;
@@ -147,6 +81,7 @@ class PortfolioManager {
   private modeStartTime: number = Date.now();
   private modeDuration: number = 0;
   private dumbModeAccumulatedLoss: number = 0;
+  private pnlCarryOver: number = 0;
   
   // Bot mode probability thresholds (for initial mode selection)
   private readonly SMART_MODE_PROBABILITY = 0.6;   // 60% chance to start in smart mode
@@ -288,8 +223,15 @@ class PortfolioManager {
     if (this.currentStrategyTier) {
       return this.currentStrategyTier;
     }
-    const { walletBalance } = usePortfolioStore.getState();
-    return getStrategyTierForStake(walletBalance);
+
+    const { currentTier, totalEquity, walletBalance } = usePortfolioStore.getState();
+    const normalizedTier = normalizeStrategyTier(currentTier);
+    if (normalizedTier) {
+      return normalizedTier;
+    }
+
+    const effectiveBalance = totalEquity > 0 ? totalEquity : walletBalance;
+    return getStrategyTierForStake(effectiveBalance);
   }
 
   /** @deprecated Use getActiveStrategyTier instead */
@@ -306,14 +248,16 @@ class PortfolioManager {
    * Set the strategy tier explicitly
    */
   public setStrategyTier(tier: StrategyTier): void {
-    const { walletBalance } = usePortfolioStore.getState();
+    const { walletBalance, totalEquity, setCurrentTier } = usePortfolioStore.getState();
     const tierConfig = STRATEGY_TIERS[tier];
+    const eligibleBalance = totalEquity > 0 ? totalEquity : walletBalance;
     
-    if (walletBalance < tierConfig.minimumStake) {
+    if (eligibleBalance < tierConfig.minimumStake) {
       throw new Error(`Insufficient balance for ${tierConfig.name}. Minimum stake: $${tierConfig.minimumStake.toLocaleString('en-US')}`);
     }
     
     this.currentStrategyTier = tier;
+    setCurrentTier(tier);
   }
 
   /** @deprecated Use setStrategyTier instead */
@@ -321,6 +265,12 @@ class PortfolioManager {
 
   public start() {
     if (this.isRunning) return;
+
+    const { totalEquity, walletBalance } = usePortfolioStore.getState();
+    if (totalEquity <= 0 && walletBalance <= 0) {
+      this.setUserBalance(STRATEGY_TIERS.anchor.minimumStake, 'anchor');
+    }
+
     this.isRunning = true;
 
     // Pre-populate historical trades so log is never empty on page load
@@ -416,16 +366,17 @@ class PortfolioManager {
    */
   private generateHistoricalTrades(): void {
     const store = usePortfolioStore.getState();
-    const { walletBalance, startOfDayWalletBalance } = store;
-    const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+    const { totalEquity, startOfDayEquity, walletBalance } = store;
+    const balanceReference = totalEquity > 0 ? totalEquity : walletBalance;
+    const baseBalance = getSimulationBaseBalance(balanceReference, startOfDayEquity);
     
     // Get tier config for realistic amounts
     const tierConfig = this.getActiveTierConfig();
-    const hourlyTarget = baseBalance * ((tierConfig.hourlyRoiMin + tierConfig.hourlyRoiMax) / 2);
+    const hourlyTarget = baseBalance * getAverageHourlyRoi(tierConfig);
     
-    // Generate 20-30 historical trades over last 30-60 mins
-    const tradeCount = 20 + Math.floor(Math.random() * 11);
     const timeSpan = (30 + Math.random() * 30) * 60 * 1000; // 30-60 mins in ms
+    const timeSpanHours = timeSpan / (60 * 60 * 1000);
+    const tradeCount = Math.max(12, Math.round(getTargetTradesPerHour(tierConfig, this.calculateMarketVolatility()) * timeSpanHours));
     const now = Date.now();
     
     // Common crypto symbols for variety
@@ -462,8 +413,12 @@ class PortfolioManager {
         pnl = -avgGainPerTrade * (0.3 + Math.random() * 1.2);
       }
       
-      pnl = Number(pnl.toFixed(2));
-      accumulatedPnL += pnl;
+      const normalizedPnl = this.quantizePnl(pnl);
+      if (normalizedPnl === 0) {
+        continue;
+      }
+
+      accumulatedPnL += normalizedPnl;
       
       // Approximate price based on symbol
       const basePrices: Record<string, number> = {
@@ -475,10 +430,10 @@ class PortfolioManager {
       
       historicalTrades.push({
         symbol,
-        side: pnl >= 0 ? 'BUY' : 'SELL',
+        side: normalizedPnl >= 0 ? 'BUY' : 'SELL',
         price,
         quantity,
-        pnl,
+        pnl: normalizedPnl,
         timestamp
       });
     }
@@ -698,10 +653,11 @@ class PortfolioManager {
         this.lastDayIndex = currentDayIndex;
         this.dailyCashflow = 0;
         // Reset start of day equity for new day
-        const { walletBalance } = usePortfolioStore.getState();
-        usePortfolioStore.getState().resetDailyEquity(walletBalance);
+        const { totalEquity, walletBalance } = usePortfolioStore.getState();
+        usePortfolioStore.getState().resetDailyEquity(totalEquity > 0 ? totalEquity : walletBalance, walletBalance);
         // Reset dumb mode accumulated loss for new day
         this.dumbModeAccumulatedLoss = 0;
+        this.pnlCarryOver = 0;
       }
 
       // Pick a random crypto symbol
@@ -721,23 +677,22 @@ class PortfolioManager {
       }
 
       // --- Tier-Based Micro-Gain Calculation ---
-      const { walletBalance, startOfDayWalletBalance, sessionPnL } = usePortfolioStore.getState();
-      const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+      const { walletBalance, totalEquity, startOfDayEquity, sessionPnL } = usePortfolioStore.getState();
+      const balanceReference = totalEquity > 0 ? totalEquity : walletBalance;
+      const baseBalance = getSimulationBaseBalance(balanceReference, startOfDayEquity);
       
       // Get tier config for this user's stake
       const tierConfig = this.getActiveTierConfig();
-      const hourlyRoiMid = (tierConfig.hourlyRoiMin + tierConfig.hourlyRoiMax) / 2;
-      const hourlyTarget = baseBalance * hourlyRoiMid;
-      
-      // Estimate ~30-50 trades per hour, so each trade's net contribution
-      const tradesPerHour = 40;
+      const hourlyTarget = baseBalance * getAverageHourlyRoi(tierConfig);
+      const volatility = this.calculateMarketVolatility();
+      const tradesPerHour = getTargetTradesPerHour(tierConfig, volatility);
       const avgNetGainPerTrade = hourlyTarget / tradesPerHour;
       
       // Calculate current progress toward target
       const currentReturn = baseBalance > 0 ? sessionPnL / baseBalance : 0;
       const elapsedTime = Date.now() - this.startTime;
       const dayProgress = (elapsedTime % this.MS_PER_DAY) / this.MS_PER_DAY;
-      const targetReturnNow = tierConfig.dailyRoiMin * dayProgress;
+      const targetReturnNow = getAverageDailyRoi(tierConfig) * dayProgress;
       
       // Determine win/loss for this trade (~50% each, but biased to hit target)
       const behindSchedule = currentReturn < targetReturnNow * 0.9;
@@ -759,7 +714,6 @@ class PortfolioManager {
       
       // Calculate PnL as micro-gain/loss
       let pnl: number;
-      const volatility = this.calculateMarketVolatility();
       const volMultiplier = volatility === 'high' ? 1.4 : volatility === 'low' ? 0.7 : 1.0;
       
       if (isWin) {
@@ -784,7 +738,12 @@ class PortfolioManager {
         this.dumbModeAccumulatedLoss -= recoverBonus;
       }
       
-      const normalizedPnL = Number(pnl.toFixed(2));
+      const normalizedPnL = this.quantizePnl(pnl);
+      if (normalizedPnL === 0) {
+        this.scheduleNextTrade();
+        return;
+      }
+
       const side: 'BUY' | 'SELL' = normalizedPnL >= 0 ? 'BUY' : 'SELL';
       
       // Calculate quantity based on price and PnL
@@ -822,30 +781,25 @@ class PortfolioManager {
    * Trades every 5-15 seconds to distribute daily target
    */
   private scheduleNextTrade(): void {
-    let baseDelay: number;
-    let variance: number;
-    
-    // Micro-gain pacing: 5-15 second intervals
-    switch (this.currentBotMode) {
-      case 'smart':
-        baseDelay = 8000;  // 8-15s in smart mode
-        variance = 7000;
-        break;
-      case 'dumb':
-        baseDelay = 5000;  // 5-10s in dumb mode (faster, more chaotic)
-        variance = 5000;
-        break;
-      case 'recovering':
-        baseDelay = 6000;  // 6-12s in recovery mode
-        variance = 6000;
-        break;
-      default:
-        baseDelay = 7000;
-        variance = 6000;
-    }
-    
-    const nextDelay = baseDelay + Math.random() * variance;
+    const tierConfig = this.getActiveTierConfig();
+    const targetTradesPerHour = getTargetTradesPerHour(tierConfig, this.calculateMarketVolatility());
+    const averageDelay = 3600000 / targetTradesPerHour;
+    const modeSpeedMultiplier = this.currentBotMode === 'dumb'
+      ? 0.8
+      : this.currentBotMode === 'recovering'
+        ? 0.95
+        : 1.1;
+    const randomizedDelay = 0.75 + Math.random() * 0.5;
+    const nextDelay = averageDelay * modeSpeedMultiplier * randomizedDelay;
+
     this.tradeTimeout = setTimeout(() => this.startTradeCycle(), nextDelay);
+  }
+
+  private quantizePnl(rawPnl: number): number {
+    const carriedPnl = rawPnl + this.pnlCarryOver;
+    const roundedPnl = Number(carriedPnl.toFixed(2));
+    this.pnlCarryOver = carriedPnl - roundedPnl;
+    return roundedPnl;
   }
 
   /**
@@ -932,27 +886,21 @@ class PortfolioManager {
     tierRoiRange: string;
   } {
     const tierConfig = this.getActiveTierConfig();
-    const { walletBalance, startOfDayWalletBalance } = usePortfolioStore.getState();
-    const baseBalance = startOfDayWalletBalance > 0 ? startOfDayWalletBalance : Math.max(walletBalance, 1000);
+    const { totalEquity, startOfDayEquity, walletBalance } = usePortfolioStore.getState();
+    const baseBalance = getSimulationBaseBalance(totalEquity > 0 ? totalEquity : walletBalance, startOfDayEquity);
     
     const sessionDuration = Math.floor((Date.now() - this.sessionStartTime) / 1000);
     
     // Calculate projected earnings based on tier rates
-    const dailyRoiMid = (tierConfig.dailyRoiMin + tierConfig.dailyRoiMax) / 2;
-    const projectedDaily = baseBalance * dailyRoiMid;
-    const projectedWeekly = projectedDaily * tierConfig.tradingDaysPerWeek;
-    const projectedMonthly = projectedDaily * tierConfig.tradingDaysPerWeek * 4;
-    
-    const roiMin = (tierConfig.hourlyRoiMin * 100).toFixed(2);
-    const roiMax = (tierConfig.hourlyRoiMax * 100).toFixed(2);
-    const tierRoiRange = roiMin === roiMax ? `${roiMin}%/hr` : `${roiMin}%-${roiMax}%/hr`;
+    const projections = calculateTierEarnings(baseBalance, tierConfig);
+    const tierRoiRange = formatTierRoiRange(tierConfig, 'hourly');
     
     return {
       dailyCashflow: this.dailyCashflow,
       sessionDuration,
-      projectedDaily,
-      projectedWeekly,
-      projectedMonthly,
+      projectedDaily: projections.daily,
+      projectedWeekly: projections.weekly,
+      projectedMonthly: projections.monthly,
       tierName: tierConfig.name,
       tierRoiRange,
     };
@@ -968,6 +916,7 @@ class PortfolioManager {
     const activeTier = this.getActiveStrategyTier();
     const tierConfig = STRATEGY_TIERS[activeTier];
     const cryptoTickers = this.getCryptoTickers();
+    const balanceReference = state.totalEquity > 0 ? state.totalEquity : state.walletBalance;
     
     return {
       status: 'success',
@@ -989,8 +938,8 @@ class PortfolioManager {
           max: tierConfig.dailyRoiMax
         },
         projected_daily_profit: {
-          min: state.walletBalance * tierConfig.dailyRoiMin,
-          max: state.walletBalance * tierConfig.dailyRoiMax,
+          min: balanceReference * tierConfig.dailyRoiMin,
+          max: balanceReference * tierConfig.dailyRoiMax,
         },
         market_context: {
           volatility,
@@ -1048,10 +997,11 @@ class PortfolioManager {
     }
     
     usePortfolioStore.getState().setWalletBalance(balance);
-    usePortfolioStore.getState().resetDailyEquity(balance);
+    usePortfolioStore.getState().resetDailyEquity(balance, balance);
     
     const effectiveTier = this.getActiveStrategyTier();
     const tierConfig = STRATEGY_TIERS[effectiveTier];
+    usePortfolioStore.getState().setCurrentTier(effectiveTier);
     
     return {
       status: 'success',

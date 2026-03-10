@@ -45,7 +45,8 @@ export const SwipeEdgeDetector = ({ onSwipeOpen }: SwipeEdgeDetectorProps) => {
 
   return (
     <div
-      className="fixed left-0 top-14 bottom-0 w-6 z-40 lg:hidden"
+      className="fixed left-0 bottom-0 w-5 z-10 lg:hidden"
+      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

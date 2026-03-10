@@ -1,7 +1,8 @@
 import { TrendingUp, Zap, Clock, Target } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { usePortfolioStore } from '../store/usePortfolioStore';
-import { portfolioManager, STRATEGY_TIERS, type StrategyTier } from '../core/PortfolioManager';
+import { portfolioManager } from '../core/PortfolioManager';
+import { STRATEGY_TIERS, getAverageDailyRoi, normalizeStrategyTier, type StrategyTier } from '../core/strategy-tiers';
 
 interface CashflowData {
   dailyCashflow: number;
@@ -32,7 +33,7 @@ function formatCurrency(amount: number): string {
 }
 
 export function TierCashflowPanel() {
-  const { sessionPnL, currentTier, walletBalance } = usePortfolioStore();
+  const { sessionPnL, currentTier, totalEquity, walletBalance } = usePortfolioStore();
   const [cashflowData, setCashflowData] = useState<CashflowData | null>(null);
 
   useEffect(() => {
@@ -48,9 +49,10 @@ export function TierCashflowPanel() {
 
   if (!cashflowData) return null;
 
-  const tierKey = (currentTier || 'anchor') as StrategyTier;
+  const tierKey = (normalizeStrategyTier(currentTier) ?? 'anchor') as StrategyTier;
   const tierConfig = STRATEGY_TIERS[tierKey];
-  const dailyRoiPercent = ((tierConfig.dailyRoiMin + tierConfig.dailyRoiMax) / 2 * 100).toFixed(2);
+  const dailyRoiPercent = (getAverageDailyRoi(tierConfig) * 100).toFixed(2);
+  const displayedBalance = totalEquity > 0 ? totalEquity : walletBalance;
   
   const isPositive = sessionPnL >= 0;
 
@@ -111,7 +113,7 @@ export function TierCashflowPanel() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Target className="h-3 w-3 text-slate-500" />
-            <span className="text-[8px] text-slate-500">Balance: {formatCurrency(walletBalance)}</span>
+            <span className="text-[8px] text-slate-500">Balance: {formatCurrency(displayedBalance)}</span>
           </div>
           <span className="text-[8px] text-slate-500">Min: ${tierConfig.minimumStake.toLocaleString('en-US')}</span>
         </div>

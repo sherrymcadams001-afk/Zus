@@ -242,7 +242,7 @@ export const CapWheelDashboard = () => {
   }, [location.pathname, location.search, navigate]);
 
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
+    <div className="h-full w-full relative flex bg-[#0B1015] overflow-hidden">
       {/* Atmospheric background with gradient depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0B1015] via-[#0D1318] to-[#0A0E12] pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,255,157,0.03),transparent_60%)] pointer-events-none" />
@@ -274,7 +274,7 @@ export const CapWheelDashboard = () => {
 
         {/* Dashboard Grid with staggered entrance */}
         <motion.main 
-          className={`flex-1 p-5 flex flex-col gap-4 ${isMobile ? 'overflow-y-auto pb-24 mobile-scroll' : 'overflow-hidden'}`}
+          className={`flex-1 flex flex-col gap-4 ${isMobile ? 'overflow-y-auto mobile-scroll px-4 pt-4 content-with-bottom-nav' : 'overflow-hidden p-5'}`}
           variants={staggerContainer}
           initial="hidden"
           animate="visible"

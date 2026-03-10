@@ -13,6 +13,16 @@
  */
 
 import { apiClient } from '../api/client';
+import {
+  BOT_TIERS,
+  STRATEGY_TIERS,
+  calculateTierEarnings,
+  getAverageDailyRoi,
+  getStrategyTierForStake,
+  normalizeStrategyTier,
+  type StrategyTier,
+  type StrategyTierConfig,
+} from './strategy-tiers';
 
 // ========== Type Definitions ==========
 
@@ -64,75 +74,10 @@ export interface TradeData {
   created_at: number;
 }
 
-/**
- * Strategy Tier - Frontend naming for trading strategy levels
- * Maps to backend 'BotTier' type and 'bot_tier' database columns
- */
-export type StrategyTier = 'anchor' | 'vector' | 'kinetic' | 'horizon';
-
 /** @deprecated Use StrategyTier instead */
 export type BotTier = StrategyTier;
 
-// Strategy tier configurations (mirrored from backend/src/engine/BotTiers.ts)
-export const STRATEGY_TIERS: Record<StrategyTier, {
-  name: string;
-  hourlyRoiMin: number;
-  hourlyRoiMax: number;
-  dailyRoiMin: number;
-  dailyRoiMax: number;
-  minimumStake: number;
-  tradingHoursPerDay: number;
-  tradingDaysPerWeek: number;
-  capitalWithdrawalDays: number;
-}> = {
-  anchor: {
-    name: 'Anchor',
-    hourlyRoiMin: 0.001,
-    hourlyRoiMax: 0.0012,
-    dailyRoiMin: 0.008,
-    dailyRoiMax: 0.0096,
-    minimumStake: 100,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    capitalWithdrawalDays: 40,
-  },
-  vector: {
-    name: 'Vector',
-    hourlyRoiMin: 0.0012,
-    hourlyRoiMax: 0.0014,
-    dailyRoiMin: 0.0096,
-    dailyRoiMax: 0.0112,
-    minimumStake: 4000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    capitalWithdrawalDays: 45,
-  },
-  kinetic: {
-    name: 'Kinetic',
-    hourlyRoiMin: 0.0014,
-    hourlyRoiMax: 0.0016,
-    dailyRoiMin: 0.0112,
-    dailyRoiMax: 0.0128,
-    minimumStake: 25000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    capitalWithdrawalDays: 65,
-  },
-  horizon: {
-    name: 'Horizon',
-    hourlyRoiMin: 0.00225,
-    hourlyRoiMax: 0.00225,
-    dailyRoiMin: 0.018,
-    dailyRoiMax: 0.018,
-    minimumStake: 50000,
-    tradingHoursPerDay: 8,
-    tradingDaysPerWeek: 6,
-    capitalWithdrawalDays: 85,
-  },
-};
-
-/** @deprecated Use STRATEGY_TIERS instead */
-export const BOT_TIERS = STRATEGY_TIERS;
+export { BOT_TIERS, STRATEGY_TIERS };
 
 // ========== Core Orchestrator ==========
 
@@ -179,7 +124,7 @@ export interface DashboardData {
   
   // Strategy Tier
   currentTier: StrategyTier;
-  tierConfig: typeof STRATEGY_TIERS[StrategyTier];
+  tierConfig: StrategyTierConfig;
   
   // Dynamic ROI Data (from backend)
   roi: ROIData | null;
@@ -193,10 +138,7 @@ export interface DashboardData {
  * Determine strategy tier based on total staked amount
  */
 export function getStrategyTierForAmount(amount: number): StrategyTier {
-  if (amount >= STRATEGY_TIERS.horizon.minimumStake) return 'horizon';
-  if (amount >= STRATEGY_TIERS.kinetic.minimumStake) return 'kinetic';
-  if (amount >= STRATEGY_TIERS.vector.minimumStake) return 'vector';
-  return 'anchor';
+  return getStrategyTierForStake(amount);
 }
 
 /** @deprecated Use getStrategyTierForAmount instead */
@@ -223,16 +165,13 @@ export function calculateEarningsProjections(
   stakedAmount: number,
   tier: StrategyTier
 ): { daily: number; weekly: number; monthly: number } {
-  const config = STRATEGY_TIERS[tier];
-  
-  // Use average of min/max for projection
-  const avgDailyRoi = (config.dailyRoiMin + config.dailyRoiMax) / 2;
-  
-  const daily = stakedAmount * avgDailyRoi;
-  const weekly = daily * config.tradingDaysPerWeek;
-  const monthly = weekly * 4.33; // Average weeks per month
-  
-  return { daily, weekly, monthly };
+  const projections = calculateTierEarnings(stakedAmount, tier);
+
+  return {
+    daily: projections.daily,
+    weekly: projections.weekly,
+    monthly: projections.monthly,
+  };
 }
 
 /**
@@ -420,12 +359,12 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   const aum = rawAum > 0 ? rawAum : DEMO_AUM;
   
   // Use backend's dynamic tier determination (based on actual stake amount)
-  const currentTier = roi?.tier ?? getStrategyTierForAmount(aum);
+  const currentTier = normalizeStrategyTier(roi?.tier) ?? getStrategyTierForAmount(aum);
   const tierConfig = STRATEGY_TIERS[currentTier];
   
   // Use DYNAMIC ROI from backend instead of static tier max
   // The backend calculates this using the sophisticated wave-based algorithm
-  const avgDailyRoi = (tierConfig.dailyRoiMin + tierConfig.dailyRoiMax) / 2;
+  const avgDailyRoi = getAverageDailyRoi(tierConfig);
   const netYieldPercent = roi?.actualDailyRatePercent ?? (avgDailyRoi * 100);
   
   // Calculate vesting runway from earliest active stake
@@ -438,10 +377,10 @@ export async function orchestrateDashboardData(): Promise<DashboardData> {
   // If backend returns 0 or null, calculate from AUM × daily ROI rate
   // This ensures we always show realistic earnings based on actual AUM
   const backendEarnings = roi?.actualDailyEarning;
-  const tierBasedEarnings = aum * avgDailyRoi;
+  const tierBasedEarnings = calculateTierEarnings(aum, tierConfig).daily;
   const dailyEarnings = (backendEarnings && backendEarnings > 0) ? backendEarnings : tierBasedEarnings;
   const weeklyEarnings = dailyEarnings * tierConfig.tradingDaysPerWeek;
-  const monthlyEarnings = weeklyEarnings * 4.33; // Average weeks per month
+  const monthlyEarnings = calculateTierEarnings(aum, tierConfig, dailyEarnings / Math.max(aum, 1)).monthly;
   
   // Calculate strategy metrics from trade history
   const sharpeRatio = calculateSharpeRatio(trades);
@@ -506,10 +445,8 @@ export function getDefaultDashboardData(): DashboardData {
   
   // Use demo AUM for realistic earnings display
   const aum = DEMO_AUM;
-  const avgDailyRoi = (config.dailyRoiMin + config.dailyRoiMax) / 2;
-  const dailyEarnings = aum * avgDailyRoi;
-  const weeklyEarnings = dailyEarnings * config.tradingDaysPerWeek;
-  const monthlyEarnings = weeklyEarnings * 4.33;
+  const avgDailyRoi = getAverageDailyRoi(config);
+  const { daily: dailyEarnings, weekly: weeklyEarnings, monthly: monthlyEarnings } = calculateTierEarnings(aum, config);
   
   return {
     aum,

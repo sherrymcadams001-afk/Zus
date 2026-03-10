@@ -10,6 +10,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, TrendingUp, Calculator, Loader2 } from 'lucide-react';
 import { useDashboardData } from '../../hooks/useDashboardData';
+import {
+  calculateTierEarnings,
+  getAverageDailyRoi,
+  getTradingDaysPerMonth,
+} from '../../core/strategy-tiers';
 
 interface ToggleProps {
   label: string;
@@ -36,11 +41,12 @@ export const OrionWealthProjection = () => {
   const [autoCompound, setAutoCompound] = useState(true);
 
   // Calculate compound vs simple annual projections
-  const dailyRate = (data.tierConfig.dailyRoiMin + data.tierConfig.dailyRoiMax) / 2;
-  const tradingDaysPerYear = data.tierConfig.tradingDaysPerWeek * 52;
+  const dailyRate = (data.roi?.actualDailyRatePercent ?? (getAverageDailyRoi(data.tierConfig) * 100)) / 100;
+  const tradingDaysPerMonth = getTradingDaysPerMonth(data.tierConfig);
+  const projections = calculateTierEarnings(data.aum, data.tierConfig, dailyRate);
   
-  const compoundGain = data.aum * (Math.pow(1 + dailyRate, tradingDaysPerYear) - 1);
-  const simpleGain = data.dailyEarnings * tradingDaysPerYear;
+  const compoundGain = projections.annualCompoundedProfit;
+  const simpleGain = projections.annualSimple;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -109,7 +115,7 @@ export const OrionWealthProjection = () => {
         <div className="grid grid-cols-3 gap-2 py-2.5 border-b border-white/5 hover:bg-white/5 transition-colors">
           <span className="text-sm text-white font-medium">Monthly</span>
           <span className="text-sm text-slate-400 font-mono text-right">
-            {(dailyRate * data.tierConfig.tradingDaysPerWeek * 4.33 * 100).toFixed(2)}%
+            {(dailyRate * tradingDaysPerMonth * 100).toFixed(2)}%
           </span>
           <span className="text-sm text-[#00FF9D] font-mono text-right">
             {formatCurrency(data.monthlyEarnings)}

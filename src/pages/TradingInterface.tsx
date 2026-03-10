@@ -7,7 +7,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Globe, Shield, Menu, Bell, Settings } from 'lucide-react';
 import { streamEngine } from '../core/StreamEngine';
-import { portfolioManager } from '../core/PortfolioManager';
 import { MacroTicker } from '../components/MacroTicker';
 import { Watchlist } from '../components/Watchlist';
 import { MainChart } from '../components/MainChart';
@@ -18,6 +17,7 @@ import { TierCashflowPanel } from '../components/TierCashflowPanel';
 import { OrionSidebar } from '../components/capwheel/OrionSidebar';
 import { MobileNavDrawer, SwipeEdgeDetector } from '../components/mobile/MobileNavDrawer';
 import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
+import { useMarketStore } from '../store/useMarketStore';
 
 // Orion Enterprise Session Timer Hook
 function useSessionTimer() {
@@ -45,6 +45,7 @@ export default function TradingInterface() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [time, setTime] = useState(new Date());
   const sessionTime = useSessionTimer();
+  const activeSymbol = useMarketStore((state) => state.activeSymbol);
 
   // Real-time clock
   useEffect(() => {
@@ -53,15 +54,6 @@ export default function TradingInterface() {
   }, []);
 
   useEffect(() => {
-    // Start the stream engine (with auto geo-failover)
-    streamEngine.start().then(() => {
-      // Initialize chart after engine is ready (and region probed)
-      streamEngine.subscribeToChart('BTCUSDT');
-    });
-    
-    // Start Portfolio Manager (Global Data Script)
-    portfolioManager.start();
-    
     // Check region periodically
     const checkRegion = () => {
       const config = streamEngine.getConfig();
@@ -71,16 +63,15 @@ export default function TradingInterface() {
     const interval = setInterval(checkRegion, 2000);
     checkRegion();
 
-    // Cleanup on unmount
-    return () => {
-      streamEngine.stop();
-      portfolioManager.stop();
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    streamEngine.subscribeToChart(activeSymbol);
+  }, [activeSymbol]);
+
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden font-sans select-none">
+    <div className="h-full w-full flex bg-[#0B1015] overflow-hidden font-sans select-none">
       {/* Swipe Edge Detector for mobile */}
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
@@ -165,7 +156,7 @@ export default function TradingInterface() {
         </div>
 
         {/* --- MOBILE LAYOUT (Visible on Mobile) --- */}
-        <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#0B1015] overflow-y-auto overflow-x-hidden pb-20">
+        <div className="flex lg:hidden flex-col flex-1 min-h-0 bg-[#0B1015] overflow-y-auto overflow-x-hidden content-with-bottom-nav">
           {/* Mobile Chart Area */}
           <div className="h-[280px] flex-shrink-0 border-b border-white/5 bg-[#0B1015] p-2">
             <MainChart />

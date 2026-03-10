@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Zap, 
@@ -24,89 +25,89 @@ import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { apiClient } from '../../api/client';
 import { usePortfolioStore } from '../../store/usePortfolioStore';
+import {
+  STRATEGY_TIERS,
+  STRATEGY_TIER_ORDER,
+  calculateTierEarnings,
+  formatTierRoiRange,
+  getAverageDailyRoi,
+  getTradingDaysPerMonth,
+  normalizeStrategyTier,
+  type StrategyTier,
+  type StrategyTierConfig,
+} from '../../core/strategy-tiers';
 
 // Strategy tier configuration
-export interface StrategyConfig {
-  id: 'anchor' | 'vector' | 'kinetic' | 'horizon';
+export interface StrategyConfig extends StrategyTierConfig {
+  id: StrategyTier;
   name: string;
   tagline: string;
   color: string;
   bgGradient: string;
   borderColor: string;
-  icon: React.ReactNode;
-  minimumStake: number;
-  dailyRoiMin: number;
-  dailyRoiMax: number;
-  capitalWithdrawalDays: number;
+  icon: ReactNode;
   features: string[];
   isHighlighted?: boolean;
   isRestricted?: boolean;
 }
 
-export const STRATEGY_POOLS: StrategyConfig[] = [
-  {
-    id: 'anchor',
-    name: 'ANCHOR',
+const STRATEGY_POOL_UI: Record<StrategyTier, Omit<StrategyConfig, keyof StrategyTierConfig | 'id' | 'name'>> = {
+  anchor: {
     tagline: 'Conservative Growth',
     color: '#6B7FD7',
     bgGradient: 'from-[#6B7FD7]/10 to-transparent',
     borderColor: 'border-[#6B7FD7]/30',
     icon: <Shield className="w-6 h-6" />,
-    minimumStake: 100,
-    dailyRoiMin: 0.008,
-    dailyRoiMax: 0.0096,
-    capitalWithdrawalDays: 40,
-    features: ['Low risk entry', '0.8% - 0.96% daily', '40-day capital lock'],
+    features: ['Low risk entry', '', ''],
   },
-  {
-    id: 'vector',
-    name: 'VECTOR',
+  vector: {
     tagline: 'Balanced Momentum',
     color: '#00B8D4',
     bgGradient: 'from-[#00B8D4]/10 to-transparent',
     borderColor: 'border-[#00B8D4]/30',
     icon: <TrendingUp className="w-6 h-6" />,
-    minimumStake: 4000,
-    dailyRoiMin: 0.0096,
-    dailyRoiMax: 0.0112,
-    capitalWithdrawalDays: 45,
-    features: ['Optimized returns', '0.96% - 1.12% daily', '45-day capital lock'],
+    features: ['Optimized returns', '', ''],
   },
-  {
-    id: 'kinetic',
-    name: 'KINETIC',
+  kinetic: {
     tagline: 'Aggressive Performance',
     color: '#00FF9D',
     bgGradient: 'from-[#00FF9D]/15 to-transparent',
     borderColor: 'border-[#00FF9D]/50',
     icon: <Zap className="w-6 h-6" />,
-    minimumStake: 25000,
-    dailyRoiMin: 0.0112,
-    dailyRoiMax: 0.0128,
-    capitalWithdrawalDays: 65,
-    features: ['Maximum velocity', '1.12% - 1.28% daily', '65-day capital lock'],
+    features: ['Maximum velocity', '', ''],
     isHighlighted: true,
   },
-  {
-    id: 'horizon',
-    name: 'HORIZON',
+  horizon: {
     tagline: 'Elite Reserved',
     color: '#D4AF37',
     bgGradient: 'from-[#3A3A3A]/20 to-transparent',
     borderColor: 'border-[#3A3A3A]/50',
     icon: <Crown className="w-6 h-6" />,
-    minimumStake: 50000,
-    dailyRoiMin: 0.018,
-    dailyRoiMax: 0.018,
-    capitalWithdrawalDays: 85,
-    features: ['Fixed 1.8% daily', 'Priority support', 'Invite only'],
+    features: ['Invite only access', 'Priority support', ''],
     isRestricted: true,
   },
-];
+};
+
+export const STRATEGY_POOLS: StrategyConfig[] = STRATEGY_TIER_ORDER.map((id) => {
+  const config = STRATEGY_TIERS[id];
+  const ui = STRATEGY_POOL_UI[id];
+
+  return {
+    id,
+    ...config,
+    ...ui,
+    name: config.name.toUpperCase(),
+    features: [
+      ui.features[0],
+      `${formatTierRoiRange(config, 'daily')} target band`,
+      `${config.capitalWithdrawalDays}-day capital lock`,
+    ],
+  };
+});
 
 // Get strategy by ID
 export const getStrategyById = (id: string): StrategyConfig | undefined => {
-  return STRATEGY_POOLS.find(s => s.id === id);
+  return STRATEGY_POOLS.find((strategy) => strategy.id === normalizeStrategyTier(id));
 };
 
 // Legacy alias for backwards compatibility
@@ -316,23 +317,18 @@ const YieldProjectionEngine = () => {
   const selectedStrategy = availableStrategies[selectedStrategyIndex];
 
   const projections = useMemo(() => {
-    const avgDailyRoi = (selectedStrategy.dailyRoiMin + selectedStrategy.dailyRoiMax) / 2;
-    const dailyPayout = capital * avgDailyRoi;
-    const tradingDaysPerMonth = 26;
-    const monthlyPayout = dailyPayout * tradingDaysPerMonth;
-    const tradingDaysPerYear = 312;
-    let annualCompounded = capital;
-    for (let i = 0; i < tradingDaysPerYear; i++) {
-      annualCompounded *= (1 + avgDailyRoi);
-    }
+    const earnings = calculateTierEarnings(capital, selectedStrategy);
     
     return {
-      daily: dailyPayout,
-      monthly: monthlyPayout,
-      annual: annualCompounded - capital,
-      annualTotal: annualCompounded,
+      daily: earnings.daily,
+      monthly: earnings.monthly,
+      annual: earnings.annualCompoundedProfit,
+      annualTotal: earnings.annualCompoundedTotal,
     };
   }, [capital, selectedStrategy]);
+
+  const averageDailyRoi = getAverageDailyRoi(selectedStrategy);
+  const tradingDaysPerMonth = Math.round(getTradingDaysPerMonth(selectedStrategy));
 
   const formatCurrency = (val: number) => {
     if (val >= 1_000_000) return '$' + (val / 1_000_000).toFixed(2) + 'M';
@@ -371,12 +367,12 @@ const YieldProjectionEngine = () => {
               <Input
                 type="number"
                 value={capital}
-                onChange={(e) => setCapital(Math.max(100, Number(e.target.value)))}
+                onChange={(e) => setCapital(Math.max(STRATEGY_TIERS.anchor.minimumStake, Number(e.target.value)))}
                 className="text-lg font-mono"
-                min={100}
+                min={STRATEGY_TIERS.anchor.minimumStake}
                 step={100}
               />
-              <p className="text-[10px] text-gray-500 mt-1">Minimum: $100</p>
+              <p className="text-[10px] text-gray-500 mt-1">Minimum: ${STRATEGY_TIERS.anchor.minimumStake.toLocaleString('en-US')}</p>
             </div>
 
             <div>
@@ -424,7 +420,7 @@ const YieldProjectionEngine = () => {
                     {selectedStrategy.name}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {((selectedStrategy.dailyRoiMin + selectedStrategy.dailyRoiMax) / 2 * 100).toFixed(2)}% avg daily
+                    {(averageDailyRoi * 100).toFixed(2)}% avg daily
                   </span>
                 </div>
               </div>
@@ -454,7 +450,7 @@ const YieldProjectionEngine = () => {
                   {formatCurrency(projections.monthly)}
                 </span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">Based on 26 trading days/month</p>
+              <p className="text-[10px] text-gray-500 mt-1">Based on {tradingDaysPerMonth} trading days/month</p>
             </div>
 
             <div className="relative bg-black/30 rounded-lg p-4 border border-[#00FF9D]/30 overflow-hidden">
@@ -490,31 +486,17 @@ const YieldProjectionEngine = () => {
 
 // Main Strategy Pools Component
 export const StrategyPools = () => {
-  const { walletBalance, currentTier, setCurrentTier } = usePortfolioStore();
+  const { walletBalance, totalEquity, currentTier, setCurrentTier } = usePortfolioStore();
   const [currentStrategy, setCurrentStrategy] = useState<string>('anchor');
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
 
-  const userBalance = walletBalance;
+  const userBalance = totalEquity > 0 ? totalEquity : walletBalance;
 
   // Load current strategy from store
   useEffect(() => {
     if (currentTier) {
-      // Map legacy tier names to new pool names
-      const tierMap: Record<string, string> = {
-        protobot: 'anchor',
-        chainpulse: 'vector',
-        titan: 'kinetic',
-        omega: 'horizon',
-        delta: 'anchor',
-        gamma: 'vector',
-        alpha: 'kinetic',
-        anchor: 'anchor',
-        vector: 'vector',
-        kinetic: 'kinetic',
-        horizon: 'horizon',
-      };
-      const mapped = tierMap[currentTier] || 'anchor';
+      const mapped = normalizeStrategyTier(currentTier) ?? 'anchor';
       setCurrentStrategy(mapped);
     }
   }, [currentTier]);

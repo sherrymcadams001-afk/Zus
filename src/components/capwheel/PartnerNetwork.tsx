@@ -668,7 +668,7 @@ export const PartnerNetwork = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="fixed inset-0 flex bg-[#0B1015] overflow-hidden">
+    <div className="h-full w-full flex bg-[#0B1015] overflow-hidden">
       <SwipeEdgeDetector onSwipeOpen={() => setIsMobileNavOpen(true)} />
       
       <MobileNavDrawer 
